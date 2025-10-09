@@ -11,8 +11,6 @@ dependencies = [
     "kaggle>=1.7.4.5",
     "kagglehub>=0.3.13",
     "pandas>=2.3.3",
-    "pip>=25.2",
-    "pre-commit>=4.3.0",
     "presidio>=0.1.0",
     "presidio-evaluator>=0.2.5",
     "scrambletron",

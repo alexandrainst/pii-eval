@@ -1,0 +1,35 @@
+{
+    "name": "Python Torch XPU Dev",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "runArgs": [
+        "--device=/dev/dri"
+    ],
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "eamodio.gitlens",
+                "mechatroner.rainbow-csv",
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "ms-azuretools.vscode-containers",
+                "ms-azuretools.vscode-docker",
+                "ms-python.autopep8",
+                "ms-python.debugpy",
+                "ms-python.isort",
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "ms-python.vscode-python-envs",
+                "openai.chatgpt",
+                "yzhang.markdown-all-in-one"
+            ]
+        }
+    },
+    "postCreateCommand": ".devcontainer/setup.sh",
+    "mounts": [
+        "source=${env:HOME}/.bashrc,target=/root/.bashrc,type=bind,consistency=cached",
+        "source=${env:HOME}/.ssh,target=/root/.ssh,type=bind,consistency=cached",
+        "source=${env:HOME}/.config/kaggle/kaggle.json,target=/root/.config/kaggle/kaggle.json,type=bind,consistency=cached"
+    ]
+}

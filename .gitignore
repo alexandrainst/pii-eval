@@ -91,11 +91,9 @@ outputs/
 multirun/
 
 # Data
-data/raw/*
+data/
 !data/raw/.gitkeep
-data/processed/*
 !data/processed/.gitkeep
-data/final/*
 !data/final/.gitkeep
 
 # Models
@@ -113,3 +111,6 @@ models/*
 
 # Mkdocs compiled documentation
 site/
+
+wandb
+*.old*

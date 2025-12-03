@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import List
 
 input_fp = Path(
-    "data/raw/download_cache/presidio/generated_size_1500_date_October_10_2025.json"
+    "data/raw/presidio/generated_size_1500_date_October_10_2025.json"
 ).resolve()
 
 with open(input_fp, "r") as f:
@@ -46,12 +46,12 @@ for idx, document in enumerate(documents):
     )
 
 
-out_fp = Path("data/raw/transformed/presidio_gen.json").resolve()
+out_fp = Path("data/processed/span/presidio_gen.json").resolve()
 
 with open(out_fp, "w") as f:
     json.dump(transformed, f, indent=True)
 
-reduced_fp = Path("data/raw/transformed/reduced/presidio_gen_red.json").resolve()
+reduced_fp = Path("data/processed/reduced/presidio_gen_red.json").resolve()
 reduced_fp.parent.mkdir(parents=True, exist_ok=True)
 with open(reduced_fp, "w") as f:
     json.dump(transformed[:5], f, ensure_ascii=False)

@@ -2,10 +2,7 @@ import json
 from pathlib import Path
 from typing import List
 
-data_fp = Path(
-    "data/raw/download_cache/kagglehub/competitions/"
-    "pii-detection-removal-from-educational-data"
-).resolve()
+data_fp = Path("data/raw/piilal").resolve()
 
 with open(data_fp / "train.json", "r") as f:
     documents: List[dict] = json.load(f)
@@ -49,7 +46,8 @@ for document in documents:
     spans = []
     text_parts = []
 
-    for token, label, has_whitespace in zip(tokens, labels, trailing_whitespace):
+    for token, label, has_whitespace in zip(
+            tokens, labels, trailing_whitespace):
         token_start = char_position
         token_end = token_start + len(token)
 
@@ -111,13 +109,13 @@ for document in documents:
     )
 
 
-out_fp = Path("data/raw/transformed/pii_lal.json").resolve()
+out_fp = Path("data/processed/span/piilal.json").resolve()
 
 with open(out_fp, "w") as f:
     json.dump(documents_with_spans, f, ensure_ascii=False, indent=True)
 
 # Save reduced version with first 5 entries including span text
-reduced_path = Path("data/raw/transformed/reduced/pii_lal_red.json").resolve()
+reduced_path = Path("data/processed/span/reduced/piilal_red.json").resolve()
 reduced_path.parent.mkdir(parents=True, exist_ok=True)
 with open(reduced_path, "w") as handle:
     json.dump(documents_with_spans[:5], handle, ensure_ascii=False, indent=True)

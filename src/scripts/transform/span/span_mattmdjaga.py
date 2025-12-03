@@ -111,7 +111,7 @@ def main() -> None:
     dataset = load_dataset(DATASET_NAME)["train"]
 
     raw_fp = Path(
-        "data/raw/download_cache/mattmdjaga/text-anonymization-benchmark-train.json"
+        "data/raw/mattmdjaga/text-anonymization-benchmark-train.json"
     )
     raw_fp.resolve()
     if not raw_fp.exists():
@@ -144,13 +144,14 @@ def main() -> None:
             }
         )
 
-    out_fp = Path("data/transformed/mattmdjaga.json").resolve()
+    out_fp = Path("data/processed/spans/mattmdjaga.json").resolve()
     out_fp.parent.mkdir(parents=True, exist_ok=True)
 
     with out_fp.open("w", encoding="utf-8") as f:
         json.dump(output, f, ensure_ascii=False, indent=True)
 
-    reduced_fp = Path("data/raw/transformed/reduced/mattmdjaga_red.json").resolve()
+    reduced_fp = Path(
+        "data/processed/spans/reduced/mattmdjaga_red.json").resolve()
     reduced_fp.parent.mkdir(parents=True, exist_ok=True)
 
     with reduced_fp.open("w", encoding="utf-8") as f:

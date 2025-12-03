@@ -26,11 +26,10 @@ from tqdm import tqdm
 #     "URL_PERSONAL",
 #     "STREET_ADDRESS"]
 
-# device = "cuda" if torch.cuda.is_available() \
-#     else "xpu" if torch.xpu.is_available() \
-#     else "cpu"
+device = "cuda" if torch.cuda.is_available() \
+    else "xpu" if torch.xpu.is_available() \
+    else "cpu"
 
-device = "cpu"
 
 competition_name = "pii-detection-removal-from-educational-data"
 data_fp = Path(f"data/raw/kagglehub/competitions/{competition_name}")
@@ -42,7 +41,9 @@ if os.system(f"ls {data_fp}") != 0:  # not data_fp.exists() # <- doesn't work?
         ).split(" "),
         check=True,
     )
-    subprocess.run(f"unzip -q {data_fp}.zip -d {data_fp}".split(" "), check=True)
+    subprocess.run(
+        f"unzip -q {data_fp}.zip -d {data_fp}".split(" "),
+        check=True)
     # os.system(f"rm {data_fp}.zip")
 df = pd.read_json(data_fp / "train.json").set_index("document", inplace=False)
 classes = set(x for xs in list(df["labels"]) for x in xs)
@@ -61,7 +62,11 @@ assert classes == {
     "I-URL_PERSONAL",
     "O",
 }
-assert df.columns.tolist() == ["full_text", "tokens", "trailing_whitespace", "labels"]
+assert df.columns.tolist() == [
+    "full_text",
+    "tokens",
+    "trailing_whitespace",
+    "labels"]
 
 model_fp = Path(
     kagglehub.model_download(
@@ -148,11 +153,13 @@ class CustomModel(nn.Module):
 
     def _init_weights(self, module):
         if isinstance(module, nn.Linear):
-            module.weight.data.normal_(mean=0.0, std=self.config.initializer_range)
+            module.weight.data.normal_(
+                mean=0.0, std=self.config.initializer_range)
             if module.bias is not None:
                 module.bias.data.zero_()
         elif isinstance(module, nn.Embedding):
-            module.weight.data.normal_(mean=0.0, std=self.config.initializer_range)
+            module.weight.data.normal_(
+                mean=0.0, std=self.config.initializer_range)
             if module.padding_idx is not None:
                 module.weight.data[module.padding_idx].zero_()
         elif isinstance(module, nn.LayerNorm):
@@ -170,9 +177,8 @@ class CustomModel(nn.Module):
         lstm_output, hc = self.bilstm(sequence_output)
         gru_output, _ = self.gru(sequence_output)
 
-        lstm_output_new = (
-            self.lstm_weights * lstm_output + (1 - self.lstm_weights) * gru_output
-        )
+        lstm_output_new = (self.lstm_weights * lstm_output +
+                           (1 - self.lstm_weights) * gru_output)
 
         logits = self.fc(lstm_output_new)
 
@@ -348,5 +354,8 @@ print(
 
 print("\nClassification Report:")
 print(
-    classification_report(true_labels, pred_labels, labels=label_order, zero_division=0)
-)
+    classification_report(
+        true_labels,
+        pred_labels,
+        labels=label_order,
+        zero_division=0))

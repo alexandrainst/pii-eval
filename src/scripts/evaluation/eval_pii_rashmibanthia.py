@@ -39,12 +39,8 @@ competition_name = "pii-detection-removal-from-educational-data"
 data_fp = Path(f"data/raw/kagglehub/competitions/{competition_name}").resolve()
 data_fp.parent.mkdir(exist_ok=True, parents=True)
 if os.system(f"ls {data_fp} > /dev/null") != 0:
-    subprocess.run(
-        ("kaggle competitions download -c{competition_name} -p {data_fp.parent}").split(
-            " "
-        ),
-        check=True,
-    )
+    cmd = f"kaggle competitions download -c {competition_name} -p {data_fp.parent}"
+    subprocess.run(cmd.split(" "), check=True)
     subprocess.run(f"unzip -q {data_fp}.zip -d {data_fp}".split(" "), check=True)
     # os.system(f"rm {data_fp}.zip")
 

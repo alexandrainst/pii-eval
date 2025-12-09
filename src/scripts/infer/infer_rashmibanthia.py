@@ -17,6 +17,10 @@ from transformers import AutoModel, AutoTokenizer
 #     "URL_PERSONAL",
 #     "STREET_ADDRESS"]
 
+dataset = "dansk_ner"
+
+data_fp = Path(f"data/span/da/{dataset}.json").resolve()
+
 device = (
     "cuda"
     if torch.cuda.is_available()
@@ -24,8 +28,6 @@ device = (
     if torch.xpu.is_available()
     else "cpu"
 )
-
-data_fp = Path("data/raw/transformed/mattmdjaga.json").resolve()
 
 with open(data_fp, "r") as f:
     ds: List[dict] = json.load(f)
@@ -259,7 +261,7 @@ for sample in tqdm(ds, desc="Inferring", unit="doc"):
         }
     )
 
-output_path = Path("data/infer/mattmdjaga/rashmibanthia.json").resolve()
+output_path = Path(f"data/infer/{dataset}/rashmibanthia.json").resolve()
 output_path.parent.mkdir(parents=True, exist_ok=True)
 with open(output_path, "w") as f:
     json.dump(results, f, indent=True)

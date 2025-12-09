@@ -51,6 +51,64 @@ def _iter_span_dicts(raw: Any) -> Iterable[Dict[str, Any]]:
             stack.extend(current)
 
 
+def _resolve_majority_label(spans: List[Dict[str, Any]]) -> str:
+    label_segments: Dict[str, List[tuple[int, int]]] = {}
+    for span in spans:
+        label_segments.setdefault(span["label"], []).append(
+            (span["start"], span["end"])
+        )
+    label_scores: Dict[str, int] = {}
+    for label, segments in label_segments.items():
+        segments.sort()
+        coverage = 0
+        current_start, current_end = segments[0]
+        for start, end in segments[1:]:
+            if start <= current_end:
+                current_end = max(current_end, end)
+            else:
+                coverage += current_end - current_start
+                current_start, current_end = start, end
+        coverage += current_end - current_start
+        label_scores[label] = coverage
+    max_score = max(label_scores.values())
+    candidates = [
+        label for label, score in label_scores.items() if score == max_score
+    ]
+    if len(candidates) == 1:
+        return candidates[0]
+    for span in spans:
+        if span["label"] in candidates:
+            return span["label"]
+    return spans[0]["label"]
+
+
+def _merge_overlapping_spans(spans: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    if not spans:
+        return []
+    merged: List[Dict[str, Any]] = []
+    idx = 0
+    while idx < len(spans):
+        current_group = [spans[idx]]
+        current_start = spans[idx]["start"]
+        current_end = spans[idx]["end"]
+        idx += 1
+        while idx < len(spans) and spans[idx]["start"] < current_end:
+            current_group.append(spans[idx])
+            current_end = max(current_end, spans[idx]["end"])
+            idx += 1
+        if len(current_group) == 1:
+            merged.append(current_group[0])
+        else:
+            merged.append(
+                {
+                    "label": _resolve_majority_label(current_group),
+                    "start": current_start,
+                    "end": current_end,
+                }
+            )
+    return merged
+
+
 def _extract_spans(
     raw_spans: Any, full_text: str | None = None
 ) -> List[Dict[str, Any]]:
@@ -82,12 +140,15 @@ def _extract_spans(
             end_idx = int(end)
         except (TypeError, ValueError):
             continue
+        if end_idx - start_idx <= 5:
+            continue
         key = (label, start_idx, end_idx)
         if key in seen:
             continue
         seen.add(key)
         spans.append({"label": label, "start": start_idx, "end": end_idx})
     spans.sort(key=lambda item: (item["start"], item["end"]))
+    spans = _merge_overlapping_spans(spans)
     if isinstance(full_text, str):
         text_len = len(full_text)
         for span in spans:
@@ -144,14 +205,14 @@ def main() -> None:
             }
         )
 
-    out_fp = Path("data/processed/spans/mattmdjaga.json").resolve()
+    out_fp = Path("data/processed/span/mattmdjaga.json").resolve()
     out_fp.parent.mkdir(parents=True, exist_ok=True)
 
     with out_fp.open("w", encoding="utf-8") as f:
         json.dump(output, f, ensure_ascii=False, indent=True)
 
     reduced_fp = Path(
-        "data/processed/spans/reduced/mattmdjaga_red.json").resolve()
+        "data/processed/span/reduced/mattmdjaga.json").resolve()
     reduced_fp.parent.mkdir(parents=True, exist_ok=True)
 
     with reduced_fp.open("w", encoding="utf-8") as f:

@@ -6,10 +6,10 @@ from typing import List, Tuple
 from scrambletron.utils import create_analyzer
 from tqdm import tqdm
 
-data_fp = Path("data/processed/span/reduced/piilal.json").resolve()
-with open(data_fp, "r") as f:
-    ds: List[dict] = json.load(f)
-
+dataset = "pii_lal"
+reduced = "reduced/"
+input_fp = Path(f"data/span/{reduced}{dataset}.json").resolve()
+dataset: List[dict] = json.loads(input_fp.read_text())
 analyzer = create_analyzer()
 
 
@@ -34,7 +34,7 @@ def _chunk_text(text: str) -> List[Tuple[int, str]]:
 
 
 results = []
-for idx, document in tqdm(enumerate(ds), total=len(ds)):
+for idx, document in tqdm(enumerate(dataset), total=len(dataset)):
     full_text = document.get("full_text", "")
     if not isinstance(full_text, str):
         full_text = str(full_text)
@@ -87,13 +87,13 @@ for idx, document in tqdm(enumerate(ds), total=len(ds)):
         }
     )
 
-output_path = Path("data/infer/pii_lal/scrambletron.json").resolve()
+output_path = Path(f"data/infer/{dataset}/scrambletron.json").resolve()
 output_path.parent.mkdir(parents=True, exist_ok=True)
 with open(output_path, "w") as handle:
     json.dump(results, handle, ensure_ascii=False, indent=2)
 
 reduced_path = Path(
-    "data/infer/pii_lal/reduced/scrambletron_red.json").resolve()
+    f"data/infer/{dataset}/reduced/scrambletron.json").resolve()
 reduced_path.parent.mkdir(parents=True, exist_ok=True)
 with open(reduced_path, "w") as handle:
     json.dump(results[:5], handle, ensure_ascii=False, indent=2)

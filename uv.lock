@@ -493,6 +493,7 @@ dependencies = [
     { name = "click" },
     { name = "datasets" },
     { name = "faker" },
+    { name = "gliner" },
     { name = "kaggle" },
     { name = "kagglehub" },
     { name = "pandas" },
@@ -511,13 +512,14 @@ requires-dist = [
     { name = "click", specifier = ">=8.3.0" },
     { name = "datasets", specifier = ">=4.1.1" },
     { name = "faker", specifier = ">=37.11.0" },
+    { name = "gliner", specifier = ">=0.2.22" },
     { name = "kaggle", specifier = ">=1.7.4.5" },
     { name = "kagglehub", specifier = ">=0.3.13" },
     { name = "pandas", specifier = ">=2.3.3" },
     { name = "presidio", specifier = ">=0.1.0" },
     { name = "presidio-evaluator", specifier = ">=0.2.5" },
     { name = "pyconll", specifier = ">=3.3.1" },
-    { name = "scrambletron", git = "https://github.com/danish-foundation-models/scrambletron" },
+    { name = "scrambletron", git = "https://github.com/danish-foundation-models/scrambletron?branch=jacob-dv" },
     { name = "spacy", specifier = ">=3.8.7" },
     { name = "tqdm", specifier = ">=4.67.1" },
     { name = "transformers", specifier = ">=4.51.0" },
@@ -2114,7 +2116,7 @@ wheels = [
 [[package]]
 name = "scrambletron"
 version = "0.1.0"
-source = { git = "https://github.com/danish-foundation-models/scrambletron#d2d38687483d6af3cb1fca7803b43c24567f70dc" }
+source = { git = "https://github.com/danish-foundation-models/scrambletron?branch=jacob-dv#94796f786eb6f966d4cd8eef8c21ed1b0e28a0af" }
 dependencies = [
     { name = "da-core-news-trf" },
     { name = "en-core-web-md" },

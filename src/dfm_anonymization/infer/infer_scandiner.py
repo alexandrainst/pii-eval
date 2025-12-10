@@ -7,7 +7,7 @@ from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModelForTokenClassification
 
 model_name = "saattrupdan/nbailab-base-ner-scandi"
-dataset_name = "dane"
+dataset_name = "dansk_ner"
 
 device = torch.device(
     "cuda"
@@ -88,14 +88,12 @@ for document in tqdm(dataset):
     tokenized = tokenizer(
         text, return_tensors="pt",
         return_offsets_mapping=True)
-    input_ids = tokenized["input_ids"]
-    input_ids.to(device)
-    # TODO: problem here "Expected all tensors to be on the same device"
+    input_ids = tokenized["input_ids"].to(device)
     preds = model(input_ids)[0]
     preds = torch.argmax(preds, dim=2)
     preds = preds[0].tolist()[1:-1]
     pred_ents = [id2labels[p] for p in preds]
-    offset_mapping = tokenized["offset_mapping"][0][1:-1]
+    offset_mapping = tokenized["offset_mapping"][0].tolist()[1:-1]
     spans = bio_to_spans(
         pred_ents, input_ids, offset_mapping, text)
     out_data.append(

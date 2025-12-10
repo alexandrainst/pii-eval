@@ -8,6 +8,7 @@ dependencies = [
     "click>=8.3.0",
     "datasets>=4.1.1",
     "faker>=37.11.0",
+    "gliner>=0.2.22",
     "kaggle>=1.7.4.5",
     "kagglehub>=0.3.13",
     "pandas>=2.3.3",
@@ -21,4 +22,4 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-scrambletron = { git = "https://github.com/danish-foundation-models/scrambletron" }
+scrambletron = { git = "https://github.com/danish-foundation-models/scrambletron", branch = "jacob-dv" }

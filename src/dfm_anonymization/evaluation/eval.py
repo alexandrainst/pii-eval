@@ -6,11 +6,10 @@ import json
 from pathlib import Path
 from typing import Dict, Iterable, Optional, Set, Tuple
 
-DEFAULT_DATASET = "dane"
+DEFAULT_DATASET = "dansk_ner"
 DEFAULT_MODEL = "scandiner"
 DEFAULT_REDUCED = "" # "/reduced"
-
-DEFAULT_LABELS = [
+DEFAULT_PII_LABELS = [
     "CREDITCARD",
     "CREDIT_CARD",
     "EMAIL",
@@ -137,7 +136,7 @@ def evaluate_documents(
 
 def main() -> None:
     args = parse_args()
-    whitelist = DEFAULT_LABELS
+    whitelist = DEFAULT_PII_LABELS
     predictions = load_records(path=args.predictions)
     truths = load_records(path=args.truth)
     tp, fp, fn, tn = evaluate_documents(predictions, truths, whitelist)

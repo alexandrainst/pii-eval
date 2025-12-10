@@ -11,7 +11,7 @@ train_data_fp = Path(
 df = pd.read_json(train_data_fp).set_index("document", inplace=False)
 
 # train_ds = Dataset.from_dict({
-#     "full_text": [item["full_text"] for item in train_data],
+#     "text": [item["text"] for item in train_data],
 #     "document": [item["document"] for item in train_data],
 #     "tokens": [item["tokens"] for item in train_data],
 #     "trailing_whitespace": [item["trailing_whitespace"] for item in train_data],

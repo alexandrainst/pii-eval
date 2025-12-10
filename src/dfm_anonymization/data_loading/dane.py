@@ -221,7 +221,7 @@ for idx, (text, tokens, bio_tags) in enumerate(zip(texts, sentences, tags)):
     spans = _bio_to_spans(text, offsets, bio_tags)
     documents.append({
         'document': idx,
-        'full_text': text,
+        'text': text,
         'spans': spans
     })
 

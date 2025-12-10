@@ -110,7 +110,7 @@ def _merge_overlapping_spans(spans: List[Dict[str, Any]]) -> List[Dict[str, Any]
 
 
 def _extract_spans(
-    raw_spans: Any, full_text: str | None = None
+    raw_spans: Any, text: str | None = None
 ) -> List[Dict[str, Any]]:
     spans: List[Dict[str, Any]] = []
     seen = set()
@@ -149,8 +149,8 @@ def _extract_spans(
         spans.append({"label": label, "start": start_idx, "end": end_idx})
     spans.sort(key=lambda item: (item["start"], item["end"]))
     spans = _merge_overlapping_spans(spans)
-    if isinstance(full_text, str):
-        text_len = len(full_text)
+    if isinstance(text, str):
+        text_len = len(text)
         for span in spans:
             start_idx = span["start"]
             end_idx = span["end"]
@@ -162,7 +162,7 @@ def _extract_spans(
                 end_idx = start_idx
             elif end_idx > text_len:
                 end_idx = text_len
-            span["text"] = full_text[start_idx:end_idx]
+            span["text"] = text[start_idx:end_idx]
     return spans
 
 
@@ -183,8 +183,8 @@ def main() -> None:
     output = []
 
     for idx, example in enumerate(dataset):
-        full_text = example.get("full_text") or example.get("text")
-        if full_text is None:
+        text = example.get("text") or example.get("text")
+        if text is None:
             raise ValueError("Example missing full text content")
 
         span_source = (
@@ -200,8 +200,8 @@ def main() -> None:
                 or example.get("doc_id")
                 or example.get("id")
                 or idx,
-                "full_text": full_text,
-                "spans": _extract_spans(span_source, full_text),
+                "text": text,
+                "spans": _extract_spans(span_source, text),
             }
         )
 

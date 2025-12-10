@@ -35,14 +35,14 @@ def _chunk_text(text: str) -> List[Tuple[int, str]]:
 
 results = []
 for idx, document in tqdm(enumerate(dataset), total=len(dataset)):
-    full_text = document.get("full_text", "")
-    if not isinstance(full_text, str):
-        full_text = str(full_text)
-    text_len = len(full_text)
+    text = document.get("text", "")
+    if not isinstance(text, str):
+        text = str(text)
+    text_len = len(text)
     spans = []
     seen = set()
 
-    for chunk_start, chunk_text in _chunk_text(full_text):
+    for chunk_start, chunk_text in _chunk_text(text):
         analysis = analyzer.analyze(chunk_text, language="da")
         for item in analysis:
             start_local = getattr(item, "start", None)
@@ -74,7 +74,7 @@ for idx, document in tqdm(enumerate(dataset), total=len(dataset)):
                     "label": label,
                     "start": start_idx,
                     "end": end_idx,
-                    "text": full_text[start_idx:end_idx],
+                    "text": text[start_idx:end_idx],
                 }
             )
 
@@ -82,7 +82,7 @@ for idx, document in tqdm(enumerate(dataset), total=len(dataset)):
     results.append(
         {
             "document": document.get("document", idx),
-            "full_text": full_text,
+            "text": text,
             "spans": spans,
         }
     )

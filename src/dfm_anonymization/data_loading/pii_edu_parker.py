@@ -109,7 +109,7 @@ def format_text(text):
 
 
 # Example usage
-raw_text = df["full_text"][0]
+raw_text = df["text"][0]
 
 print(format_text(raw_text))
 

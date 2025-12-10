@@ -12,10 +12,10 @@ with open(input_fp, "r") as f:
 transformed = []
 
 for idx, document in enumerate(documents):
-    assert set(document.keys()) >= {"full_text", "spans"}
+    assert set(document.keys()) >= {"text", "spans"}
 
     spans = []
-    text = document["full_text"]
+    text = document["text"]
     text_len = len(text)
     for span in document["spans"]:
         start = int(span["start_position"])
@@ -40,7 +40,7 @@ for idx, document in enumerate(documents):
     transformed.append(
         {
             "document": idx,
-            "full_text": document["full_text"],
+            "text": document["text"],
             "spans": spans,
         }
     )

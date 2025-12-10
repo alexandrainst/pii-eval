@@ -32,7 +32,7 @@ device = (
 with open(data_fp, "r") as f:
     ds: List[dict] = json.load(f)
 
-assert set(ds[0].keys()) == {"document", "full_text", "spans"}
+assert set(ds[0].keys()) == {"document", "text", "spans"}
 model_fp = Path(
     kagglehub.model_download(
         "rashmibanthia/pii-data-detection-deberta-v3-large/pyTorch/5folds"
@@ -252,11 +252,11 @@ def infer_text(text: str):
 
 results = []
 for sample in tqdm(ds, desc="Inferring", unit="doc"):
-    spans = infer_text(sample["full_text"])
+    spans = infer_text(sample["text"])
     results.append(
         {
             "document": sample["document"],
-            "full_text": sample["full_text"],
+            "text": sample["text"],
             "spans": spans,
         }
     )

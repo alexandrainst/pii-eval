@@ -16,7 +16,7 @@ labels = [k for k in LABEL_TRANSLATIONS[dataset_name].values() if k]
 model = GLiNER.from_pretrained(model_name, map_location="cuda")
 
 for entry in dataset:
-    text = entry["full_text"]
+    text = entry["text"]
 
     entities = model.predict_entities(text, labels)
 

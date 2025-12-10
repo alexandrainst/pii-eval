@@ -63,7 +63,7 @@ assert classes == {
     "O",
 }
 assert df.columns.tolist() == [
-    "full_text",
+    "text",
     "tokens",
     "trailing_whitespace",
     "labels"]

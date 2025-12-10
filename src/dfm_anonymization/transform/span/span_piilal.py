@@ -28,7 +28,7 @@ documents_with_spans = []
 for document in documents:
     assert set(document.keys()) == {
         "document",
-        "full_text",
+        "text",
         "tokens",
         "trailing_whitespace",
         "labels",
@@ -89,7 +89,7 @@ for document in documents:
         spans.append(active_span)
 
     reconstructed_text = "".join(text_parts)
-    if reconstructed_text != document["full_text"]:
+    if reconstructed_text != document["text"]:
         raise ValueError(f"Full text mismatch for document {document_id}")
 
     text_len = len(reconstructed_text)
@@ -103,7 +103,7 @@ for document in documents:
     documents_with_spans.append(
         {
             "document": document_id,
-            "full_text": reconstructed_text,
+            "text": reconstructed_text,
             "spans": spans,
         }
     )

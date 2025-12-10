@@ -150,7 +150,7 @@ def _default_output_path(dataset: str, target_language: str) -> Path:
     return Path(f"data/processed/span/translated/{dataset}_{safe_target}.json")
 
 
-def _translate_full_text(
+def _translate_text(
     client: ChatCompletionsClient,
     text: str,
     source_language: str,
@@ -227,13 +227,13 @@ def _extract_json_array(raw: str) -> List[str]:
     return parsed
 
 
-def _resolve_span_text(span: dict, full_text: str) -> str:
+def _resolve_span_text(span: dict, text: str) -> str:
     text = span.get("text")
     if text:
         return text
     start = int(span.get("start", 0))
     end = int(span.get("end", start))
-    return full_text[start:end]
+    return text[start:end]
 
 
 def _align_spans(
@@ -316,14 +316,14 @@ def main() -> None:
     skipped = 0
     for entry in samples:
         try:
-            translated_text = _translate_full_text(
+            translated_text = _translate_text(
                 client,
-                entry.get("full_text", ""),
+                entry.get("text", ""),
                 args.source_language,
                 args.target_language,
             )
             spans = entry.get("spans", [])
-            span_texts = [_resolve_span_text(span, entry.get("full_text", "")) for span in spans]
+            span_texts = [_resolve_span_text(span, entry.get("text", "")) for span in spans]
             translated_span_texts = _translate_spans(
                 client,
                 span_texts,
@@ -331,7 +331,7 @@ def main() -> None:
                 args.target_language,
             )
             aligned_spans = _align_spans(
-                entry.get("full_text", ""),
+                entry.get("text", ""),
                 translated_text,
                 spans,
                 translated_span_texts,
@@ -342,7 +342,7 @@ def main() -> None:
             translated_samples.append(
                 {
                     "document": entry.get("document"),
-                    "full_text": translated_text,
+                    "text": translated_text,
                     "spans": aligned_spans,
                 }
             )

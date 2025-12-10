@@ -85,7 +85,7 @@ def _convert_file(path: Path) -> List[dict]:
         converted.append(
             {
                 "document": idx,
-                "full_text": sentence,
+                "text": sentence,
                 "spans": spans,
             }
         )

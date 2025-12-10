@@ -51,7 +51,7 @@ data = json.load(
 
 ds = Dataset.from_dict(
     {
-        "full_text": [x["full_text"] for x in data],
+        "text": [x["text"] for x in data],
         "document": [x["document"] for x in data],
         "tokens": [x["tokens"] for x in data],
         "trailing_whitespace": [x["trailing_whitespace"] for x in data],

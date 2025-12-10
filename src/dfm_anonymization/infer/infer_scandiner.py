@@ -84,7 +84,7 @@ tokenized_sents = []
 out_data = []
 for document in tqdm(dataset):
     document_id = document["document"]
-    text = document['full_text']
+    text = document['text']
     tokenized = tokenizer(
         text, return_tensors="pt",
         return_offsets_mapping=True)
@@ -97,7 +97,7 @@ for document in tqdm(dataset):
     spans = bio_to_spans(
         pred_ents, input_ids, offset_mapping, text)
     out_data.append(
-        {"document": document_id, "full_text": text, "spans": spans})
+        {"document": document_id, "text": text, "spans": spans})
 
 out_path = Path(f"data/infer/{dataset_name}/scandiner.json")
 out_path.parent.mkdir(exist_ok=True, parents=True)

@@ -108,10 +108,10 @@ def evaluate_documents(
     for doc_id in truth_ids:
         truth_entry = truths[doc_id]
         pred_entry = predictions[doc_id]
-        text = truth_entry["full_text"]
+        text = truth_entry["text"]
         total_chars += len(text)
 
-        pred_text = pred_entry["full_text"]
+        pred_text = pred_entry["text"]
         if len(pred_text) != len(text):
             raise ValueError(
                 f"Text length mismatch for doc {doc_id}: "

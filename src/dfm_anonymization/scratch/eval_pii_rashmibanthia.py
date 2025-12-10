@@ -68,7 +68,7 @@ assert classes == {
     "O",
 }
 
-assert df.columns.tolist() == ["full_text", "tokens", "trailing_whitespace", "labels"]
+assert df.columns.tolist() == ["text", "tokens", "trailing_whitespace", "labels"]
 
 model_fp = Path(
     kagglehub.model_download(

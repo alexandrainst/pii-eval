@@ -28,7 +28,7 @@ if df.empty:
     output_path.write_text("[]", encoding="utf-8")
     raise SystemExit(0)
 
-text_column_candidates = ("full_text", "text", "content", "raw_text")
+text_column_candidates = ("text", "text", "content", "raw_text")
 text_column = next(
     (col for col in text_column_candidates if col in df.columns),
     None)
@@ -45,9 +45,9 @@ if text_column is None:
 
 records = []
 for row in df.itertuples():
-    full_text = getattr(row, text_column)
-    if not isinstance(full_text, str):
-        full_text = "" if full_text is None else str(full_text)
+    text = getattr(row, text_column)
+    if not isinstance(text, str):
+        text = "" if text is None else str(text)
 
     spans = []
     for ent in getattr(row, "ents"):
@@ -59,7 +59,7 @@ for row in df.itertuples():
             end = int(end)
         span_text = ent.get("text")
         if span_text is None and start is not None and end is not None:
-            span_text = full_text[start:end]
+            span_text = text[start:end]
         spans.append(
             {
                 "label": ent.get("label"),
@@ -81,7 +81,7 @@ for row in df.itertuples():
     records.append(
         {
             "document": document_id,
-            "full_text": full_text,
+            "text": text,
             "spans": spans,
         }
     )

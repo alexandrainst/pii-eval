@@ -7,7 +7,7 @@ from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModelForTokenClassification
 
 model_name = "saattrupdan/nbailab-base-ner-scandi"
-dataset_name = "dansk_ner"
+dataset_name = "gen_address"
 
 device = torch.device(
     "cuda"

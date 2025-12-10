@@ -114,3 +114,4 @@ site/
 
 wandb
 *.old*
+.backups

@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 from typing import Dict, Iterable, Optional, Set, Tuple
 
+import pandas as pd
+
 from dfm_anonymization.util.misc import MODEL_LABEL_MAP, DATASET_LABEL_MAP
 
 
@@ -46,8 +48,8 @@ def mask_from_spans(
 def evaluate_documents(
     predictions: Dict[int, dict],
     truths: Dict[int, dict],
-    whitelist_model: Optional[Dict[str, Optional[str]]] = None,
-    whitelist_dataset: Optional[Dict[str, Optional[str]]] = None
+    label_dataset: str,
+    label_model: str,
 ) -> Tuple[int, int, int, int]:
     pred_ids = set(predictions)
     truth_ids = set(truths)
@@ -86,9 +88,9 @@ def evaluate_documents(
             )
 
         truth_mask = mask_from_spans(
-            len(text), truth_entry.get("spans", []), whitelist_dataset)
+            len(text), truth_entry.get("spans", []), [label_dataset])
         pred_mask = mask_from_spans(
-            len(text), pred_entry.get("spans", []), whitelist_model)
+            len(text), pred_entry.get("spans", []), [label_model])
         for pred_char, truth_char in zip(pred_mask, truth_mask):
             if pred_char:
                 if truth_char:
@@ -109,71 +111,72 @@ def main() -> None:
         truth_path = Path(f"data/span/{dataset_name}.json")
         truths = load_records(path=truth_path)
         predictions_base = Path(f"data/infer/{dataset_name}")
+        dataset_label_map = DATASET_LABEL_MAP[dataset_name]
         for predictions_path in predictions_base.glob("*.json"):
             model_name = predictions_path.stem
             model_label_map = MODEL_LABEL_MAP[model_name] \
                 if model_name in MODEL_LABEL_MAP else None
-            dataset_label_map = DATASET_LABEL_MAP[dataset_name]
-            whitelist_model = [
+            labels_model = None if not model_label_map else [
                 k for k, v in model_label_map.items()
                 if v and v in dataset_label_map.values()
-            ] if model_label_map else None
-            whitelist_ds = [
-                k for k, v in dataset_label_map.items()
-                if v and (not model_label_map or v in model_label_map.values())
             ]
-            predictions = load_records(path=predictions_path)
-            tp, fp, fn, tn = evaluate_documents(
-                predictions, truths, whitelist_model, whitelist_ds)
+            labels_dataset = [
+                k for k, v in dataset_label_map.items() if v and
+                (not model_label_map or v in model_label_map.values())
+            ]
+            for label_dataset in labels_dataset:
+                predictions = load_records(path=predictions_path)
+                if labels_model:
+                    label_model = [
+                        k for k, v in model_label_map.items()
+                        if v == dataset_label_map[label_dataset]
+                    ][0]
+                else:
+                    label_model = label_dataset
+                tp, fp, fn, tn = evaluate_documents(
+                    predictions, truths, label_dataset, label_model)
 
-            precision = tp / (tp + fp) if tp + fp else 0.0
-            recall = tp / (tp + fn) if tp + fn else 0.0
-            f1 = (2 * precision * recall / (precision + recall)
-                  ) if (precision + recall) else 0.0
-            beta_sq = 25
-            f5 = ((1 + beta_sq) * precision * recall /
-                  (beta_sq * precision + recall)) if (beta_sq * precision + recall) else 0.0
-            accuracy = (tp + tn) / (tp + fp + fn + tn) if (tp + fp + fn + tn) else 0.0
+                precision = tp / (tp + fp) if tp + fp else 0.0
+                recall = tp / (tp + fn) if tp + fn else 0.0
+                f1 = (2 * precision * recall / (precision + recall)
+                      ) if (precision + recall) else 0.0
+                beta_sq = 25
+                f5 = ((1 + beta_sq) * precision * recall /
+                      (beta_sq * precision + recall)) if (beta_sq * precision + recall) else 0.0
+                accuracy = (tp + tn) / (tp + fp + fn + tn) if (tp + fp + fn + tn) else 0.0
 
-            # if model_label_map:
-            #     print(f"model labels: {[k for k, v in model_label_map.items() if v]}")
-            # print(f"dataset labels: {[k for k, v in dataset_label_map.items() if v]}")
-            # print(f"whitelist model: {whitelist_model}")
-            # print(f"whitelist dataset: {whitelist_ds}")
-            # print(
-            #     "\n".join(
-            #         [
-            #             f"True Positives : {tp}",
-            #             f"False Positives: {fp}",
-            #             f"False Negatives: {fn}",
-            #             f"True Negatives: {tn}",
-            #             f"Precision     : {precision:.4f}",
-            #             f"Recall        : {recall:.4f}",
-            #             f"F1 Score      : {f1:.4f}",
-            #             f"F5 Score      : {f5:.4f}",
-            #             f"Accuracy      : {accuracy:.4f}",
-            #         ]
-            #     )
-            # )
+                results.append({
+                    "dataset": dataset_name,
+                    "model": model_name,
+                    "label_dataset": label_dataset,
+                    "label_model": label_model,
+                    "label_iso": dataset_label_map[label_dataset],
+                    "true_positive": tp,
+                    "false_positive": fp,
+                    "false_negative": fn,
+                    "true_negative": tn,
+                    "precision": precision,
+                    "recall": recall,
+                    "f1": f1,
+                    "f5": f5,
+                    "accuracy": accuracy
+                })
 
-            results.append({
-                "dataset": dataset_name,
-                "model": model_name,
-                "labels_dataset": whitelist_ds,
-                "labels_model": whitelist_model,
-                "true_positive": tp,
-                "false_positive": fp,
-                "false_negative": fn,
-                "true_negative": tn,
-                "precision": precision,
-                "recall": recall,
-                "f1": f1,
-                "f5": f5,
-                "accuracy": accuracy
-            })
+                out_path.write_text(
+                    json.dumps(results, ensure_ascii=False, indent=4))
 
-            out_path.write_text(
-                json.dumps(results, ensure_ascii=False, indent=4))
+    metrics = ["precision", "f1", "f5", "recall"]
+    df = pd.DataFrame(results)
+    df = df[["dataset", "model", "label_iso"] + metrics]
+    df = df.sort_values(["dataset", "label_iso", "f5"], ascending=[True, True, False])
+    best_models_by_label = df.groupby(["label_iso", "model"])[metrics].mean() \
+        .reset_index().sort_values(["label_iso", "f5"], ascending=[True, False])
+    best_model_by_label = best_models_by_label.loc[
+        best_models_by_label.groupby("label_iso").idxmax()["f5"]]
+    best_models_by_label = best_models_by_label.set_index(["label_iso", "model"])
+    best_model_by_label = best_model_by_label.set_index(["label_iso", "model"])
+    print(best_models_by_label, end="\n\n")
+    print(best_model_by_label)
 
 
 if __name__ == "__main__":

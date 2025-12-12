@@ -43,5 +43,6 @@ for dataset_name, model_name in it:
         new_entries.append(new_entry)
 
     out_path.parent.mkdir(exist_ok=True, parents=True)
-    out_path.write_text(json.dumps(new_entries, ensure_ascii=False, indent=4))
+    out_path.write_text(
+        json.dumps(new_entries, ensure_ascii=False, indent=4), encoding="utf8")
 

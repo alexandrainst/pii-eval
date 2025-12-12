@@ -101,7 +101,8 @@ for document in tqdm(dataset):
 
 out_path = Path(f"data/infer/{dataset_name}/scandiner.json")
 out_path.parent.mkdir(exist_ok=True, parents=True)
-out_path.write_text(json.dumps(out_data, ensure_ascii=False, indent=4))
+out_path.write_text(
+    json.dumps(out_data, ensure_ascii=False, indent=4), encoding="utf8")
 
 # predictions = []
 # for (input, mask) in tokenized_sents:

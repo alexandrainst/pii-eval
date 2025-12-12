@@ -163,12 +163,16 @@ def main() -> None:
                 })
 
                 out_path.write_text(
-                    json.dumps(results, ensure_ascii=False, indent=4))
+                    json.dumps(results, ensure_ascii=False, indent=4),
+                    encoding="utf8"
+                )
 
     metrics = ["precision", "f1", "f5", "recall"]
     df = pd.DataFrame(results)
     df = df[["dataset", "model", "label_iso"] + metrics]
     df = df.sort_values(["dataset", "label_iso", "f5"], ascending=[True, True, False])
+    best_models = df.groupby("model")[metrics].mean().sort_values("f5", ascending=False)
+    dataset_scores = df.groupby("dataset")[metrics].mean().sort_values("f5", ascending=False)
     best_models_by_label = df.groupby(["label_iso", "model"])[metrics].mean() \
         .reset_index().sort_values(["label_iso", "f5"], ascending=[True, False])
     best_model_by_label = best_models_by_label.loc[
@@ -176,7 +180,10 @@ def main() -> None:
     best_models_by_label = best_models_by_label.set_index(["label_iso", "model"])
     best_model_by_label = best_model_by_label.set_index(["label_iso", "model"])
     print(best_models_by_label, end="\n\n")
+    print(dataset_scores, end="\n\n")
+    print(best_models, end="\n\n")
     print(best_model_by_label)
+    pass
 
 
 if __name__ == "__main__":

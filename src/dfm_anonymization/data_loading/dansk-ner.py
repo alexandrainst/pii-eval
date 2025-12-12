@@ -88,6 +88,6 @@ for row in df.itertuples():
 
 red_output_path = output_path.parent / "reduced" / output_path.name
 red_output_path.write_text(json.dumps(
-    records[:5], ensure_ascii=False, indent=4))
+    records[:5], ensure_ascii=False, indent=4), encoding="utf8")
 output_path.write_text(json.dumps(
-    records, ensure_ascii=False, indent=4))
+    records, ensure_ascii=False, indent=4), encoding="utf8")

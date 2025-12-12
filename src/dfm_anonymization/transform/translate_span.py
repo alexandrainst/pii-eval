@@ -44,7 +44,8 @@ class ChatCompletionsClient:
 
     def complete(self, messages: Sequence[dict], temperature: float = 0.0) -> str:
         payload = json.dumps(
-            {"model": self.model, "temperature": temperature, "messages": messages}
+            {"model": self.model, "temperature": temperature, "messages": messages},
+            ensure_ascii=False
         ).encode("utf-8")
         url = f"{self.api_base}/chat/completions"
         req = request.Request(

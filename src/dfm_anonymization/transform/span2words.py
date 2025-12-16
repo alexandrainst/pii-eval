@@ -62,9 +62,8 @@ def _transform_entry(entry: ExampleEntry) -> ExampleEntry:
     tags = _spans_to_bio(token_spans, spans)
     result = dict(entry)
     result.pop("spans", None)
-    result["tokens"] = tokens
-    result["tags"] = tags
-    result["language"] = "danish"
+    result["words"] = tokens
+    result["bio_tags"] = tags
     return result
 
 

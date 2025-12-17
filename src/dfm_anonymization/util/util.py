@@ -1,12 +1,22 @@
 from __future__ import annotations
 
-from dataclasses import is_dataclass, fields
-from typing import Any, Mapping
 from collections.abc import Set as AbcSet
+from dataclasses import fields, is_dataclass
+from typing import Any, Mapping
+
+import torch
 
 
+def get_torch_device() -> str:
+    return "cuda" if torch.cuda.is_available() else "xpu" if hasattr(
+        torch, "xpu") and torch.xpu.is_available() else "cpu"
 
-def to_dict_recursive(obj: Any, *, include_private: bool = False, max_depth: int | None = None) -> Any:
+
+def to_dict_recursive(
+        obj: Any,
+        *,
+        include_private: bool = False,
+        max_depth: int | None = None) -> Any:
     """
     Recursively convert custom objects into JSON-like primitives (dict/list/etc).
 
@@ -54,11 +64,18 @@ def to_dict_recursive(obj: Any, *, include_private: bool = False, max_depth: int
             return out if isinstance(x, list) else tuple(out)
 
         if isinstance(x, (set, frozenset, AbcSet)):
-            return sorted((convert(i, depth + 1) for i in x), key=lambda y: repr(y))
+            return sorted((convert(i, depth + 1)
+                          for i in x), key=lambda y: repr(y))
 
         # Dataclasses
         if is_dataclass(x) and not isinstance(x, type):
-            return {f.name: convert(getattr(x, f.name), depth + 1) for f in fields(x)}
+            return {
+                f.name: convert(
+                    getattr(
+                        x,
+                        f.name),
+                    depth +
+                    1) for f in fields(x)}
 
         # Objects with __dict__ / __slots__
         data: dict[str, Any] = {}
@@ -83,7 +100,8 @@ def to_dict_recursive(obj: Any, *, include_private: bool = False, max_depth: int
         if data:
             return data
 
-        # Fallback for unknown types (e.g., datetime, Path, enums): string representation
+        # Fallback for unknown types (e.g., datetime, Path, enums): string
+        # representation
         return repr(x)
 
     return convert(obj, 0)

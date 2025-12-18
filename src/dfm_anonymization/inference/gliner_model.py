@@ -5,6 +5,7 @@ from bidict import bidict
 from dfm_anonymization.inference.dataset import PiiDataEntry
 from dfm_anonymization.inference.interfaces import PiiModel
 from dfm_anonymization.util.util import get_torch_device, spans_to_bio, tokens_to_offsets
+from dfm_anonymization.util.misc import LABEL_DESCRIPTIONS_DA
 
 
 GLINER_MODEL_EXAMPLES = ["nvidia/gliner-pii", "urchade/gliner_multi-v2.1"]
@@ -13,8 +14,8 @@ GLINER_MODEL_EXAMPLES = ["nvidia/gliner-pii", "urchade/gliner_multi-v2.1"]
 class GlinerModel(PiiModel):
     def __init__(
             self,
-            tag: str,
-            labels: Set[str] | bidict[str, str],
+            tag: str = GLINER_MODEL_EXAMPLES[1],
+            labels: Set[str] | bidict[str, str] = LABEL_DESCRIPTIONS_DA,
     ):
         self.name = tag.split('/')[-1]
         self.model = GLiNER.from_pretrained(

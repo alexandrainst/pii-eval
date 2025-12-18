@@ -8,6 +8,10 @@ from presidio_anonymizer import RecognizerResult
 import torch
 
 
+def undefined() -> Any:
+    raise NotImplemented()
+
+
 def tokens_to_offsets(text: str, tokens: List[str]) -> List[tuple[int, int]]:
     offsets: List[tuple[int, int]] = []
     cursor = 0

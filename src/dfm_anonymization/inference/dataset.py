@@ -1,5 +1,5 @@
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional
 
@@ -8,11 +8,11 @@ from dfm_anonymization.util.util import to_dict_recursive
 
 @dataclass
 class PiiDataEntry(object):
-    id: int | str
     text: str
     tokens: List[str]
-    bio_tags: Optional[List[str]] = None
-    metadata: Optional[dict] = None
+    id: int | str | None = None
+    bio_tags: List[str] | None = None
+    metadata: dict | None = None
 
     @staticmethod
     def sample() -> "PiiDataEntry":
@@ -39,9 +39,8 @@ class PiiDataEntry(object):
 
 @dataclass
 class PiiDataset(object):
-    name: str
-    entries: List[PiiDataEntry]
-    metadata: Optional[dict] = None
+    metadata: dict | None = None
+    entries: List[PiiDataEntry] = field(default_factory=list)
 
     def __iter__(self):
         return self.entries.__iter__()
@@ -68,6 +67,7 @@ class PiiDataset(object):
 
     @staticmethod
     def from_dict(d: dict) -> "PiiDataset":
+        # return PiiDataset(**d)
         entries = []
         for i, e in enumerate(d['entries']):
             if 'id' not in e:
@@ -77,7 +77,7 @@ class PiiDataset(object):
         original_metadata = d['metadata'] if 'metadata' in d else dict()
         metadata = original_metadata | {
             k: v for k, v in d.items()
-            if k not in dir(PiiDataset)
+            if k not in PiiDataset.__annotations__.keys()
         }
         for k in metadata.keys():
             if k.startswith('__'):
@@ -109,9 +109,10 @@ class PiiDataset(object):
             entry['id'] = entry.pop('document')
             entries.append(PiiDataEntry.from_dict(entry))
         return PiiDataset(
-            name=dataset_name if dataset_name else file.stem,
             entries=entries,
             metadata={
+                "dataset_name": dataset_name if dataset_name else file.stem,
+                "is_ground_truth": True,
                 "file_path": str(file)
             }
         )

@@ -3,10 +3,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import Callable, List
 
+from codetiming import Timer
 from tqdm import tqdm
 
-from dfm_anonymization.inference.dataset import PiiDataset
-from dfm_anonymization.inference.gliner_model import GLINER_MODEL_EXAMPLES, GlinerModel
+from dfm_anonymization.inference.dataset import PiiDataEntry, PiiDataset
+from dfm_anonymization.inference.gliner_model import (
+    GLINER_MODEL_EXAMPLES, GlinerModel)
 from dfm_anonymization.inference.interfaces import PiiModel
 from dfm_anonymization.inference.ner_model import NerModel
 from dfm_anonymization.inference.presidio_model import PresidioModel
@@ -14,19 +16,25 @@ from dfm_anonymization.util.misc import LABEL_DESCRIPTIONS_DA
 
 
 def inference(
-        model: PiiModel, dataset: PiiDataset, show_bar: bool = True
+        model: PiiModel, dataset: PiiDataset, show_progress_bar: bool = True
 ) -> PiiDataset:
-    dataset = deepcopy(dataset)
-    it = tqdm(dataset) if show_bar else dataset
+    it = tqdm(dataset, dynamic_ncols=True) if show_progress_bar else dataset
+    new_entries = []
     for entry in it:
-        timestamp = datetime.now().isoformat()
-        entry.bio_tags = model(entry)
-        entry.metadata = {
-            "dataset_name": dataset.name,
-            "model_name": model.name,
-            "timestamp": timestamp
-        }
-    return dataset
+        new_entries.append(PiiDataEntry(
+            id=entry.id,
+            text=entry.text,
+            tokens=entry.tokens,
+            bio_tags=model(entry),
+            metadata=entry.metadata
+        ))
+    timestamp = datetime.now().isoformat()
+    return PiiDataset(entries=new_entries, metadata={
+        "model_name": model.name,
+        "is_ground_truth": False,
+        "timestamp": timestamp,
+        "dataset": dataset.metadata
+    })
 
 
 def convert_datasets_from_words():
@@ -36,11 +44,11 @@ def convert_datasets_from_words():
         dataset.to_file(out_path)
 
 
-def generate_inferences():
+def generate_inferences(override: bool = False):
     models: List[Callable[[], PiiModel]] = [
-        # lambda: NerModel.from_hf("saattrupdan/nbailab-base-ner-scandi")
-        # lambda: GlinerModel(GLINER_MODEL_EXAMPLES[0], LABEL_DESCRIPTIONS_DA),
-        # lambda: GlinerModel(GLINER_MODEL_EXAMPLES[1], LABEL_DESCRIPTIONS_DA)
+        lambda: NerModel.from_hf("saattrupdan/nbailab-base-ner-scandi"),
+        lambda: GlinerModel(GLINER_MODEL_EXAMPLES[0], LABEL_DESCRIPTIONS_DA),
+        lambda: GlinerModel(GLINER_MODEL_EXAMPLES[1], LABEL_DESCRIPTIONS_DA),
         lambda: PresidioModel()
     ]
     for model_fct in models:
@@ -48,10 +56,23 @@ def generate_inferences():
         print(f"Model: {model.name}")
         for in_path in Path("data/ground_truth").glob("*.json"):
             dataset = PiiDataset.from_file(in_path)
-            print(f"Dataset: {dataset.name}")
+            dataset_name = dataset.metadata['dataset_name']
+            print(f"Dataset: {dataset_name}")
+            output_file_path = Path(
+                f"data/infer_ds/{model.name}/{dataset_name}.json")
+            if not override and output_file_path.exists():
+                print("skipping: file already exists")
+                continue
+            timer = Timer()
+            timer.start()
             predictions = inference(model=model, dataset=dataset)
-            predictions.to_file(
-                f"data/infer_ds/{model.name}/{dataset.name}.json")
+            timer.stop()
+            time = timer.last
+            predictions.metadata.update({
+                "computation_time_total": time,
+                "computation_time_per_entry": time / len(dataset)
+            })
+            predictions.to_file(output_file_path)
 
 
 if __name__ == "__main__":
@@ -59,9 +80,3 @@ if __name__ == "__main__":
     generate_inferences()
 
     pass
-
-
-# sample_ds = PiiDataset.sample()
-# sample_json = sample_ds.to_json()
-# sample_ds_ = PiiDataset.from_json(sample_json)
-# assert sample_ds == sample_ds_

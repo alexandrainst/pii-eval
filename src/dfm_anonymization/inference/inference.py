@@ -6,8 +6,10 @@ from typing import Callable, List
 from tqdm import tqdm
 
 from dfm_anonymization.inference.dataset import PiiDataset
+from dfm_anonymization.inference.gliner_model import GLINER_MODEL_EXAMPLES, GlinerModel
+from dfm_anonymization.inference.interfaces import PiiModel
 from dfm_anonymization.inference.ner_model import NerModel
-from dfm_anonymization.util.pii_model import PiiModel
+from dfm_anonymization.util.misc import LABEL_DESCRIPTIONS_DA
 
 
 def inference(
@@ -17,7 +19,7 @@ def inference(
     it = tqdm(dataset) if show_bar else dataset
     for entry in it:
         timestamp = datetime.now().isoformat()
-        entry.bio_tags = model(entry.tokens)
+        entry.bio_tags = model(entry)
         entry.metadata = {
             "dataset_name": dataset.name,
             "model_name": model.name,
@@ -36,6 +38,8 @@ def convert_datasets_from_words():
 def generate_inferences():
     models: List[Callable[[], PiiModel]] = [
         lambda: NerModel.from_hf("saattrupdan/nbailab-base-ner-scandi")
+        # lambda: GlinerModel(GLINER_MODEL_EXAMPLES[0], LABEL_DESCRIPTIONS_DA),
+        # lambda: GlinerModel(GLINER_MODEL_EXAMPLES[1], LABEL_DESCRIPTIONS_DA)
     ]
     for model_fct in models:
         model = model_fct()

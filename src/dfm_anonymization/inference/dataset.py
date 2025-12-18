@@ -17,6 +17,7 @@ class PiiDataEntry(object):
     @staticmethod
     def sample() -> "PiiDataEntry":
         return PiiDataEntry(
+            id=0,
             text="\"Hør du nu, jomfru Hermelin,",
             tokens=["\"", "Hør", "du", "nu", ",", "jomfru", "Hermelin", ","],
             bio_tags=["O", "O", "O", "O", "O", "O", "B-PERSON", "O"]
@@ -29,6 +30,9 @@ class PiiDataEntry(object):
         meta = {k: v for k, v in d.items() if k not in attribute_keys}
         if 'metadata' in d:
             meta = meta | d['metadata']
+        for k in meta.keys():
+            if k.startswith('__'):
+                _ = meta.pop(k)
         sd['metadata'] = meta
         return PiiDataEntry(**sd)
 
@@ -69,10 +73,14 @@ class PiiDataset(object):
             entries.append(PiiDataEntry.from_dict(e))
         d['entries'] = entries
         original_metadata = d['metadata'] if 'metadata' in d else dict()
-        d['metadata'] = original_metadata | {
+        metadata = original_metadata | {
             k: v for k, v in d.items()
             if k not in dir(PiiDataset)
         }
+        for k in metadata.keys():
+            if k.startswith('__'):
+                _ = metadata.pop(k)
+        d['metadata'] = metadata
         return PiiDataset(**d)
 
     def to_json_str(self) -> str:

@@ -3,6 +3,8 @@
 from abc import ABC, abstractmethod
 from typing import Any, List, Optional, Tuple
 
+from dfm_anonymization.inference.dataset import PiiDataEntry
+
 
 class Tokenizer(ABC):
     @abstractmethod
@@ -23,5 +25,5 @@ class PiiModel(ABC):
         self.name = name
 
     @abstractmethod
-    def __call__(self, input: Any) -> List[str]:
+    def __call__(self, entry: PiiDataEntry) -> List[str]:
         pass

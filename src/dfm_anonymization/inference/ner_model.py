@@ -2,6 +2,7 @@ from typing import Any, List, Optional, Tuple
 import torch
 from transformers import AutoModelForTokenClassification, AutoTokenizer
 
+from dfm_anonymization.inference.dataset import PiiDataEntry
 from dfm_anonymization.inference.interfaces import PiiModel, TokenClassifier, Tokenizer
 from dfm_anonymization.util.util import get_torch_device
 
@@ -53,7 +54,8 @@ class NerModel(PiiModel):
                 AutoModelForTokenClassification.from_pretrained(tag))
         )
 
-    def __call__(self, words: List[str]) -> List[str]:
+    def __call__(self, entry: PiiDataEntry) -> List[str]:
+        words = entry.tokens
         subtokens, word_ids = self.tokenizer(words)
         sublabels = self.model(subtokens)
         labels = ["O"] * len(words)

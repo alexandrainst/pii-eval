@@ -1,16 +1,19 @@
 from typing import Dict, Optional
+from bidict import bidict
 
-LABEL_ORG_DA = "organisation"
-LABEL_LOC_DA = "lokation"
-LABEL_PER_DA = "personnavn"
-LABEL_URL_DA = "webadresse(url)"
-LABEL_PHONE_DA = "telefonnummer"
-LABEL_EMAIL_DA = "email"
-LABEL_DRIVERS_LICENSE_DA = "kørekortnummer"
-LABEL_DATE_TIME_DA = "dato/tid"
-LABEL_IBAN_DA = "cvv-nummer"
-LABEL_SSN_DA = "cpr-nummer"
-LABEL_CARD_NUMBER_DA = "betalingskortnummer"
+LABEL_DESCRIPTIONS_DA = bidict({
+    "ORG": "organisation",
+    "LOC": "lokation",
+    "PER": "personnavn",
+    "URL": "webadresse(url)",
+    "PHONE": "telefonnummer",
+    "EMAIL": "email",
+    "DRIVERS_LICENSE": "kørekortnummer",
+    "DATE_TIME": "dato/tid",
+    "IBAN": "cvv-nummer",
+    "SSN": "cpr-nummer",
+    "CARD_NUMBER": "betalingskortnummer",
+})
 
 GLINER_MODELS = [
     "nvidia/gliner-pii",
@@ -23,41 +26,41 @@ NER_MODELS = [
 
 MODEL_LABEL_MAP: Dict[str, Dict[str, Optional[str]]] = {
     "scandiner": {
-        "ORG": LABEL_ORG_DA,
-        "LOC": LABEL_LOC_DA,
-        "PER": LABEL_PER_DA,
+        "ORG": LABEL_DESCRIPTIONS_DA["ORG"],
+        "LOC": LABEL_DESCRIPTIONS_DA["LOC"],
+        "PER": LABEL_DESCRIPTIONS_DA["PER"],
         "MISC": None
     },
     "custom_presidio": {
-        "ORGANIZATION": LABEL_ORG_DA,
-        "PERSON": LABEL_PER_DA,
-        "LOCATION": LABEL_LOC_DA,
-        "URL": LABEL_URL_DA,
-        "PHONE_NUMBER": LABEL_PHONE_DA,
-        "DATE_TIME": LABEL_DATE_TIME_DA,
-        "EMAIL_ADDRESS": LABEL_EMAIL_DA
+        "ORGANIZATION": LABEL_DESCRIPTIONS_DA["ORG"],
+        "PERSON": LABEL_DESCRIPTIONS_DA["PER"],
+        "LOCATION": LABEL_DESCRIPTIONS_DA["LOC"],
+        "URL": LABEL_DESCRIPTIONS_DA["URL"],
+        "PHONE_NUMBER": LABEL_DESCRIPTIONS_DA["PHONE"],
+        "DATE_TIME": LABEL_DESCRIPTIONS_DA["DATE_TIME"],
+        "EMAIL_ADDRESS": LABEL_DESCRIPTIONS_DA["EMAIL"]
     },
     "scrambletron": {
-        "ORGANIZATION": LABEL_ORG_DA,
-        "PERSON": LABEL_PER_DA,
-        "LOCATION": LABEL_LOC_DA,
-        "URL": LABEL_URL_DA,
-        "PHONE_NUMBER": LABEL_PHONE_DA,
-        "DATE_TIME": LABEL_DATE_TIME_DA,
-        "EMAIL_ADDRESS": LABEL_EMAIL_DA,
-        "DK_DRIVERS_LICENSE": LABEL_DRIVERS_LICENSE_DA,
-        "IBAN_CODE": LABEL_IBAN_DA,
-        "DK_SSN": LABEL_SSN_DA,
-        "CREDIT_CARD": LABEL_CARD_NUMBER_DA
+        "ORGANIZATION": LABEL_DESCRIPTIONS_DA["ORG"],
+        "PERSON": LABEL_DESCRIPTIONS_DA["PER"],
+        "LOCATION": LABEL_DESCRIPTIONS_DA["LOC"],
+        "URL": LABEL_DESCRIPTIONS_DA["URL"],
+        "PHONE_NUMBER": LABEL_DESCRIPTIONS_DA["PHONE"],
+        "DATE_TIME": LABEL_DESCRIPTIONS_DA["DATE_TIME"],
+        "EMAIL_ADDRESS": LABEL_DESCRIPTIONS_DA["EMAIL"],
+        "DK_DRIVERS_LICENSE": LABEL_DESCRIPTIONS_DA["DRIVERS_LICENSE"],
+        "IBAN_CODE": LABEL_DESCRIPTIONS_DA["IBAN"],
+        "DK_SSN": LABEL_DESCRIPTIONS_DA["SSN"],
+        "CREDIT_CARD": LABEL_DESCRIPTIONS_DA["CARD_NUMBER"]
     }
 }
 
 DATASET_LABEL_MAP: Dict[str, Dict[str, Optional[str]]] = {
     "dane": {
-        "ORG": LABEL_ORG_DA,
+        "ORG": LABEL_DESCRIPTIONS_DA["ORG"],
         "MISC": None,
-        "LOC": LABEL_LOC_DA,
-        "PER": LABEL_PER_DA
+        "LOC": LABEL_DESCRIPTIONS_DA["LOC"],
+        "PER": LABEL_DESCRIPTIONS_DA["PER"]
     },
     "dansk_ner": {
         "WORK OF ART": None,
@@ -66,7 +69,7 @@ DATASET_LABEL_MAP: Dict[str, Dict[str, Optional[str]]] = {
         "DATE": None, # too low quality
         "GPE": None,
         "TIME": None, # too low quality
-        "PERSON": LABEL_PER_DA,
+        "PERSON": LABEL_DESCRIPTIONS_DA["PER"],
         "CARDINAL": None,
         "PERCENT": None,
         "FACILITY": None,
@@ -76,39 +79,39 @@ DATASET_LABEL_MAP: Dict[str, Dict[str, Optional[str]]] = {
         "EVENT": None,
     },
     "gen_address": {
-        "address": LABEL_LOC_DA
+        "address": LABEL_DESCRIPTIONS_DA["LOC"]
     },
     "gen_card-expiry": {
-        "card-expiry": LABEL_DATE_TIME_DA
+        "card-expiry": LABEL_DESCRIPTIONS_DA["DATE_TIME"]
     },
     "gen_card-number": {
-        "card-number": LABEL_CARD_NUMBER_DA
+        "card-number": LABEL_DESCRIPTIONS_DA["CARD_NUMBER"]
     },
     "gen_cpr": {
-        "cpr": LABEL_SSN_DA
+        "cpr": LABEL_DESCRIPTIONS_DA["SSN"]
     },
     "gen_cvv": {
-        "cvv": LABEL_IBAN_DA
+        "cvv": LABEL_DESCRIPTIONS_DA["IBAN"]
     },
     "gen_dob": {
-        "dob": LABEL_DATE_TIME_DA
+        "dob": LABEL_DESCRIPTIONS_DA["DATE_TIME"]
     },
     "gen_driver-license": {
-        "driver-license": LABEL_DRIVERS_LICENSE_DA
+        "driver-license": LABEL_DESCRIPTIONS_DA["DRIVERS_LICENSE"]
     },
     "gen_email": {
-        "email": LABEL_EMAIL_DA
+        "email": LABEL_DESCRIPTIONS_DA["EMAIL"]
     },
     "gen_organization": {
-        "organization": LABEL_ORG_DA
+        "organization": LABEL_DESCRIPTIONS_DA["ORG"]
     },
     "gen_person": {
-        "person": LABEL_PER_DA
+        "person": LABEL_DESCRIPTIONS_DA["PER"]
     },
     "gen_phone-number": {
-        "phone-number": LABEL_PHONE_DA
+        "phone-number": LABEL_DESCRIPTIONS_DA["PHONE"]
     },
     "gen_website": {
-        "website": LABEL_URL_DA
+        "website": LABEL_DESCRIPTIONS_DA["URL"]
     }
 }

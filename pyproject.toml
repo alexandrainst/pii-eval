@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "bidict>=0.23.1",
     "click>=8.3.0",
     "datasets>=4.1.1",
     "faker>=37.11.0",

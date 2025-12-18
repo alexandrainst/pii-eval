@@ -2,18 +2,18 @@ from ast import List
 from copy import deepcopy
 import json
 from pathlib import Path
-from presidio_analyzer import AnalyzerEngine, RecognizerResult
+from presidio_analyzer import AnalyzerEngine
 from presidio_analyzer.nlp_engine import NlpEngineProvider
 import spacy
 from tqdm import tqdm
 
 from dfm_anonymization.util.misc import DATASET_LABEL_MAP
-from dfm_anonymization.util.pii_model import PiiModel, PiiModelResult
+from dfm_anonymization.util.util import presidio_result_2_span
 
 OVERRIDE = False
 
 
-class CustomPresidioModel(PiiModel):
+class CustomPresidioModel():
     def __init__(self):
         configuration = {
             "nlp_engine_name": "spacy",
@@ -28,20 +28,9 @@ class CustomPresidioModel(PiiModel):
             supported_languages=["da"]
         )
 
-    @staticmethod
-    def from_presidio_result(
-            result: RecognizerResult,
-            text: str) -> PiiModelResult:
-        return {
-            "label": result.entity_type,
-            "start": result.start,
-            "end": result.end,
-            "text": text[result.start:result.end]
-        }
-
-    def __call__(self, text: str, language="da") -> PiiModelResult:
+    def __call__(self, text: str, language="da") -> dict:
         presidio_result = self.analyzer.analyze(text, language=language)
-        return [self.from_presidio_result(r, text) for r in presidio_result]
+        return [presidio_result_2_span(r, text) for r in presidio_result]
 
 
 def main():

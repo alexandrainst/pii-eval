@@ -2,9 +2,66 @@ from __future__ import annotations
 
 from collections.abc import Set as AbcSet
 from dataclasses import fields, is_dataclass
-from typing import Any, Mapping
+from typing import Any, Dict, List, Mapping
 
+from presidio_anonymizer import RecognizerResult
 import torch
+
+
+def tokens_to_offsets(text: str, tokens: List[str]) -> List[tuple[int, int]]:
+    offsets: List[tuple[int, int]] = []
+    cursor = 0
+    text_len = len(text)
+    for token in tokens:
+        if not token:
+            offsets.append((cursor, cursor))
+            continue
+        while cursor < text_len and text[cursor].isspace():
+            cursor += 1
+        end = cursor + len(token)
+        if text[cursor:end] == token:
+            start = cursor
+        else:
+            start = text.find(token, cursor)
+            if start == -1:
+                raise ValueError(f"Token '{token}' not found in text segment.")
+            end = start + len(token)
+        offsets.append((start, end))
+        cursor = end
+    return offsets
+
+
+def spans_to_bio(token_spans: List[tuple[int, int]],
+                 spans: List[Dict[str, Any]]) -> List[str]:
+    tags = ["O"] * len(token_spans)
+    for span in sorted(spans,
+                       key=lambda item: (int(item["start"]), int(item["end"]))):
+        start = int(span["start"])
+        end = int(span["end"])
+        label = span["label"]
+        inside = False
+        for idx, (tok_start, tok_end) in enumerate(token_spans):
+            if tok_end <= start:
+                continue
+            if tok_start >= end:
+                break
+            if tok_start < end and tok_end > start:
+                prefix = "B" if not inside else "I"
+                if tags[idx] == "O":
+                    tags[idx] = f"{prefix}-{label}"
+                inside = True
+    return tags
+
+
+def presidio_result_2_span(
+        result: RecognizerResult,
+        text: str) -> dict:
+    return {
+        "label": result.entity_type,
+        "start": result.start,
+        "end": result.end,
+        "text": text[result.start:result.end]
+    }
 
 
 def get_torch_device() -> str:

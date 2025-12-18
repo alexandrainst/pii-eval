@@ -4,55 +4,10 @@ from bidict import bidict
 
 from dfm_anonymization.inference.dataset import PiiDataEntry
 from dfm_anonymization.inference.interfaces import PiiModel
-from dfm_anonymization.util.util import get_torch_device
+from dfm_anonymization.util.util import get_torch_device, spans_to_bio, tokens_to_offsets
 
 
 GLINER_MODEL_EXAMPLES = ["nvidia/gliner-pii", "urchade/gliner_multi-v2.1"]
-
-
-def _tokens_to_offsets(text: str, tokens: List[str]) -> List[tuple[int, int]]:
-    offsets: List[tuple[int, int]] = []
-    cursor = 0
-    text_len = len(text)
-    for token in tokens:
-        if not token:
-            offsets.append((cursor, cursor))
-            continue
-        while cursor < text_len and text[cursor].isspace():
-            cursor += 1
-        end = cursor + len(token)
-        if text[cursor:end] == token:
-            start = cursor
-        else:
-            start = text.find(token, cursor)
-            if start == -1:
-                raise ValueError(f"Token '{token}' not found in text segment.")
-            end = start + len(token)
-        offsets.append((start, end))
-        cursor = end
-    return offsets
-
-
-def _spans_to_bio(token_spans: List[tuple[int, int]],
-                  spans: List[Dict[str, Any]]) -> List[str]:
-    tags = ["O"] * len(token_spans)
-    for span in sorted(spans,
-                       key=lambda item: (int(item["start"]), int(item["end"]))):
-        start = int(span["start"])
-        end = int(span["end"])
-        label = span["label"]
-        inside = False
-        for idx, (tok_start, tok_end) in enumerate(token_spans):
-            if tok_end <= start:
-                continue
-            if tok_start >= end:
-                break
-            if tok_start < end and tok_end > start:
-                prefix = "B" if not inside else "I"
-                if tags[idx] == "O":
-                    tags[idx] = f"{prefix}-{label}"
-                inside = True
-    return tags
 
 
 class GlinerModel(PiiModel):
@@ -74,8 +29,8 @@ class GlinerModel(PiiModel):
         if isinstance(self.labels, bidict):
             for span in spans:
                 span['label'] = self.labels.inverse[span['label']]
-        bio_tags = _spans_to_bio(
-            _tokens_to_offsets(entry.text, entry.tokens),
+        bio_tags = spans_to_bio(
+            tokens_to_offsets(entry.text, entry.tokens),
             spans
         )
         return bio_tags

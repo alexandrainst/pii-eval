@@ -57,8 +57,10 @@ class PiiDataset(object):
         return PiiDataset("sample_dataset", entries=[PiiDataEntry.sample()])
 
     @staticmethod
-    def from_file(file: Path) -> "PiiDataset":
-        return PiiDataset.from_json_str(file.read_text(encoding="utf8"))
+    def from_file(file_path: Path | str) -> "PiiDataset":
+        if type(file_path) == str:
+            file_path = Path(file_path)
+        return PiiDataset.from_json_str(file_path.read_text(encoding="utf8"))
 
     @staticmethod
     def from_json_str(json_str) -> "PiiDataset":

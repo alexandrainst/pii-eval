@@ -9,6 +9,7 @@ from dfm_anonymization.inference.dataset import PiiDataset
 from dfm_anonymization.inference.gliner_model import GLINER_MODEL_EXAMPLES, GlinerModel
 from dfm_anonymization.inference.interfaces import PiiModel
 from dfm_anonymization.inference.ner_model import NerModel
+from dfm_anonymization.inference.presidio_model import PresidioModel
 from dfm_anonymization.util.misc import LABEL_DESCRIPTIONS_DA
 
 
@@ -37,9 +38,10 @@ def convert_datasets_from_words():
 
 def generate_inferences():
     models: List[Callable[[], PiiModel]] = [
-        lambda: NerModel.from_hf("saattrupdan/nbailab-base-ner-scandi")
+        # lambda: NerModel.from_hf("saattrupdan/nbailab-base-ner-scandi")
         # lambda: GlinerModel(GLINER_MODEL_EXAMPLES[0], LABEL_DESCRIPTIONS_DA),
         # lambda: GlinerModel(GLINER_MODEL_EXAMPLES[1], LABEL_DESCRIPTIONS_DA)
+        lambda: PresidioModel()
     ]
     for model_fct in models:
         model = model_fct()

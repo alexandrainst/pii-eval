@@ -1,5 +1,6 @@
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
+import math
 from pathlib import Path
 from typing import Dict, List
 
@@ -36,118 +37,116 @@ def map_bio_tags(tags: List[str], label_map: Dict[str, str | None]):
 
 
 @dataclass
-class EvaluationResult:
-    dataset: str
-    model: str
-    label: str
+class ConfusionResult:
+    tp: int
+    fp: int
+    fn: int
+    tn: int
+
+    @staticmethod
+    def zero() -> "ConfusionResult":
+        return ConfusionResult(0, 0, 0, 0)
+
+    def rp(self) -> int:
+        return self.tp + self.fn
+
+    def pp(self) -> int:
+        return self.tp + self.fp
+
+    def total(self) -> int:
+        return self.tp + self.fp + self.fn + self.tn
+
+
+@dataclass
+class MetricResult(ConfusionResult):
     precision: float
     f1: float
     f5: float
     recall: float
 
+    @staticmethod
+    def from_confusion(c: ConfusionResult) -> "MetricResult":
+        precision = c.tp / c.pp() if c.pp() else math.nan
+        recall = c.tp / c.rp() if c.rp() else math.nan
+        if precision + recall > 0:
+            f1, f5 = (
+                2.0 * precision * recall / (precision + recall),
+                (1.0 + 25.0) * precision * recall / (25.0 * precision + recall)
+            )
+        else:
+            f1 = f5 = math.nan
+
+        return MetricResult(
+            **asdict(c), precision=precision, f1=f1, f5=f5, recall=recall
+        )
+
+
+@dataclass
+class EvaluationResult(MetricResult):
+    dataset: str
+    model: str
+    label: str
+
 
 def evaluate(
     ground_truth: PiiDataset, predictions: PiiDataset
-) -> List[EvaluationResult]:
+) -> Dict[str, MetricResult]:
     dataset_name = ground_truth.metadata["dataset_name"]
     model_name = predictions.metadata["model_name"]
-    truth_entries = {entry.id: entry for entry in ground_truth}
-    prediction_entries = {entry.id: entry for entry in predictions}
+    dataset_label_map = DATASET_LABEL_MAP[dataset_name]
+    model_label_map = MODEL_LABEL_MAP[model_name] \
+        if model_name in MODEL_LABEL_MAP else LABEL_DESCRIPTIONS_DA
+    common_iso_labels = set(dataset_label_map.values()).intersection(
+        set(model_label_map.values()))
 
-    missing_predictions = truth_entries.keys() - prediction_entries.keys()
-    extra_predictions = prediction_entries.keys() - truth_entries.keys()
-    if missing_predictions or extra_predictions:
-        raise ValueError(
-            "Mismatching entry ids between ground truth and predictions: "
-            f"missing_predictions={sorted(missing_predictions)}, "
-            f"extra_predictions={sorted(extra_predictions)}"
-        )
-    label_counts: Dict[str, List[int]] = defaultdict(lambda: [0, 0, 0])
-    truth_labels: set[str] = set()
-    predicted_labels: set[str] = set()
-
-    for entry_id, truth_entry in truth_entries.items():
-        prediction_entry = prediction_entries[entry_id]
-        truth_tags = map_bio_tags(
-            truth_entry.bio_tags or [], DATASET_LABEL_MAP[dataset_name])
-        predicted_tags = map_bio_tags(
-            prediction_entry.bio_tags or [],
-            MODEL_LABEL_MAP[model_name] if model_name in MODEL_LABEL_MAP
-            else LABEL_DESCRIPTIONS_DA
-        )
-
-        if len(truth_tags) != len(predicted_tags):
-            raise ValueError(
-                f"Mismatching tag counts for entry {entry_id}: "
-                f"truth={len(truth_tags)}, predicted={len(predicted_tags)}"
-            )
-
-        for truth_tag, predicted_tag in zip(truth_tags, predicted_tags):
-            truth_is_entity = truth_tag != "O"
-            predicted_is_entity = predicted_tag != "O"
-            truth_label = truth_tag[2:] if truth_is_entity else None
-            predicted_label = predicted_tag[2:] if predicted_is_entity else None
-
-            if truth_label:
-                truth_labels.add(truth_label)
-            if predicted_label:
-                predicted_labels.add(predicted_label)
-
-            if truth_is_entity and predicted_is_entity:
-                if predicted_label == truth_label:
-                    label_counts[truth_label][0] += 1
+    confusion_counts = {}
+    for label in common_iso_labels:
+        confusion = ConfusionResult.zero()
+        confusion_counts[label] = confusion
+        for true_entry, pred_entry in zip(ground_truth, predictions):
+            for true_tag, pred_tag in zip(
+                true_entry.bio_tags, pred_entry.bio_tags
+            ):
+                true_orig_label = true_tag[2:] if true_tag != 'O' else None
+                pred_orig_label = pred_tag[2:] if pred_tag != 'O' else None
+                true_iso_label = dataset_label_map[true_orig_label] \
+                    if true_orig_label in dataset_label_map else None
+                pred_iso_label = model_label_map[pred_orig_label] \
+                    if pred_orig_label in model_label_map else None
+                if true_iso_label and true_iso_label == label:
+                    if pred_iso_label and pred_iso_label == label:
+                        confusion.tp += 1
+                    else:
+                        confusion.fn += 1
                 else:
-                    label_counts[predicted_label][1] += 1
-                    label_counts[truth_label][2] += 1
-            elif predicted_is_entity:
-                label_counts[predicted_label][1] += 1
-            elif truth_is_entity:
-                label_counts[truth_label][2] += 1
+                    if pred_iso_label and pred_iso_label == label:
+                        confusion.fp += 1
+                    else:
+                        confusion.tn += 1
 
-    def _safe_divide(numerator: int, denominator: int) -> float:
-        return numerator / denominator if denominator else 0.0
-
-    beta_sq = 25
-    intersection_labels = truth_labels & predicted_labels
-    results: List[EvaluationResult] = []
-    append_result = results.append
-
-    for label in sorted(intersection_labels):
-        true_positive, false_positive, false_negative = label_counts.get(
-            label, (0, 0, 0)
-        )
-        precision = _safe_divide(true_positive, true_positive + false_positive)
-        recall = _safe_divide(true_positive, true_positive + false_negative)
-        denominator_f1 = precision + recall
-        f1 = (2 * precision * recall / denominator_f1) if denominator_f1 else 0.0
-        denom_f5 = (beta_sq * precision) + recall
-        f5 = (
-            (1 + beta_sq) * precision * recall / denom_f5
-            if denom_f5
-            else 0.0
-        )
-
-        append_result(EvaluationResult(
-            dataset=dataset_name,
-            model=model_name,
-            label=label,
-            precision=precision,
-            f1=f1,
-            f5=f5,
-            recall=recall,
-        ))
-
-    return results
+    return {
+        label: MetricResult.from_confusion(confusion)
+        for label, confusion in confusion_counts.items()
+    }
 
 
 def evaluate_all():
     results = []
     for predictions_path in Path("data/infer_ds").rglob("*.json"):
         dataset_name = predictions_path.stem
+        model_name = predictions_path.parent.name
         ground_truth_path = f"data/ground_truth/{dataset_name}.json"
         predictions = PiiDataset.from_file(predictions_path)
         ground_truth = PiiDataset.from_file(ground_truth_path)
-        results += evaluate(ground_truth=ground_truth, predictions=predictions)
+        metrics_dict = evaluate(
+            ground_truth=ground_truth,
+            predictions=predictions)
+        results += [EvaluationResult(
+            **asdict(metrics),
+            dataset=dataset_name,
+            model=model_name,
+            label=label
+        ) for label, metrics in metrics_dict.items()]
     df = pd.DataFrame(to_dict_recursive(results))
     metrics = ["precision", "f1", "f5", "recall"]
     df = df[["dataset", "model", "label"] + metrics]

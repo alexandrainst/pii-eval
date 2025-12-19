@@ -29,7 +29,7 @@ MODEL_LABEL_MAP: Dict[str, Dict[str, Optional[str]]] = {
         "ORG": LABEL_DESCRIPTIONS_DA["ORG"],
         "LOC": LABEL_DESCRIPTIONS_DA["LOC"],
         "PER": LABEL_DESCRIPTIONS_DA["PER"],
-        "MISC": None
+        "MISC": None # mostly not relevant in pii context
     },
     "presidio": {
         "ORGANIZATION": LABEL_DESCRIPTIONS_DA["ORG"],
@@ -58,7 +58,7 @@ MODEL_LABEL_MAP: Dict[str, Dict[str, Optional[str]]] = {
 DATASET_LABEL_MAP: Dict[str, Dict[str, Optional[str]]] = {
     "dane": {
         "ORG": LABEL_DESCRIPTIONS_DA["ORG"],
-        "MISC": None,
+        "MISC": None, # mostly not relevant in pii context
         "LOC": LABEL_DESCRIPTIONS_DA["LOC"],
         "PER": LABEL_DESCRIPTIONS_DA["PER"]
     },
@@ -66,9 +66,9 @@ DATASET_LABEL_MAP: Dict[str, Dict[str, Optional[str]]] = {
         "WORK OF ART": None,
         "MONEY": None,
         "QUANTITY": None,
-        "DATE": None, # too low quality
+        "DATE": None, # mostly not precise enough for pii in this dataset
         "GPE": None,
-        "TIME": None, # too low quality
+        "TIME": None, # mostly not precise enough for pii in this dataset
         "PERSON": LABEL_DESCRIPTIONS_DA["PER"],
         "CARDINAL": None,
         "PERCENT": None,

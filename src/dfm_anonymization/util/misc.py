@@ -21,17 +21,17 @@ GLINER_MODELS = [
 ]
 
 NER_MODELS = [
-    "scandiner"
+    "nbailab-base-ner-scandi"
 ]
 
 MODEL_LABEL_MAP: Dict[str, Dict[str, Optional[str]]] = {
-    "scandiner": {
+    "nbailab-base-ner-scandi": {
         "ORG": LABEL_DESCRIPTIONS_DA["ORG"],
         "LOC": LABEL_DESCRIPTIONS_DA["LOC"],
         "PER": LABEL_DESCRIPTIONS_DA["PER"],
         "MISC": None
     },
-    "custom_presidio": {
+    "presidio": {
         "ORGANIZATION": LABEL_DESCRIPTIONS_DA["ORG"],
         "PERSON": LABEL_DESCRIPTIONS_DA["PER"],
         "LOCATION": LABEL_DESCRIPTIONS_DA["LOC"],

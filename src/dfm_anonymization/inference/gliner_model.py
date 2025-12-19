@@ -14,7 +14,7 @@ GLINER_MODEL_EXAMPLES = ["nvidia/gliner-pii", "urchade/gliner_multi-v2.1"]
 class GlinerModel(PiiModel):
     def __init__(
             self,
-            tag: str = GLINER_MODEL_EXAMPLES[1],
+            tag: str = GLINER_MODEL_EXAMPLES[0],
             labels: Set[str] | bidict[str, str] = LABEL_DESCRIPTIONS_DA,
     ):
         self.name = tag.split('/')[-1]

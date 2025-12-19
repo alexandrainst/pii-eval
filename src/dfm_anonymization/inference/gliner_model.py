@@ -4,7 +4,7 @@ from bidict import bidict
 
 from dfm_anonymization.inference.dataset import PiiDataEntry
 from dfm_anonymization.inference.interfaces import PiiModel
-from dfm_anonymization.util.util import get_torch_device, spans_to_bio, tokens_to_offsets
+from dfm_anonymization.util.util import filter_bio, get_torch_device, spans_to_bio, tokens_to_offsets
 from dfm_anonymization.util.misc import LABEL_DESCRIPTIONS_DA
 
 
@@ -22,7 +22,9 @@ class GlinerModel(PiiModel):
             tag, map_location=get_torch_device())
         self.labels = labels
 
-    def __call__(self, entry: PiiDataEntry) -> List[str]:
+    def __call__(
+            self, entry: PiiDataEntry, label_whitelist: Set[str] | None = None
+    ) -> List[str]:
         descriptions = list(self.labels) if isinstance(self.labels, Set) \
             else list(self.labels.values())
         spans: List[Dict[str, Any]] = \
@@ -34,7 +36,8 @@ class GlinerModel(PiiModel):
             tokens_to_offsets(entry.text, entry.tokens),
             spans
         )
-        return bio_tags
+        return filter_bio(bio_tags, label_whitelist) if label_whitelist else \
+            bio_tags
 
 
 if __name__ == "__main__":

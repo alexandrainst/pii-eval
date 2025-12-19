@@ -1,10 +1,11 @@
-from typing import Any, List, Optional, Tuple
+from abc import ABC
+from typing import Any, List, Optional, Set, Tuple
 import torch
 from transformers import AutoModelForTokenClassification, AutoTokenizer
 
 from dfm_anonymization.inference.dataset import PiiDataEntry
 from dfm_anonymization.inference.interfaces import PiiModel, TokenClassifier, Tokenizer
-from dfm_anonymization.util.util import get_torch_device
+from dfm_anonymization.util.util import filter_bio, get_torch_device
 
 
 class TransformersTokenizer(Tokenizer):
@@ -54,28 +55,30 @@ class NerModel(PiiModel):
                 AutoModelForTokenClassification.from_pretrained(tag))
         )
 
-    def __call__(self, entry: PiiDataEntry) -> List[str]:
+    def __call__(
+            self, entry: PiiDataEntry, label_whitelist: Set[str] | None = None
+    ) -> List[str]:
         words = entry.tokens
         subtokens, word_ids = self.tokenizer(words)
         sublabels = self.model(subtokens)
-        labels = ["O"] * len(words)
+        bio_tags = ["O"] * len(words)
         current_word_id = -1
         for sublabel, word_id in zip(sublabels, word_ids):
             if word_id is None or word_id == current_word_id:
                 continue
-            if word_id >= len(labels):
+            if word_id >= len(bio_tags):
                 continue
             current_word_id = word_id
             if sublabel.startswith("B-"):
-                labels[word_id] = sublabel
+                bio_tags[word_id] = sublabel
             elif sublabel.startswith("I-"):
                 entity = sublabel[2:]
-                prev_label = labels[word_id - 1] if word_id > 0 else None
+                prev_label = bio_tags[word_id - 1] if word_id > 0 else None
                 if prev_label and prev_label.endswith(entity):
-                    labels[word_id] = sublabel
+                    bio_tags[word_id] = sublabel
                 else:
-                    labels[word_id] = "B-" + entity
+                    bio_tags[word_id] = "B-" + entity
             else:
-                labels[word_id] = "O"
-        return labels
-
+                bio_tags[word_id] = "O"
+        return filter_bio(bio_tags, label_whitelist) if label_whitelist else \
+            bio_tags

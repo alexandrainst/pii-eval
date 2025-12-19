@@ -7,6 +7,7 @@ from codetiming import Timer
 from tqdm import tqdm
 
 from dfm_anonymization.inference.dataset import PiiDataEntry, PiiDataset
+from dfm_anonymization.inference.ensemble_model import EnsembleModel
 from dfm_anonymization.inference.gliner_model import (
     GLINER_MODEL_EXAMPLES, GlinerModel)
 from dfm_anonymization.inference.interfaces import PiiModel
@@ -49,7 +50,8 @@ def generate_inferences(override: bool = False):
         lambda: NerModel.from_hf("saattrupdan/nbailab-base-ner-scandi"),
         lambda: GlinerModel(GLINER_MODEL_EXAMPLES[0], LABEL_DESCRIPTIONS_DA),
         lambda: GlinerModel(GLINER_MODEL_EXAMPLES[1], LABEL_DESCRIPTIONS_DA),
-        lambda: PresidioModel()
+        lambda: PresidioModel(),
+        EnsembleModel.get_gliner_pii_presidio
     ]
     for model_fct in models:
         model = model_fct()
@@ -77,6 +79,6 @@ def generate_inferences(override: bool = False):
 
 if __name__ == "__main__":
     # convert_datasets_from_words()
-    generate_inferences()
+    generate_inferences(override=False)
 
     pass

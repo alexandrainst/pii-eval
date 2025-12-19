@@ -1,7 +1,7 @@
 
 
 from abc import ABC, abstractmethod
-from typing import Any, List, Optional, Tuple
+from typing import Any, List, Optional, Set, Tuple
 
 from dfm_anonymization.inference.dataset import PiiDataEntry
 
@@ -25,5 +25,7 @@ class PiiModel(ABC):
         self.name = name
 
     @abstractmethod
-    def __call__(self, entry: PiiDataEntry) -> List[str]:
+    def __call__(
+        self, entry: PiiDataEntry, label_whitelist: Set[str] | None = None
+    ) -> List[str]:
         pass

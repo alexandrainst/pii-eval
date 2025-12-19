@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Set as AbcSet
 from dataclasses import fields, is_dataclass
-from typing import Any, Dict, List, Mapping
+from typing import Any, Dict, List, Mapping, Set
 
 from presidio_anonymizer import RecognizerResult
 import torch
@@ -33,6 +33,10 @@ def tokens_to_offsets(text: str, tokens: List[str]) -> List[tuple[int, int]]:
         offsets.append((start, end))
         cursor = end
     return offsets
+
+
+def filter_bio(bio_tags: List[str], labels: Set[str]) -> List[str]:
+    return [tag if tag[2:] in labels else "O" for tag in bio_tags]
 
 
 def spans_to_bio(token_spans: List[tuple[int, int]],

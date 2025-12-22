@@ -14,7 +14,8 @@ class EnsembleModel(PiiModel):
         self.models = models
 
     def __call__(self, entry: PiiDataEntry) -> List[str]:
-        predictions = ["O"] * len(entry.bio_tags)
+        n = len(entry.bio_tags) if entry.bio_tags else len(entry.tokens)
+        predictions = ["O"] * n
         for model, label_whitelist in self.models:
             for i, new_tag in enumerate(model(
                 entry=entry, label_whitelist=label_whitelist

@@ -6,7 +6,7 @@ from presidio_anonymizer import AnonymizerEngine, EngineResult
 from presidio_anonymizer.entities import RecognizerResult, OperatorConfig
 
 from dfm_anonymization.inference.dataset import PiiDataEntry
-from dfm_anonymization.inference.gliner_model import GlinerModel
+from dfm_anonymization.inference.ensemble_model import EnsembleModel
 from dfm_anonymization.inference.interfaces import PiiModel
 from dfm_anonymization.util.misc import LABEL_DESCRIPTIONS_DA
 
@@ -65,9 +65,9 @@ def spans_from_bio_tags(
 
 
 class PiiModelAnalyzer(Analyzer):
-    def __init__(self, model: PiiModel = GlinerModel()):
+    def __init__(self, model: PiiModel = None):
         super().__init__()
-        self.model = model
+        self.model = model if model else EnsembleModel.get_gliner_pii_presidio()
         nltk.download('punkt')
         self.word_tokenizer = TreebankWordTokenizer()
 
@@ -96,8 +96,9 @@ class Anonymizer:
 
 
 if __name__ == "__main__":
-    # text = "Navnet er Sand, Anders Sand. Og 21324354 er telefonnummeret."
-    text = "Marias kreditkortnummer, 4929 1234 5678 9012, blev ved et uheld delt i en e-mail til supporten."
+    text = "Navnet er Sand, Anders Sand. Og 21324354 er telefonnummeret. " \
+        "Marias kreditkortnummer, 4929 1234 5678 9012, blev ved et uheld " \
+        "delt i en e-mail til supporten."
     anonymizer = Anonymizer()
     anonymized = anonymizer(text)
     print(text)

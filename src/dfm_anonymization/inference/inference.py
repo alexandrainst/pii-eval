@@ -79,6 +79,6 @@ def generate_inferences(override: bool = False):
 
 if __name__ == "__main__":
     # convert_datasets_from_words()
-    generate_inferences(override=False)
+    generate_inferences(override=True)
 
     pass

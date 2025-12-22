@@ -1,18 +1,30 @@
 from typing import Dict, Optional
 from bidict import bidict
 
+ISO_LABEL_ORGANIZATION = "ORGANIZATION"
+ISO_LABEL_LOCATION = "LOCATION"
+ISO_LABEL_PERSON = "PERSON"
+ISO_LABEL_URL = "URL"
+ISO_LABEL_PHONE = "PHONE"
+ISO_LABEL_EMAIL = "EMAIL"
+ISO_LABEL_DRIVERS_LICENSE = "DRIVERS_LICENSE"
+ISO_LABEL_DATE_TIME = "DATE_TIME"
+ISO_LABEL_IBAN = "IBAN"
+ISO_LABEL_SSN = "SSN"
+ISO_LABEL_CARD_NUMBER = "CARD_NUMBER"
+
 LABEL_DESCRIPTIONS_DA = bidict({
-    "ORG": "organisation",
-    "LOC": "lokation",
-    "PER": "personnavn",
-    "URL": "webadresse(url)",
-    "PHONE": "telefonnummer",
-    "EMAIL": "email",
-    "DRIVERS_LICENSE": "kørekortnummer",
-    "DATE_TIME": "dato/tid",
-    "IBAN": "cvv-nummer",
-    "SSN": "cpr-nummer",
-    "CARD_NUMBER": "betalingskortnummer",
+    ISO_LABEL_ORGANIZATION: "organisation",
+    ISO_LABEL_LOCATION: "lokation",
+    ISO_LABEL_PERSON: "personnavn",
+    ISO_LABEL_URL: "webadresse(url)",
+    ISO_LABEL_PHONE: "telefonnummer",
+    ISO_LABEL_EMAIL: "email",
+    ISO_LABEL_DRIVERS_LICENSE: "kørekortnummer",
+    ISO_LABEL_DATE_TIME: "dato/tid",
+    ISO_LABEL_IBAN: "cvv-nummer",
+    ISO_LABEL_SSN: "cpr-nummer",
+    ISO_LABEL_CARD_NUMBER: "betalingskortnummer",
 })
 
 GLINER_MODELS = [
@@ -26,41 +38,41 @@ NER_MODELS = [
 
 MODEL_LABEL_MAP: Dict[str, Dict[str, Optional[str]]] = {
     "nbailab-base-ner-scandi": {
-        "ORG": LABEL_DESCRIPTIONS_DA["ORG"],
-        "LOC": LABEL_DESCRIPTIONS_DA["LOC"],
-        "PER": LABEL_DESCRIPTIONS_DA["PER"],
+        "ORG": ISO_LABEL_ORGANIZATION,
+        "LOC": ISO_LABEL_LOCATION,
+        "PER": ISO_LABEL_PERSON,
         "MISC": None # mostly not relevant in pii context
     },
     "presidio": {
-        "ORGANIZATION": LABEL_DESCRIPTIONS_DA["ORG"],
-        "PERSON": LABEL_DESCRIPTIONS_DA["PER"],
-        "LOCATION": LABEL_DESCRIPTIONS_DA["LOC"],
-        "URL": LABEL_DESCRIPTIONS_DA["URL"],
-        "PHONE_NUMBER": LABEL_DESCRIPTIONS_DA["PHONE"],
-        "DATE_TIME": LABEL_DESCRIPTIONS_DA["DATE_TIME"],
-        "EMAIL_ADDRESS": LABEL_DESCRIPTIONS_DA["EMAIL"]
+        "ORGANIZATION": ISO_LABEL_ORGANIZATION,
+        "PERSON": ISO_LABEL_PERSON,
+        "LOCATION": ISO_LABEL_LOCATION,
+        "URL": ISO_LABEL_URL,
+        "PHONE_NUMBER": ISO_LABEL_PHONE,
+        "DATE_TIME": ISO_LABEL_DATE_TIME,
+        "EMAIL_ADDRESS": ISO_LABEL_EMAIL
     },
     "scrambletron": {
-        "ORGANIZATION": LABEL_DESCRIPTIONS_DA["ORG"],
-        "PERSON": LABEL_DESCRIPTIONS_DA["PER"],
-        "LOCATION": LABEL_DESCRIPTIONS_DA["LOC"],
-        "URL": LABEL_DESCRIPTIONS_DA["URL"],
-        "PHONE_NUMBER": LABEL_DESCRIPTIONS_DA["PHONE"],
-        "DATE_TIME": LABEL_DESCRIPTIONS_DA["DATE_TIME"],
-        "EMAIL_ADDRESS": LABEL_DESCRIPTIONS_DA["EMAIL"],
-        "DK_DRIVERS_LICENSE": LABEL_DESCRIPTIONS_DA["DRIVERS_LICENSE"],
-        "IBAN_CODE": LABEL_DESCRIPTIONS_DA["IBAN"],
-        "DK_SSN": LABEL_DESCRIPTIONS_DA["SSN"],
-        "CREDIT_CARD": LABEL_DESCRIPTIONS_DA["CARD_NUMBER"]
+        "ORGANIZATION": ISO_LABEL_ORGANIZATION,
+        "PERSON": ISO_LABEL_PERSON,
+        "LOCATION": ISO_LABEL_LOCATION,
+        "URL": ISO_LABEL_URL,
+        "PHONE_NUMBER": ISO_LABEL_PHONE,
+        "DATE_TIME": ISO_LABEL_DATE_TIME,
+        "EMAIL_ADDRESS": ISO_LABEL_EMAIL,
+        "DK_DRIVERS_LICENSE": ISO_LABEL_DRIVERS_LICENSE,
+        "IBAN_CODE": ISO_LABEL_IBAN,
+        "DK_SSN": ISO_LABEL_SSN,
+        "CREDIT_CARD": ISO_LABEL_CARD_NUMBER
     }
 }
 
 DATASET_LABEL_MAP: Dict[str, Dict[str, Optional[str]]] = {
     "dane": {
-        "ORG": LABEL_DESCRIPTIONS_DA["ORG"],
+        "ORG": ISO_LABEL_ORGANIZATION,
         "MISC": None, # mostly not relevant in pii context
-        "LOC": LABEL_DESCRIPTIONS_DA["LOC"],
-        "PER": LABEL_DESCRIPTIONS_DA["PER"]
+        "LOC": ISO_LABEL_LOCATION,
+        "PER": ISO_LABEL_PERSON
     },
     "dansk_ner": {
         "WORK OF ART": None,
@@ -69,7 +81,7 @@ DATASET_LABEL_MAP: Dict[str, Dict[str, Optional[str]]] = {
         "DATE": None, # mostly not precise enough for pii in this dataset
         "GPE": None,
         "TIME": None, # mostly not precise enough for pii in this dataset
-        "PERSON": LABEL_DESCRIPTIONS_DA["PER"],
+        "PERSON": ISO_LABEL_PERSON,
         "CARDINAL": None,
         "PERCENT": None,
         "FACILITY": None,
@@ -79,39 +91,39 @@ DATASET_LABEL_MAP: Dict[str, Dict[str, Optional[str]]] = {
         "EVENT": None,
     },
     "gen_address": {
-        "address": LABEL_DESCRIPTIONS_DA["LOC"]
+        "address": ISO_LABEL_LOCATION
     },
     "gen_card-expiry": {
-        "card-expiry": LABEL_DESCRIPTIONS_DA["DATE_TIME"]
+        "card-expiry": ISO_LABEL_DATE_TIME
     },
     "gen_card-number": {
-        "card-number": LABEL_DESCRIPTIONS_DA["CARD_NUMBER"]
+        "card-number": ISO_LABEL_CARD_NUMBER
     },
     "gen_cpr": {
-        "cpr": LABEL_DESCRIPTIONS_DA["SSN"]
+        "cpr": ISO_LABEL_SSN
     },
     "gen_cvv": {
-        "cvv": LABEL_DESCRIPTIONS_DA["IBAN"]
+        "cvv": ISO_LABEL_IBAN
     },
     "gen_dob": {
-        "dob": LABEL_DESCRIPTIONS_DA["DATE_TIME"]
+        "dob": ISO_LABEL_DATE_TIME
     },
     "gen_driver-license": {
-        "driver-license": LABEL_DESCRIPTIONS_DA["DRIVERS_LICENSE"]
+        "driver-license": ISO_LABEL_DRIVERS_LICENSE
     },
     "gen_email": {
-        "email": LABEL_DESCRIPTIONS_DA["EMAIL"]
+        "email": ISO_LABEL_EMAIL
     },
     "gen_organization": {
-        "organization": LABEL_DESCRIPTIONS_DA["ORG"]
+        "organization": ISO_LABEL_ORGANIZATION
     },
     "gen_person": {
-        "person": LABEL_DESCRIPTIONS_DA["PER"]
+        "person": ISO_LABEL_PERSON
     },
     "gen_phone-number": {
-        "phone-number": LABEL_DESCRIPTIONS_DA["PHONE"]
+        "phone-number": ISO_LABEL_PHONE
     },
     "gen_website": {
-        "website": LABEL_DESCRIPTIONS_DA["URL"]
+        "website": ISO_LABEL_URL
     }
 }

@@ -1,5 +1,6 @@
 from collections import defaultdict
 from dataclasses import asdict, dataclass
+from datetime import datetime
 import math
 from pathlib import Path
 from typing import Dict, List
@@ -95,7 +96,8 @@ def evaluate(
     model_name = predictions.metadata["model_name"]
     dataset_label_map = DATASET_LABEL_MAP[dataset_name]
     model_label_map = MODEL_LABEL_MAP[model_name] \
-        if model_name in MODEL_LABEL_MAP else LABEL_DESCRIPTIONS_DA
+        if model_name in MODEL_LABEL_MAP \
+        else {k: k for k in LABEL_DESCRIPTIONS_DA.keys()}
     common_iso_labels = set(dataset_label_map.values()).intersection(
         set(model_label_map.values()))
 
@@ -148,10 +150,12 @@ def evaluate_all():
             label=label
         ) for label, metrics in metrics_dict.items()]
     df = pd.DataFrame(to_dict_recursive(results))
+    timestamp = datetime.now().isoformat()
     metrics = ["precision", "f1", "f5", "recall"]
     df = df[["dataset", "model", "label"] + metrics]
-    df = df.sort_values(["dataset", "label", "f5"],
-                        ascending=[True, True, False])
+    df = df.sort_values(
+        ["dataset", "label", "f5"], ascending=[True, True, False])
+    df.to_json(f"data/results/{timestamp}.json")
     best_models = df.groupby("model")[metrics].mean(
     ).sort_values("f5", ascending=False)
     dataset_scores = df.groupby(

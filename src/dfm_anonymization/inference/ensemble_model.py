@@ -1,8 +1,11 @@
 from typing import List, Set, Tuple
+
+from bidict import bidict
 from dfm_anonymization.inference.dataset import PiiDataEntry
 from dfm_anonymization.inference.gliner_model import GlinerModel
 from dfm_anonymization.inference.interfaces import PiiModel
 from dfm_anonymization.inference.presidio_model import PresidioModel
+from dfm_anonymization.util.misc import *
 
 
 class EnsembleModel(PiiModel):
@@ -16,7 +19,7 @@ class EnsembleModel(PiiModel):
             for i, new_tag in enumerate(model(
                 entry=entry, label_whitelist=label_whitelist
             )):
-                if predictions[i] == "O" or new_tag != "O":
+                if predictions[i] == "O" and new_tag != "O":
                     if new_tag.startswith("I-") and \
                             predictions[i - 1][2:] != new_tag[2:]:
                         predictions[i] = f"B-{new_tag[2:]}"
@@ -27,14 +30,30 @@ class EnsembleModel(PiiModel):
     @staticmethod
     def get_gliner_pii_presidio() -> "EnsembleModel":
         gliner_pii_labels = {
-            "CARD_NUMBER", "SSN", "IBAN", "DATE_TIME", "DRIVERS_LICENSE",
-            "EMAIL", "PHONE"
+            ISO_LABEL_CARD_NUMBER,
+            ISO_LABEL_SSN,
+            ISO_LABEL_IBAN,
+            ISO_LABEL_DATE_TIME,
+            ISO_LABEL_DRIVERS_LICENSE,
+            ISO_LABEL_EMAIL,
+            ISO_LABEL_PHONE
         }
-        presidio_labels = {"URL", "PER", "ORG", "LOC"}
+        gliner_pii_label_map = bidict(
+            {k: LABEL_DESCRIPTIONS_DA[k] for k in gliner_pii_labels})
+        presidio_labels = {
+            ISO_LABEL_URL,
+            ISO_LABEL_PERSON,
+            ISO_LABEL_ORGANIZATION,
+            ISO_LABEL_LOCATION
+        }
         return EnsembleModel(
             name="ensemble_gliner_pii_presidio",
             models=[
-                (GlinerModel("nvidia/gliner-pii", gliner_pii_labels), None),
+                (
+                    GlinerModel(
+                        "nvidia/gliner-pii", labels=gliner_pii_label_map),
+                    gliner_pii_labels
+                ),
                 (PresidioModel(), presidio_labels)
             ]
         )

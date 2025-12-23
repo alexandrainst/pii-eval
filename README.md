@@ -12,7 +12,7 @@
 
 # Dfm Anonymization
 
-Anonymization in the DFM context
+Anonymization in the context of [DFM](https://www.foundationmodels.dk/index.html)
 
 ______________________________________________________________________
 [![Code Coverage](https://img.shields.io/badge/Coverage-0%25-red.svg)](https://github.com/alexandrainst/dfm_anonymization/tree/main/tests)
@@ -32,3 +32,8 @@ Developer:
 1. Run `make install`, which sets up a virtual environment and all Python dependencies
    therein.
 2. Run `source .venv/bin/activate` to activate the virtual environment.
+
+### Usage
+
+- Run `dfm-anonymization --help` or
+- `df-anonymization anonymize --help` for more info

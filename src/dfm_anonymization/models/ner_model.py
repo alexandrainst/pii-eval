@@ -3,9 +3,9 @@ from typing import Any, List, Optional, Set, Tuple
 import torch
 from transformers import AutoModelForTokenClassification, AutoTokenizer
 
-from dfm_anonymization.inference.dataset import PiiDataEntry
-from dfm_anonymization.inference.interfaces import PiiModel, TokenClassifier, Tokenizer
-from dfm_anonymization.util.util import filter_bio, get_torch_device
+from dfm_anonymization.dataset import PiiDataEntry
+from dfm_anonymization.interfaces import PiiModel, TokenClassifier, Tokenizer
+from dfm_anonymization.util import filter_bio, get_torch_device
 
 
 class TransformersTokenizer(Tokenizer):

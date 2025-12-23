@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, List, Optional, Set, Tuple
 
-from dfm_anonymization.inference.dataset import PiiDataEntry
+from dfm_anonymization.dataset import PiiDataEntry
 
 
 class Tokenizer(ABC):

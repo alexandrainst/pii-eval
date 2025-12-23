@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional
 
-from dfm_anonymization.util.util import to_dict_recursive
+from dfm_anonymization.util import to_dict_recursive
 
 
 @dataclass
@@ -28,7 +28,7 @@ class PiiDataEntry(object):
         attribute_keys = PiiDataEntry.__annotations__.keys()
         sd = {k: v for k, v in d.items() if k in attribute_keys}
         meta = {k: v for k, v in d.items() if k not in attribute_keys}
-        if 'metadata' in d:
+        if 'metadata' in d and type(d['metadata']) == dict:
             meta = meta | d['metadata']
         for k in meta.keys():
             if k.startswith('__'):

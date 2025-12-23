@@ -2,34 +2,44 @@ from __future__ import annotations
 
 from collections.abc import Set as AbcSet
 from dataclasses import fields, is_dataclass
-from typing import Any, Dict, List, Mapping, Set
+from typing import Any, Dict, List, Mapping, Set, Tuple
 
+import nltk
+from nltk.tokenize import TreebankWordTokenizer
 from presidio_anonymizer import RecognizerResult
 import torch
 
 
-def undefined() -> Any:
-    raise NotImplemented()
+class Singleton(type):
+    _instances = {}
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+
+class WordTokenizer(metaclass=Singleton):
+    def __init__(self):
+        nltk.download('punkt')
+        self.word_tokenizer = TreebankWordTokenizer()
+
+    def word_tokenize(self, text: str) -> Tuple[List[str], List[Tuple[int, int]]]:
+        word_spans = list(self.word_tokenizer.span_tokenize(text))
+        words = [text[s:e] for s, e in word_spans]
+        return words, word_spans
 
 
 def tokens_to_offsets(text: str, tokens: List[str]) -> List[tuple[int, int]]:
     offsets: List[tuple[int, int]] = []
     cursor = 0
-    text_len = len(text)
     for token in tokens:
         if not token:
             offsets.append((cursor, cursor))
             continue
-        while cursor < text_len and text[cursor].isspace():
-            cursor += 1
-        end = cursor + len(token)
-        if text[cursor:end] == token:
-            start = cursor
-        else:
-            start = text.find(token, cursor)
-            if start == -1:
-                raise ValueError(f"Token '{token}' not found in text segment.")
-            end = start + len(token)
+        start = text.find(token, cursor)
+        if start == -1:
+            raise ValueError(f"Token '{token}' not found in text segment.")
+        end = start + len(token)
         offsets.append((start, end))
         cursor = end
     return offsets

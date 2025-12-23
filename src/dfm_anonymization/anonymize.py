@@ -1,20 +1,13 @@
 from abc import ABC, abstractmethod
 from typing import List, Tuple
-import nltk
-from nltk.tokenize import TreebankWordTokenizer
 from presidio_anonymizer import AnonymizerEngine, EngineResult
 from presidio_anonymizer.entities import RecognizerResult, OperatorConfig
 
-from dfm_anonymization.inference.dataset import PiiDataEntry
-from dfm_anonymization.inference.ensemble_model import EnsembleModel
-from dfm_anonymization.inference.interfaces import PiiModel
-from dfm_anonymization.util.misc import LABEL_DESCRIPTIONS_DA
-
-
-class Analyzer(ABC):
-    @abstractmethod
-    def __call__(self, text: str) -> List[RecognizerResult]:
-        pass
+from dfm_anonymization.dataset import PiiDataEntry
+from dfm_anonymization.models.ensemble_model import EnsembleModel
+from dfm_anonymization.interfaces import PiiModel
+from dfm_anonymization.constants import LABEL_DESCRIPTIONS_DA
+from dfm_anonymization.util import WordTokenizer
 
 
 def spans_from_bio_tags(
@@ -64,16 +57,20 @@ def spans_from_bio_tags(
     return results
 
 
+class Analyzer(ABC):
+    @abstractmethod
+    def __call__(self, text: str) -> List[RecognizerResult]:
+        pass
+
+
 class PiiModelAnalyzer(Analyzer):
     def __init__(self, model: PiiModel = None):
         super().__init__()
         self.model = model if model else EnsembleModel.get_gliner_pii_presidio()
-        nltk.download('punkt')
-        self.word_tokenizer = TreebankWordTokenizer()
+
 
     def __call__(self, text: str) -> List[RecognizerResult]:
-        word_spans = list(self.word_tokenizer.span_tokenize(text))
-        words = [text[s:e] for s, e in word_spans]
+        words, word_spans = WordTokenizer().word_tokenize(text)
         bio_tags = self.model(PiiDataEntry(text=text, tokens=words))
         return spans_from_bio_tags(bio_tags=bio_tags, spans=word_spans)
 

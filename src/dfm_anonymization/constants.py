@@ -74,7 +74,7 @@ DATASET_LABEL_MAP: Dict[str, Dict[str, Optional[str]]] = {
         "LOC": ISO_LABEL_LOCATION,
         "PER": ISO_LABEL_PERSON
     },
-    "dansk_ner": {
+    "dansk-ner": {
         "WORK OF ART": None,
         "MONEY": None,
         "QUANTITY": None,

@@ -1,12 +1,13 @@
-from typing import Any, Dict, List, Optional, Set
-from gliner import GLiNER
+from typing import Any, Dict, List, Set
+
 from bidict import bidict
+from gliner import GLiNER
 
-from dfm_anonymization.inference.dataset import PiiDataEntry
-from dfm_anonymization.inference.interfaces import PiiModel
-from dfm_anonymization.util.util import filter_bio, get_torch_device, spans_to_bio, tokens_to_offsets
-from dfm_anonymization.util.misc import LABEL_DESCRIPTIONS_DA
-
+from dfm_anonymization.constants import LABEL_DESCRIPTIONS_DA
+from dfm_anonymization.dataset import PiiDataEntry
+from dfm_anonymization.interfaces import PiiModel
+from dfm_anonymization.util import (filter_bio, get_torch_device, spans_to_bio,
+                                    tokens_to_offsets)
 
 GLINER_MODEL_EXAMPLES = ["nvidia/gliner-pii", "urchade/gliner_multi-v2.1"]
 

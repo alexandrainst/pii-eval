@@ -1,15 +1,16 @@
-from collections import defaultdict
+import math
 from dataclasses import asdict, dataclass
 from datetime import datetime
-import math
 from pathlib import Path
 from typing import Dict, List
 
 import pandas as pd
-from dfm_anonymization.inference.dataset import PiiDataset
-from dfm_anonymization.util.misc import (
-    DATASET_LABEL_MAP, LABEL_DESCRIPTIONS_DA, MODEL_LABEL_MAP)
-from dfm_anonymization.util.util import to_dict_recursive
+
+from dfm_anonymization.constants import (DATASET_LABEL_MAP,
+                                         LABEL_DESCRIPTIONS_DA,
+                                         MODEL_LABEL_MAP)
+from dfm_anonymization.dataset import PiiDataset
+from dfm_anonymization.util import to_dict_recursive
 
 
 def map_bio_tags(tags: List[str], label_map: Dict[str, str | None]):
@@ -155,6 +156,8 @@ def evaluate_all():
     df = df[["dataset", "model", "label"] + metrics]
     df = df.sort_values(
         ["dataset", "label", "f5"], ascending=[True, True, False])
+    out_path = Path(f"data/results/{timestamp}.json")
+    out_path.parent.mkdir(exist_ok=True, parents=True)
     df.to_json(f"data/results/{timestamp}.json")
     best_models = df.groupby("model")[metrics].mean(
     ).sort_values("f5", ascending=False)

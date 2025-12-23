@@ -6,14 +6,14 @@ from typing import Callable, List
 from codetiming import Timer
 from tqdm import tqdm
 
-from dfm_anonymization.inference.dataset import PiiDataEntry, PiiDataset
-from dfm_anonymization.inference.ensemble_model import EnsembleModel
-from dfm_anonymization.inference.gliner_model import (
-    GLINER_MODEL_EXAMPLES, GlinerModel)
-from dfm_anonymization.inference.interfaces import PiiModel
-from dfm_anonymization.inference.ner_model import NerModel
-from dfm_anonymization.inference.presidio_model import PresidioModel
-from dfm_anonymization.util.misc import LABEL_DESCRIPTIONS_DA
+from dfm_anonymization.constants import LABEL_DESCRIPTIONS_DA
+from dfm_anonymization.dataset import PiiDataEntry, PiiDataset
+from dfm_anonymization.interfaces import PiiModel
+from dfm_anonymization.models.ensemble_model import EnsembleModel
+from dfm_anonymization.models.gliner_model import (GLINER_MODEL_EXAMPLES,
+                                                   GlinerModel)
+from dfm_anonymization.models.ner_model import NerModel
+from dfm_anonymization.models.presidio_model import PresidioModel
 
 
 def inference(

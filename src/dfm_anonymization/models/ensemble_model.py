@@ -1,11 +1,12 @@
 from typing import List, Set, Tuple
 
 from bidict import bidict
-from dfm_anonymization.inference.dataset import PiiDataEntry
-from dfm_anonymization.inference.gliner_model import GlinerModel
-from dfm_anonymization.inference.interfaces import PiiModel
-from dfm_anonymization.inference.presidio_model import PresidioModel
-from dfm_anonymization.util.misc import *
+
+from dfm_anonymization.constants import *
+from dfm_anonymization.dataset import PiiDataEntry
+from dfm_anonymization.interfaces import PiiModel
+from dfm_anonymization.models.gliner_model import GlinerModel
+from dfm_anonymization.models.presidio_model import PresidioModel
 
 
 class EnsembleModel(PiiModel):

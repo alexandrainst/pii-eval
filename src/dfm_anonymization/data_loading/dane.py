@@ -4,13 +4,16 @@ Recognition data sets.
 """
 
 import os
-import json
-import pyconll
+import ssl
+from datetime import datetime
 from io import BytesIO
 from pathlib import Path
 from urllib.request import urlopen
 from zipfile import ZipFile
-import ssl
+
+import pyconll
+
+from dfm_anonymization.dataset import PiiDataEntry, PiiDataset
 
 
 def download_unzip(url_zip: str,
@@ -134,98 +137,39 @@ def get_dane_data(split: str = 'train',
     return {'texts': texts, 'sentences': sentences, 'tags': entities}
 
 
-def _tokens_to_offsets(text: str, tokens: list[str]) -> list[tuple[int, int]]:
-    """Align tokens to their character offsets in text."""
-    offsets = []
-    cursor = 0
-    text_len = len(text)
+def generate_dataset_file(override: bool = False):
+    timestamp = datetime.now().isoformat()
+    raw_path = Path("data/raw/dane")
+    gen_path = Path("data/ground_truth/dane.json")
+    if gen_path.exists() and not override:
+        return
+    if not raw_path.exists():
+        download_dane_data()
+    input_data = get_dane_data()
 
-    for token in tokens:
-        while cursor < text_len and text[cursor].isspace():
-            cursor += 1
-        start = text.find(token, cursor)
-        if start == -1:
-            raise ValueError(f"Token '{token}' not found in text segment.")
-        end = start + len(token)
-        offsets.append((start, end))
-        cursor = end
+    texts = input_data['texts']
+    sentences = input_data['sentences']
+    tags = input_data['tags']
 
-    return offsets
+    entries = []
+    for idx, (text, tokens, bio_tags) in enumerate(zip(texts, sentences, tags)):
+        entries.append(PiiDataEntry(
+            id=idx,
+            text=text,
+            tokens=tokens,
+            bio_tags=bio_tags
+        ))
 
+    dataset = PiiDataset(
+        metadata={
+            "downloaded": timestamp,
+            "dataset_name": "dane"
+        },
+        entries=entries
+    )
 
-def _bio_to_spans(text: str,
-                  offsets: list[tuple[int, int]],
-                  tags: list[str]) -> list[dict]:
-    """Convert BIO tags aligned with offsets to span dictionaries."""
-    spans = []
-    active_label = None
-    active_start = None
-    active_end = None
-
-    for (start, end), tag in zip(offsets, tags):
-        if not tag or tag == 'O':
-            if active_label:
-                spans.append({
-                    'label': active_label,
-                    'start': active_start,
-                    'end': active_end,
-                    'text': text[active_start:active_end]
-                })
-                active_label = None
-            continue
-
-        if '-' in tag:
-            prefix, label = tag.split('-', 1)
-        else:
-            prefix, label = 'B', tag
-
-        if prefix == 'I' and active_label == label:
-            active_end = end
-            continue
-
-        if active_label:
-            spans.append({
-                'label': active_label,
-                'start': active_start,
-                'end': active_end,
-                'text': text[active_start:active_end]
-            })
-
-        active_label = label
-        active_start = start
-        active_end = end
-
-    if active_label:
-        spans.append({
-            'label': active_label,
-            'start': active_start,
-            'end': active_end,
-            'text': text[active_start:active_end]
-        })
-
-    return spans
+    dataset.to_file(gen_path)
 
 
-path = Path("data/raw/dane")
-if not path.exists():
-    download_dane_data()
-input_data = get_dane_data()
-
-texts = input_data['texts']
-sentences = input_data['sentences']
-tags = input_data['tags']
-
-documents = []
-for idx, (text, tokens, bio_tags) in enumerate(zip(texts, sentences, tags)):
-    offsets = _tokens_to_offsets(text, tokens)
-    spans = _bio_to_spans(text, offsets, bio_tags)
-    documents.append({
-        'document': idx,
-        'text': text,
-        'spans': spans
-    })
-
-output_path = Path("data/span/dane.json")
-output_path.parent.mkdir(parents=True, exist_ok=True)
-with output_path.open('w', encoding='utf-8') as f:
-    json.dump(documents, f, ensure_ascii=False, indent=4)
+if __name__ == "__main__":
+    generate_dataset_file()

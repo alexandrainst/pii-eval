@@ -6,39 +6,42 @@ from gliner import GLiNER
 from dfm_anonymization.constants import LABEL_DESCRIPTIONS_DA
 from dfm_anonymization.dataset import PiiDataEntry
 from dfm_anonymization.interfaces import PiiModel
-from dfm_anonymization.util import (filter_bio, get_torch_device, spans_to_bio,
-                                    tokens_to_offsets)
+from dfm_anonymization.util import (
+    filter_bio,
+    get_torch_device,
+    spans_to_bio,
+    tokens_to_offsets,
+)
 
 GLINER_MODEL_EXAMPLES = ["nvidia/gliner-pii", "urchade/gliner_multi-v2.1"]
 
 
 class GlinerModel(PiiModel):
     def __init__(
-            self,
-            tag: str = GLINER_MODEL_EXAMPLES[0],
-            labels: Set[str] | bidict[str, str] = LABEL_DESCRIPTIONS_DA,
+        self,
+        tag: str = GLINER_MODEL_EXAMPLES[0],
+        labels: Set[str] | bidict[str, str] = LABEL_DESCRIPTIONS_DA,
     ):
-        self.name = tag.split('/')[-1]
-        self.model = GLiNER.from_pretrained(
-            tag, map_location=get_torch_device())
+        super().__init__(name=tag.split("/")[-1])
+        self.model = GLiNER.from_pretrained(tag, map_location=get_torch_device())
         self.labels = labels
 
     def __call__(
-            self, entry: PiiDataEntry, label_whitelist: Set[str] | None = None
+        self, entry: PiiDataEntry, label_whitelist: Set[str] | None = None
     ) -> List[str]:
-        descriptions = list(self.labels) if isinstance(self.labels, Set) \
+        descriptions = (
+            list(self.labels)
+            if isinstance(self.labels, Set)
             else list(self.labels.values())
-        spans: List[Dict[str, Any]] = \
-            self.model.predict_entities(entry.text, descriptions)
+        )
+        spans: List[Dict[str, Any]] = self.model.predict_entities(
+            entry.text, descriptions
+        )
         if isinstance(self.labels, bidict):
             for span in spans:
-                span['label'] = self.labels.inverse[span['label']]
-        bio_tags = spans_to_bio(
-            tokens_to_offsets(entry.text, entry.tokens),
-            spans
-        )
-        return filter_bio(bio_tags, label_whitelist) if label_whitelist else \
-            bio_tags
+                span["label"] = self.labels.inverse[span["label"]]
+        bio_tags = spans_to_bio(tokens_to_offsets(entry.text, entry.tokens), spans)
+        return filter_bio(bio_tags, label_whitelist) if label_whitelist else bio_tags
 
 
 if __name__ == "__main__":

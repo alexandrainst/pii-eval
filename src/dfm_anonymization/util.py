@@ -1,17 +1,17 @@
-from __future__ import annotations
-
 from collections.abc import Set as AbcSet
 from dataclasses import fields, is_dataclass
 from typing import Any, Dict, List, Mapping, Set, Tuple
 
 import nltk
-from nltk.tokenize import TreebankWordTokenizer
-from presidio_anonymizer import RecognizerResult
 import torch
+from nltk.tokenize import word_tokenize
+from nltk.tokenize.util import align_tokens
+from presidio_anonymizer import RecognizerResult
 
 
 class Singleton(type):
     _instances = {}
+
     def __call__(cls, *args, **kwargs):
         if cls not in cls._instances:
             cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
@@ -20,12 +20,12 @@ class Singleton(type):
 
 class WordTokenizer(metaclass=Singleton):
     def __init__(self):
-        nltk.download('punkt')
-        self.word_tokenizer = TreebankWordTokenizer()
+        nltk.download("punkt")
+        nltk.download("punkt_tab")
 
     def word_tokenize(self, text: str) -> Tuple[List[str], List[Tuple[int, int]]]:
-        word_spans = list(self.word_tokenizer.span_tokenize(text))
-        words = [text[s:e] for s, e in word_spans]
+        words = word_tokenize(text, language="danish")
+        word_spans = align_tokens(tokens=words, sentence=text)
         return words, word_spans
 
 
@@ -49,11 +49,11 @@ def filter_bio(bio_tags: List[str], labels: Set[str]) -> List[str]:
     return [tag if tag[2:] in labels else "O" for tag in bio_tags]
 
 
-def spans_to_bio(token_spans: List[tuple[int, int]],
-                 spans: List[Dict[str, Any]]) -> List[str]:
+def spans_to_bio(
+    token_spans: List[tuple[int, int]], spans: List[Dict[str, Any]]
+) -> List[str]:
     tags = ["O"] * len(token_spans)
-    for span in sorted(spans,
-                       key=lambda item: (int(item["start"]), int(item["end"]))):
+    for span in sorted(spans, key=lambda item: (int(item["start"]), int(item["end"]))):
         start = int(span["start"])
         end = int(span["end"])
         label = span["label"]
@@ -71,27 +71,28 @@ def spans_to_bio(token_spans: List[tuple[int, int]],
     return tags
 
 
-def presidio_result_2_span(
-        result: RecognizerResult,
-        text: str) -> dict:
+def presidio_result_2_span(result: RecognizerResult, text: str) -> dict:
     return {
         "label": result.entity_type,
         "start": result.start,
         "end": result.end,
-        "text": text[result.start:result.end]
+        "text": text[result.start : result.end],
     }
 
 
 def get_torch_device() -> str:
-    return "cuda" if torch.cuda.is_available() else "xpu" if hasattr(
-        torch, "xpu") and torch.xpu.is_available() else "cpu"
+    return (
+        "cuda"
+        if torch.cuda.is_available()
+        else "xpu"
+        if hasattr(torch, "xpu") and torch.xpu.is_available()
+        else "cpu"
+    )
 
 
 def to_dict_recursive(
-        obj: Any,
-        *,
-        include_private: bool = False,
-        max_depth: int | None = None) -> Any:
+    obj: Any, *, include_private: bool = False, max_depth: int | None = None
+) -> Any:
     """
     Recursively convert custom objects into JSON-like primitives (dict/list/etc).
 
@@ -139,18 +140,11 @@ def to_dict_recursive(
             return out if isinstance(x, list) else tuple(out)
 
         if isinstance(x, (set, frozenset, AbcSet)):
-            return sorted((convert(i, depth + 1)
-                          for i in x), key=lambda y: repr(y))
+            return sorted((convert(i, depth + 1) for i in x), key=lambda y: repr(y))
 
         # Dataclasses
         if is_dataclass(x) and not isinstance(x, type):
-            return {
-                f.name: convert(
-                    getattr(
-                        x,
-                        f.name),
-                    depth +
-                    1) for f in fields(x)}
+            return {f.name: convert(getattr(x, f.name), depth + 1) for f in fields(x)}
 
         # Objects with __dict__ / __slots__
         data: dict[str, Any] = {}

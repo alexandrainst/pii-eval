@@ -1,5 +1,3 @@
-
-
 from abc import ABC, abstractmethod
 from typing import Any, List, Optional, Set, Tuple
 
@@ -23,6 +21,7 @@ class PiiModel(ABC):
 
     def __init__(self, name: str) -> None:
         self.name = name
+        # print(f"PiiModel '{name}' initialized")
 
     @abstractmethod
     def __call__(

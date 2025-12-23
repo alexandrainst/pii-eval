@@ -1,7 +1,6 @@
-from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
-from typing import Callable, List
+from typing import Callable, List, Tuple
 
 from codetiming import Timer
 from tqdm import tqdm
@@ -10,32 +9,36 @@ from dfm_anonymization.constants import LABEL_DESCRIPTIONS_DA
 from dfm_anonymization.dataset import PiiDataEntry, PiiDataset
 from dfm_anonymization.interfaces import PiiModel
 from dfm_anonymization.models.ensemble_model import EnsembleModel
-from dfm_anonymization.models.gliner_model import (GLINER_MODEL_EXAMPLES,
-                                                   GlinerModel)
+from dfm_anonymization.models.gliner_model import GLINER_MODEL_EXAMPLES, GlinerModel
 from dfm_anonymization.models.ner_model import NerModel
 from dfm_anonymization.models.presidio_model import PresidioModel
 
 
 def inference(
-        model: PiiModel, dataset: PiiDataset, show_progress_bar: bool = True
+    model: PiiModel, dataset: PiiDataset, show_progress_bar: bool = True
 ) -> PiiDataset:
     it = tqdm(dataset, dynamic_ncols=True) if show_progress_bar else dataset
     new_entries = []
     for entry in it:
-        new_entries.append(PiiDataEntry(
-            id=entry.id,
-            text=entry.text,
-            tokens=entry.tokens,
-            bio_tags=model(entry),
-            metadata=entry.metadata
-        ))
+        new_entries.append(
+            PiiDataEntry(
+                id=entry.id,
+                text=entry.text,
+                tokens=entry.tokens,
+                bio_tags=model(entry),
+                metadata=entry.metadata,
+            )
+        )
     timestamp = datetime.now().isoformat()
-    return PiiDataset(entries=new_entries, metadata={
-        "model_name": model.name,
-        "is_ground_truth": False,
-        "timestamp": timestamp,
-        "dataset": dataset.metadata
-    })
+    return PiiDataset(
+        entries=new_entries,
+        metadata={
+            "model_name": model.name,
+            "is_ground_truth": False,
+            "timestamp": timestamp,
+            "dataset": dataset.metadata,
+        },
+    )
 
 
 def convert_datasets_from_words():
@@ -45,40 +48,53 @@ def convert_datasets_from_words():
         dataset.to_file(out_path)
 
 
-def generate_inferences(override: bool = False):
-    models: List[Callable[[], PiiModel]] = [
-        lambda: NerModel.from_hf("saattrupdan/nbailab-base-ner-scandi"),
-        lambda: GlinerModel(GLINER_MODEL_EXAMPLES[0], LABEL_DESCRIPTIONS_DA),
-        lambda: GlinerModel(GLINER_MODEL_EXAMPLES[1], LABEL_DESCRIPTIONS_DA),
-        lambda: PresidioModel(),
-        EnsembleModel.get_gliner_pii_presidio
+def generate_predictions(override: bool = False):
+    print("generating predictions")
+    models: List[Tuple[str, Callable[[], PiiModel]]] = [
+        (
+            "nbailab-base-ner-scandi",
+            lambda: NerModel.from_hf("saattrupdan/nbailab-base-ner-scandi"),
+        ),
+        (
+            "gliner-pii",
+            lambda: GlinerModel(GLINER_MODEL_EXAMPLES[0], LABEL_DESCRIPTIONS_DA),
+        ),
+        (
+            "gliner_multi-v2.1",
+            lambda: GlinerModel(GLINER_MODEL_EXAMPLES[1], LABEL_DESCRIPTIONS_DA),
+        ),
+        ("presidio", lambda: PresidioModel()),
+        ("ensemble_gliner_pii_presidio", EnsembleModel.get_gliner_pii_presidio),
     ]
-    for model_fct in models:
-        model = model_fct()
-        print(f"Model: {model.name}")
+    for model_name, model_fct in models:
+        model = None
+        print(f"\033[KModel: {model_name}", end="\r")
         for in_path in Path("data/ground_truth").glob("*.json"):
             dataset = PiiDataset.from_file(in_path)
-            dataset_name = dataset.metadata['dataset_name']
-            print(f"Dataset: {dataset_name}")
+            dataset_name = dataset.metadata["dataset_name"]
+            print(f"\033[KDataset: {dataset_name}", end="\r")
             output_file_path = Path(
-                f"data/predictions/{model.name}/{dataset_name}.json")
+                f"data/predictions/{model_name}/{dataset_name}.json"
+            )
             if not override and output_file_path.exists():
-                print("skipping: file already exists")
+                print("\033[Kskipping: file already exists", end="\r")
                 continue
+            if not model:
+                model = model_fct()
             timer = Timer()
             timer.start()
             predictions = inference(model=model, dataset=dataset)
             timer.stop()
-            time = timer.last
-            predictions.metadata.update({
-                "computation_time_total": time,
-                "computation_time_per_entry": time / len(dataset)
-            })
+            elapsed_time = timer.last
+            predictions.metadata.update(
+                {
+                    "computation_time_total": elapsed_time,
+                    "computation_time_per_entry": elapsed_time / len(dataset),
+                }
+            )
             predictions.to_file(output_file_path)
+    print()
 
 
 if __name__ == "__main__":
-    # convert_datasets_from_words()
-    generate_inferences(override=True)
-
-    pass
+    generate_predictions(override=False)

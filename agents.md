@@ -1,3 +1,4 @@
+- if it exists and you have read access, please read ~/.agents.md first
 - whenever acting on a prompt entails editing files log the full prompt
 (if the prompt comes from e.g. a TODO comment, include eventual lines below the
 TODO if they has to do with the prompt)

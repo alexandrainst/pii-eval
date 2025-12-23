@@ -88,7 +88,8 @@ publish-docs:  ## Publish documentation to GitHub Pages
 	@echo "Updated documentation website: https://alexandrainst.github.io/dfm_anonymization"
 
 test:  ## Run tests
-	@uv run pytest && uv run readme-cov
+	@uv run pytest
+## && uv run readme-cov
 
 docker:  ## Build Docker image and run container
 	@docker build -t dfm_anonymization .

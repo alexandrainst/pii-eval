@@ -19,6 +19,7 @@ dependencies = [
     "presidio>=0.1.0",
     "presidio-evaluator>=0.2.5",
     "pyconll>=3.3.1",
+    "pytest>=9.0.2",
     "scrambletron",
     "spacy>=3.8.7",
     "tqdm>=4.67.1",

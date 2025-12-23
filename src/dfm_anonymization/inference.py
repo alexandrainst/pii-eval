@@ -61,7 +61,7 @@ def generate_inferences(override: bool = False):
             dataset_name = dataset.metadata['dataset_name']
             print(f"Dataset: {dataset_name}")
             output_file_path = Path(
-                f"data/infer_ds/{model.name}/{dataset_name}.json")
+                f"data/predictions/{model.name}/{dataset_name}.json")
             if not override and output_file_path.exists():
                 print("skipping: file already exists")
                 continue

@@ -135,7 +135,7 @@ def evaluate(
 
 def evaluate_all():
     results = []
-    for predictions_path in Path("data/infer_ds").rglob("*.json"):
+    for predictions_path in Path("data/predictions").rglob("*.json"):
         dataset_name = predictions_path.stem
         model_name = predictions_path.parent.name
         ground_truth_path = f"data/ground_truth/{dataset_name}.json"

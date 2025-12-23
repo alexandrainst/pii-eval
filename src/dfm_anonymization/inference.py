@@ -68,16 +68,16 @@ def generate_predictions(override: bool = False):
     ]
     for model_name, model_fct in models:
         model = None
-        print(f"\033[KModel: {model_name}", end="\r")
+        print(f"Model: {model_name}")
         for in_path in Path("data/ground_truth").glob("*.json"):
             dataset = PiiDataset.from_file(in_path)
             dataset_name = dataset.metadata["dataset_name"]
-            print(f"\033[KDataset: {dataset_name}", end="\r")
+            print(f"Dataset: {dataset_name}")
             output_file_path = Path(
                 f"data/predictions/{model_name}/{dataset_name}.json"
             )
             if not override and output_file_path.exists():
-                print("\033[Kskipping: file already exists", end="\r")
+                print("skipping: file already exists")
                 continue
             if not model:
                 model = model_fct()

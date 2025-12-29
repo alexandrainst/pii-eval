@@ -35,10 +35,22 @@ Developer:
 
 ### Example usage
 
-- `dfm-anonymization anonymize "Navnet er Anders Sand. Og 21324354 er telefonnummeret."
- --whitelist "Anders Sand"`
-- `dfm-anonymization make-evaluations`
-- `echo "example 12 23 34 45" | dfm-anonymization anonymize`
-- `dfm-anonymization anonymize ./text_file.txt > ./text_file_anonymized.txt`
-- Run `dfm-anonymization --help` or
-- `df-anonymization anonymize --help` for more info
+```bash
+# Anonymize inline text
+dfm-anonymization anonymize \
+  "Navnet er Anders Sand. Og 21324354 er telefonnummeret." \
+  --whitelist "Anders Sand"
+
+# Anonymize piped input
+echo "Eksempel telefonnummer: 12 23 34 45" | dfm-anonymization anonymize
+
+# Anonymize a file
+dfm-anonymization anonymize ./text_file.txt > ./text_file_anonymized.txt
+
+# Generate evaluations
+dfm-anonymization make-evaluations
+
+# Get help
+dfm-anonymization --help
+dfm-anonymization anonymize --help
+```

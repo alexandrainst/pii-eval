@@ -34,19 +34,39 @@ class GlinerModel(PiiModel):
             if isinstance(self.labels, Set)
             else list(self.labels.values())
         )
-        spans: List[Dict[str, Any]] = self.model.predict_entities(
-            entry.text, descriptions
+        token_spans = tokens_to_offsets(entry.text, entry.tokens)
+        max_sentence_len = 500
+        c = 0
+        subtexts = []
+        span_inits = []
+        for tspan in token_spans:
+            end = tspan[1]
+            if end - c > max_sentence_len:
+                subtexts.append(entry.text[c:end])
+                span_inits.append(c)
+                c = end
+        if c < len(entry.text) - 1:
+            subtexts.append(entry.text[c:])
+            span_inits.append(c)
+        subspan_list: List[List[Dict[str, Any]]] = self.model.run(
+            subtexts, descriptions
         )
+        spans = []
+        for c, subspans in zip(span_inits, subspan_list):
+            for span in subspans:
+                span['start'] += c
+                span['end'] += c
+                spans.append(span)
         if isinstance(self.labels, bidict):
             for span in spans:
                 span["label"] = self.labels.inverse[span["label"]]
-        bio_tags = spans_to_bio(tokens_to_offsets(entry.text, entry.tokens), spans)
+        bio_tags = spans_to_bio(token_spans, spans)
         return filter_bio(bio_tags, label_whitelist) if label_whitelist else bio_tags
 
 
 if __name__ == "__main__":
     gliner = GlinerModel(GLINER_MODEL_EXAMPLES[0], bidict({"n": "navn", "m": "verbum"}))
-    sample = PiiDataEntry.sample()
+    sample = PiiDataEntry.from_txt_file("data/samples/ex-1.txt") # sample()
     x = gliner(sample, {"m"})
     print(sample)
     print(x)

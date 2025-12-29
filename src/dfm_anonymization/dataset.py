@@ -1,15 +1,16 @@
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Tuple
 
-from dfm_anonymization.util import to_dict_recursive
+from dfm_anonymization.util import WordTokenizer, to_dict_recursive
 
 
 @dataclass
 class PiiDataEntry(object):
     text: str
     tokens: List[str]
+    token_spans: List[Tuple[int,int]] | None = None
     id: int | str | None = None
     bio_tags: List[str] | None = None
     metadata: dict | None = None
@@ -21,6 +22,20 @@ class PiiDataEntry(object):
             text="\"Hør du nu, jomfru Hermelin,",
             tokens=["\"", "Hør", "du", "nu", ",", "jomfru", "Hermelin", ","],
             bio_tags=["O", "O", "O", "O", "O", "O", "B-PERSON", "O"]
+        )
+
+    @staticmethod
+    def from_txt_file(path: Path | str) -> "PiiDataEntry":
+        if type(path) == str:
+            path = Path(path)
+        assert path.exists()
+        text = path.read_text(encoding="utf8")
+        word_tokenizer = WordTokenizer()
+        words, word_spans = word_tokenizer.word_tokenize(text=text)
+        return PiiDataEntry(
+            text=text,
+            tokens=words,
+            token_spans=word_spans
         )
 
     @staticmethod

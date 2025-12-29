@@ -54,3 +54,12 @@ dfm-anonymization make-evaluations
 dfm-anonymization --help
 dfm-anonymization anonymize --help
 ```
+
+### Performance
+
+Current (limited) test results:
+| Hardware | Speed |
+| --- | --- |
+| CPU (x86_64, Intel(R) Core(TM) Ultra 7 258V) | ~1.5 sentences / second |
+| GPU (RTX 4090) | ~170 sentences / second |
+(1 sentence ≃ 250 tokens)

@@ -26,9 +26,7 @@ def make_evaluations():
 )
 def anonymize(
     text_or_path: str | None = typer.Argument(
-        None, help="A string or text file to anonymize. " \
-        "If given a file path 'path/text.txt', will produce a new file " \
-        "'path/text-anonymized.txt'."
+        None, help="A string or text file to anonymize."
     ),
     whitelist: Optional[List[str]] = typer.Option(
         None, "--whitelist", help="Whitelist - strings to avoid anonymizing"
@@ -37,18 +35,12 @@ def anonymize(
     if text_or_path is None or text_or_path == '-':
         text_or_path = sys.stdin.read().strip()
     maybe_path = Path(text_or_path)
-    out_path = None
     if maybe_path.exists():
-        out_path = maybe_path.parent / \
-            f"{maybe_path.stem}-anonymized{maybe_path.suffix}"
         text = maybe_path.read_text(encoding="utf8")
     else:
         text = text_or_path
-
     anonymizer = Anonymizer()
     result = anonymizer(text, whitelist)
-    if out_path:
-        out_path.write_text(result.text, encoding="utf8")
     print(result.text)
 
 

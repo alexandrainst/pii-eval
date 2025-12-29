@@ -33,7 +33,12 @@ Developer:
    therein.
 2. Run `source .venv/bin/activate` to activate the virtual environment.
 
-### Usage
+### Example usage
 
+- `dfm-anonymization anonymize "Navnet er Anders Sand. Og 21324354 er telefonnummeret."
+ --whitelist "Anders Sand"`
+- `dfm-anonymization make-evaluations`
+- `echo "example 12 23 34 45" | dfm-anonymization anonymize`
+- `dfm-anonymization anonymize ./text_file.txt > ./text_file_anonymized.txt`
 - Run `dfm-anonymization --help` or
 - `df-anonymization anonymize --help` for more info

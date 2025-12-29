@@ -12,6 +12,7 @@ from dfm_anonymization.constants import LABEL_DESCRIPTIONS_DA
 from dfm_anonymization.dataset import PiiDataEntry
 from dfm_anonymization.interfaces import PiiModel
 from dfm_anonymization.models.ensemble_model import EnsembleModel
+from dfm_anonymization.models.gliner_model import GlinerModel
 from dfm_anonymization.util import WordTokenizer
 
 
@@ -97,7 +98,8 @@ class WikiDa:
 
         content = data_path.read_text(encoding="utf8")
         lines = content.split("\n")
-        title_set = set(line.replace("_", " ").replace("\n", "") for line in lines)
+        title_set = set(line.replace("_", " ").replace("\n", "")
+                        for line in lines)
         self._title_set = set(t for t in title_set if len(t) > 3)
 
     def look_up(self, key: str) -> bool:
@@ -120,24 +122,26 @@ class Anonymizer:
         # ignore wiki entities and whitelist entries
         analyser_results = []
         for r in self.analyzer(text):
-            substr = text[r.start : r.end]
+            substr = text[r.start: r.end]
             if not self.wiki.look_up(substr) and (
                 not whitelist or substr not in whitelist
             ):
                 analyser_results.append(r)
 
         return self.engine.anonymize(
-            text=text, analyzer_results=analyser_results, operators=self.operators
-        )
+            text=text,
+            analyzer_results=analyser_results,
+            operators=self.operators)
 
 
 if __name__ == "__main__":
     text = (
-        "Navnet er Sand, Anders Sand. Og 21324354 er telefonnummeret. "
+        "Navnet er Anders Sand. Og 21324354 er telefonnummeret. "
         "Marias kreditkortnummer, 4929 1234 5678 9012, blev ved et uheld "
         "delt i en e-mail til supporten. Peter Lund Madsen er død."
     )
-    anonymizer = Anonymizer()
+    anonymizer = Anonymizer(Analyzer(PiiModelAnalyzer(model=GlinerModel(
+        tag="nvidia/gliner-pii"))))
     anonymized = anonymizer(text)
     print(text)
     print(anonymized.text)

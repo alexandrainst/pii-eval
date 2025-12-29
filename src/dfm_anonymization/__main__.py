@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 from typing import List, Optional
 
@@ -24,15 +25,22 @@ def make_evaluations():
     '--whitelist "Anders Sand"'
 )
 def anonymize(
-    text_or_path: str,
+    text_or_path: str | None = typer.Argument(
+        None, help="A string or text file to anonymize. " \
+        "If given a file path 'path/text.txt', will produce a new file " \
+        "'path/text-anonymized.txt'."
+    ),
     whitelist: Optional[List[str]] = typer.Option(
         None, "--whitelist", help="Whitelist - strings to avoid anonymizing"
     ),
 ):
+    if text_or_path is None or text_or_path == '-':
+        text_or_path = sys.stdin.read().strip()
     maybe_path = Path(text_or_path)
+    out_path = None
     if maybe_path.exists():
         out_path = maybe_path.parent / \
-            f"{maybe_path.stem}-anonymized-{maybe_path.suffix}"
+            f"{maybe_path.stem}-anonymized{maybe_path.suffix}"
         text = maybe_path.read_text(encoding="utf8")
     else:
         text = text_or_path
@@ -41,9 +49,7 @@ def anonymize(
     result = anonymizer(text, whitelist)
     if out_path:
         out_path.write_text(result.text, encoding="utf8")
-    else:
-        print(result.text)
-
+    print(result.text)
 
 
 def main() -> int:

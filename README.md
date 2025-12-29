@@ -50,6 +50,15 @@ dfm-anonymization anonymize ./text_file.txt > ./text_file_anonymized.txt
 # Generate evaluations
 dfm-anonymization make-evaluations
 
+# Start the API
+dfm-anonymization start-api
+# Or via
+uvicorn dfm_anonymization.service:app --host 0.0.0.0 --port 8000
+# then anonymize text via HTTP
+curl -X POST "http://localhost:8000/anonymize" \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Navnet er Anders Sand. Og 21324354 er telefonnummeret.","whitelist":["Anders Sand"]}'
+
 # Get help
 dfm-anonymization --help
 dfm-anonymization anonymize --help

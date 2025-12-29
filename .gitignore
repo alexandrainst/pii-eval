@@ -115,3 +115,7 @@ site/
 wandb
 *.old*
 .backups
+
+agents_log.md
+agent_history.md
+agents.md

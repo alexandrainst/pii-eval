@@ -1,0 +1,46 @@
+You will generate sentences to test {{language}} NER for PII detection.
+
+I am designing a system for NER-based PII detection.
+I want to test our models on this PII category: {{category}}, which is {{information}}.
+
+MANDATORY REQUIREMENTS:
+1. Generate EXACTLY {{n_sentences}} sentences containing {{category}} entities
+2. Each sentence must have at least 10 words
+3. Use varied topics, contexts and types of {{category}} entities
+4. Output only in {{language}}
+
+Sentences with {{category}} should include:
+- Clear examples of {{category}}
+- Multi-token {{category}} entities.
+- Edge cases that still qualify as {{category}}, but might not be as obvious.
+{%- if extra %}
+- {{extra}}
+{% endif %}
+
+Generate {{n_sentences}} samples following the exact same format.
+
+Output as JSON array where each example has:
+- "sentence": the complete sentence text
+- "entities": array of {{category}} entity text strings as they appear in the sentence
+
+Formally, the format looks like this:
+
+```json
+[
+  {
+    "sentence": "<example sentence with multiple {{category}} entities>",
+    "entities": ["entity1", "entity2"]
+  },
+  {
+    "sentence": "<example sentence with a {{category}} entity>",
+    "entities": ["entity3"]
+  }
+]
+```
+
+
+CRITICAL:
+- Only include entities that are specifically {{category}} type
+- Remember that {{category}} entities should be listed EXACTLY as they appear in the sentence, including any punctuation or capitalization
+- Remember the definition of {{category}} entities: {{information}}
+- Only use the language {{language}}

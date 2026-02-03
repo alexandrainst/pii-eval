@@ -26,7 +26,7 @@ def anonymize(
         None, "--whitelist", help="Whitelist - strings to avoid anonymizing"
     ),
 ):
-    if text_or_path is None or text_or_path == '-':
+    if text_or_path is None or text_or_path == "-":
         text_or_path = sys.stdin.read().strip()
     maybe_path = Path(text_or_path)
     if maybe_path.exists():
@@ -41,7 +41,7 @@ def anonymize(
 @app.command(help="Start the API.")
 def start_api(
     host: str = typer.Option("0.0.0.0", "--host"),
-    port: int = typer.Option(8000, "--port")
+    port: int = typer.Option(8000, "--port"),
 ):
     service.main(host=host, port=port)
 

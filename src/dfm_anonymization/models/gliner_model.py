@@ -54,8 +54,8 @@ class GlinerModel(PiiModel):
         spans = []
         for c, subspans in zip(span_inits, subspan_list):
             for span in subspans:
-                span['start'] += c
-                span['end'] += c
+                span["start"] += c
+                span["end"] += c
                 spans.append(span)
         if isinstance(self.labels, bidict):
             for span in spans:
@@ -66,7 +66,7 @@ class GlinerModel(PiiModel):
 
 if __name__ == "__main__":
     gliner = GlinerModel(GLINER_MODEL_EXAMPLES[0], bidict({"n": "navn", "m": "verbum"}))
-    sample = PiiDataEntry.from_txt_file("data/samples/ex-1.txt") # sample()
+    sample = PiiDataEntry.from_txt_file("data/samples/ex-1.txt")  # sample()
     x = gliner(sample, {"m"})
     print(sample)
     print(x)

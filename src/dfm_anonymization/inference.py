@@ -12,6 +12,7 @@ from dfm_anonymization.models.ensemble_model import EnsembleModel
 from dfm_anonymization.models.gliner_model import GLINER_MODEL_EXAMPLES, GlinerModel
 from dfm_anonymization.models.ner_model import NerModel
 from dfm_anonymization.models.presidio_model import PresidioModel
+from dfm_anonymization.models.scrambletron import ScrambletronModel
 
 
 def inference(
@@ -65,6 +66,7 @@ def generate_predictions(override: bool = False):
         ),
         ("presidio", lambda: PresidioModel()),
         ("ensemble_gliner_pii_presidio", EnsembleModel.get_gliner_pii_presidio),
+        ("scramletron", ScrambletronModel),
     ]
     for model_name, model_fct in models:
         model = None

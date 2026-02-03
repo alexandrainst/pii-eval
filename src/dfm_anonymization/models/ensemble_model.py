@@ -18,12 +18,14 @@ class EnsembleModel(PiiModel):
         n = len(entry.bio_tags) if entry.bio_tags else len(entry.tokens)
         predictions = ["O"] * n
         for model, label_whitelist in self.models:
-            for i, new_tag in enumerate(model(
-                entry=entry, label_whitelist=label_whitelist
-            )):
+            for i, new_tag in enumerate(
+                model(entry=entry, label_whitelist=label_whitelist)
+            ):
                 if predictions[i] == "O" and new_tag != "O":
-                    if new_tag.startswith("I-") and \
-                            predictions[i - 1][2:] != new_tag[2:]:
+                    if (
+                        new_tag.startswith("I-")
+                        and predictions[i - 1][2:] != new_tag[2:]
+                    ):
                         predictions[i] = f"B-{new_tag[2:]}"
                     else:
                         predictions[i] = new_tag
@@ -38,24 +40,24 @@ class EnsembleModel(PiiModel):
             ISO_LABEL_DATE_TIME,
             ISO_LABEL_DRIVERS_LICENSE,
             ISO_LABEL_EMAIL,
-            ISO_LABEL_PHONE
+            ISO_LABEL_PHONE,
         }
         gliner_pii_label_map = bidict(
-            {k: LABEL_DESCRIPTIONS_DA[k] for k in gliner_pii_labels})
+            {k: LABEL_DESCRIPTIONS_DA[k] for k in gliner_pii_labels}
+        )
         presidio_labels = {
             ISO_LABEL_URL,
             ISO_LABEL_PERSON,
             ISO_LABEL_ORGANIZATION,
-            ISO_LABEL_LOCATION
+            ISO_LABEL_LOCATION,
         }
         return EnsembleModel(
             name="ensemble_gliner_pii_presidio",
             models=[
                 (
-                    GlinerModel(
-                        "nvidia/gliner-pii", labels=gliner_pii_label_map),
-                    gliner_pii_labels
+                    GlinerModel("nvidia/gliner-pii", labels=gliner_pii_label_map),
+                    gliner_pii_labels,
                 ),
-                (PresidioModel(), presidio_labels)
-            ]
+                (PresidioModel(), presidio_labels),
+            ],
         )

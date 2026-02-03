@@ -7,6 +7,19 @@ import torch
 from nltk.tokenize import word_tokenize
 from nltk.tokenize.util import align_tokens
 from presidio_anonymizer import RecognizerResult
+import yaml
+
+
+class BlockStrDumper(yaml.SafeDumper):
+    """YAML dumper that emits multiline strings in block style."""
+
+
+def _repr_str(dumper: BlockStrDumper, data: str) -> yaml.Node:
+    style = "|" if "\n" in data else None
+    return dumper.represent_scalar("tag:yaml.org,2002:str", data, style=style)
+
+
+BlockStrDumper.add_representer(str, _repr_str)
 
 
 class Singleton(type):

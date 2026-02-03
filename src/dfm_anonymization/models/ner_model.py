@@ -1,4 +1,3 @@
-from abc import ABC
 from typing import Any, List, Optional, Set, Tuple
 import torch
 from transformers import AutoModelForTokenClassification, AutoTokenizer
@@ -14,10 +13,7 @@ class TransformersTokenizer(Tokenizer):
 
     def __call__(self, words: List[str]) -> Tuple[Any, List[Optional[int]]]:
         encoding = self.tokenizer(
-            words,
-            is_split_into_words=True,
-            return_tensors="pt",
-            truncation=True
+            words, is_split_into_words=True, return_tensors="pt", truncation=True
         )
         word_ids = encoding.word_ids()
         return encoding, word_ids
@@ -48,15 +44,17 @@ class NerModel(PiiModel):
     @staticmethod
     def from_hf(tag: str):
         return NerModel(
-            name=tag.split('/')[-1],
+            name=tag.split("/")[-1],
             tokenizer=TransformersTokenizer(
-                AutoTokenizer.from_pretrained(tag, use_fast=True)),
+                AutoTokenizer.from_pretrained(tag, use_fast=True)
+            ),
             model=TransformersTokenClassifier(
-                AutoModelForTokenClassification.from_pretrained(tag))
+                AutoModelForTokenClassification.from_pretrained(tag)
+            ),
         )
 
     def __call__(
-            self, entry: PiiDataEntry, label_whitelist: Set[str] | None = None
+        self, entry: PiiDataEntry, label_whitelist: Set[str] | None = None
     ) -> List[str]:
         words = entry.tokens
         subtokens, word_ids = self.tokenizer(words)
@@ -80,5 +78,4 @@ class NerModel(PiiModel):
                     bio_tags[word_id] = "B-" + entity
             else:
                 bio_tags[word_id] = "O"
-        return filter_bio(bio_tags, label_whitelist) if label_whitelist else \
-            bio_tags
+        return filter_bio(bio_tags, label_whitelist) if label_whitelist else bio_tags

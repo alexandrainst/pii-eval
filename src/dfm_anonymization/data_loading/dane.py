@@ -16,8 +16,7 @@ import pyconll
 from dfm_anonymization.dataset import PiiDataEntry, PiiDataset
 
 
-def download_unzip(url_zip: str,
-                   dir_extract: str) -> str:
+def download_unzip(url_zip: str, dir_extract: str) -> str:
     """Download and unzip a ZIP archive to folder.
 
     Loads a ZIP file from URL and extracts all of the files to a
@@ -38,12 +37,12 @@ def download_unzip(url_zip: str,
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
 
-    print(f'Reading {url_zip}')
+    print(f"Reading {url_zip}")
     with urlopen(url_zip, context=ctx) as zipresp:
         with ZipFile(BytesIO(zipresp.read())) as zfile:
             zfile.extractall(dir_extract)
 
-    return f'archive extracted to {dir_extract}'
+    return f"archive extracted to {dir_extract}"
 
 
 def download_dane_data(dir: Path = None) -> str:
@@ -71,13 +70,11 @@ def download_dane_data(dir: Path = None) -> str:
         dir = Path("data/raw/dane")
 
     return download_unzip(
-        url_zip='http://danlp-downloads.alexandra.dk/datasets/ddt.zip',
-        dir_extract=dir)
+        url_zip="http://danlp-downloads.alexandra.dk/datasets/ddt.zip", dir_extract=dir
+    )
 
 
-def get_dane_data(split: str = 'train',
-                  limit: int = None,
-                  dir: Path = None) -> dict:
+def get_dane_data(split: str = "train", limit: int = None, dir: Path = None) -> dict:
     """Load DaNE data split.
 
     Loads a single data split from the DaNE data set kindly hosted
@@ -105,18 +102,20 @@ def get_dane_data(split: str = 'train',
 
     """
     assert isinstance(split, str)
-    splits = ['train', 'dev', 'test']
-    assert split in splits, f'Choose between the following splits: {splits}'
+    splits = ["train", "dev", "test"]
+    assert split in splits, f"Choose between the following splits: {splits}"
 
     # set to default directory if nothing else has been provided by user.
     if dir is None:
         dir = Path("data/raw/dane")
-    assert dir.exists(
-    ), f'Directory {dir} does not exist. Try downloading DaNE data with download_dane_data()'
+    assert dir.exists(), (
+        f"Directory {dir} does not exist. Try downloading DaNE data with download_dane_data()"
+    )
 
-    file_path = os.path.join(dir, f'ddt.{split}.conllu')
-    assert os.path.isfile(
-        file_path), f'File {file_path} does not exist. Try downloading DaNE data with download_dane_data()'
+    file_path = os.path.join(dir, f"ddt.{split}.conllu")
+    assert os.path.isfile(file_path), (
+        f"File {file_path} does not exist. Try downloading DaNE data with download_dane_data()"
+    )
 
     split = pyconll.load_from_file(file_path)
 
@@ -126,7 +125,7 @@ def get_dane_data(split: str = 'train',
 
     for sent in split:
         sentences.append([token.form for token in sent._tokens])
-        entities.append([token.misc['name'].pop() for token in sent._tokens])
+        entities.append([token.misc["name"].pop() for token in sent._tokens])
         texts.append(sent.text)
 
     if limit is not None:
@@ -134,7 +133,7 @@ def get_dane_data(split: str = 'train',
         entities = entities[:limit]
         texts = texts[:limit]
 
-    return {'texts': texts, 'sentences': sentences, 'tags': entities}
+    return {"texts": texts, "sentences": sentences, "tags": entities}
 
 
 def generate_dataset_file(override: bool = False):
@@ -147,25 +146,18 @@ def generate_dataset_file(override: bool = False):
         download_dane_data()
     input_data = get_dane_data()
 
-    texts = input_data['texts']
-    sentences = input_data['sentences']
-    tags = input_data['tags']
+    texts = input_data["texts"]
+    sentences = input_data["sentences"]
+    tags = input_data["tags"]
 
     entries = []
     for idx, (text, tokens, bio_tags) in enumerate(zip(texts, sentences, tags)):
-        entries.append(PiiDataEntry(
-            id=idx,
-            text=text,
-            tokens=tokens,
-            bio_tags=bio_tags
-        ))
+        entries.append(
+            PiiDataEntry(id=idx, text=text, tokens=tokens, bio_tags=bio_tags)
+        )
 
     dataset = PiiDataset(
-        metadata={
-            "downloaded": timestamp,
-            "dataset_name": "dane"
-        },
-        entries=entries
+        metadata={"downloaded": timestamp, "dataset_name": "dane"}, entries=entries
     )
 
     dataset.to_file(gen_path)

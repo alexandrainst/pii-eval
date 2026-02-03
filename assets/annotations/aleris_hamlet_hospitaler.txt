@@ -1,0 +1,80 @@
+Notater for:
+[Nancy Ann Berggren]<person>
+Cpr-nummer:
+[251248-4916]<ssn>
+Udskriftsdato:
+[27.09.2021]<date>
+Printet af:
+[Nancy Ann Berggren]<person>
+Notater til forløb oprettet af [Aleris-Hamlet Hospitaler]<organization>,
+[Aleris-Hamlet]<organization>, [Søborg]<address>
+Startdato: [14.07.2021]<date>
+CAVE
+Bemærk: der er oplysninger i CAVE, som kan have indflydelse på behandlingsmulighederne.
+1 notat i perioden [14.07.2021]<date> - [14.07.2021]<date>
+Dato
+Titel
+[14.07.2021]<date>
+Specialistnotat
+[Aleris-Hamlet Hospitaler]<organization>, [Søborg]<address>
+Privatbetaler kommer pga. øresmerter
+Forløbsansvarlig læge
+Undertegnede er
+patientens forløbsansvarlige læge, og patienten er informeret herom.
+[Allergi og intolerans]<health>
+Nihil
+Aktuelt
+[Smerter i venstre øre]<health> igennem 1 måned
+Øvrige organsystemer
+I.a.
+Medicin
+FMK er afstemt og ajourført
+Intet forbrug
+Klinisk/Objektivt
+Otoneurologisk intakt.
+Kranienerver 2-12: I.a.
+rp. KUDB02
+Otoskopi dxt. et sin.
+Nat. kalibrerede øregange, normale og intakte trommehinder. Luftfyldte mellemører.
+Rhinoscopia anterior: I.a.
+Cavum oris: I.a.
+Hvis udskriften indeholder fortrolige personoplysninger, skal det sikres at disse oplysninger ikke kommer
+uvedkommende i hænde. Vær opmærksom på, at oplysningerne kan have ændret sig siden udskriftstidspunktet.
+[https://pilot.sdkdev.dk/borger/min-side/min-sundhedsjournal/journal-fra-sygehus/]<url>
+Side 1 af 2Notater for:
+[Nancy Ann Berggren]<person>
+Cpr-nummer:
+[251248-4916]<ssn>
+Udskriftsdato:
+[27.09.2021]<date>
+Printet af:
+[Nancy Ann Berggren]<person>
+Collum: I.a.
+Audiometri viser bilateral symmetrisk hørelse inden for normalområdet. DS 100/100.
+Tympanometri A/A. Nat. ipsilaterale stapediusreflekser.
+Udvidet vestibulær test:
+vHIT: Viser nat. gain bilateralt. Ingen kompenserende sakkader.
+cVEMP: Med primære potentialer bilateralt, normale tærskler.
+Ved positionel testning i TRV-stol findes normal højre- og venstresidig Dix-Hallpike samt Pagnini McClure testning.
+Klinisk findes der [nakkespændinger og triggerudløste smerter fra nakkefæsterne]<health>.
+Diagnoser
+/DH920 [Øresmerter]<health>
+Konklusion og plan
+AFSLUTTES
+rp. Ciflox 2 dråber x 1 dagligt.
+Information og accept
+Patienten er informeret og samtykker.
+[Morten Friis]<person>/sno
+[overlæge, Ph.d., Speciallæge i øre-næse-halskirurgi]<profession>
+Behandlers navn:
+Syghus:
+Afdeling:
+Enhedskode:
+[Morten Friis]<person>
+[Aleris-Hamlet Hospitaler]<organization>
+[Aleris-Hamlet]<organization>, [Søborg]<address>
+[141154]<misc>
+Hvis udskriften indeholder fortrolige personoplysninger, skal det sikres at disse oplysninger ikke kommer
+uvedkommende i hænde. Vær opmærksom på, at oplysningerne kan have ændret sig siden udskriftstidspunktet.
+[https://pilot.sdkdev.dk/borger/min-side/min-sundhedsjournal/journal-fra-sygehus/]<url>
+Side 2 af 2

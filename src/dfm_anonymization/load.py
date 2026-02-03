@@ -6,7 +6,7 @@ def load_datasets():
     datasets = [
         ("dane", dane.generate_dataset_file),
         ("dansk-ner", dansk_ner.generate_dataset_file),
-        ("gen", gen.unpack_generated_datafiles)
+        ("gen", gen.unpack_generated_datafiles),
     ]
     prog_bar = tqdm(datasets, desc="preparing datasets")
     for t, f in prog_bar:

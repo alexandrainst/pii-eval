@@ -1,0 +1,26 @@
+Definition af personhenførbare data og anonymisering
+
+De følgende kategorier defineres som personhenførbare data (tag i parantes):
+
+ - Personnavn (person)
+ - Organisation (organization)
+ - Dato/tid (datetime)
+ - Hjemmeside (url)
+ - Email-adresse (email)
+ - Telefonnummer (phone, dk-phone)
+ - CVR-nummer (dk-cvr)
+ - CPR-nummer (dk-cpr)
+ - Kørekortnummer (dk-drivers-license)
+ - Betalingskortnummer (credit-card, dk-dankort)
+ - Kontonummer (dk-bank-account, iban)
+ - Pasnummer (passport-number)
+
+Der kan optræde andre kategorier af personhenførbare data,
+som er tagget med andre passende tags, hvis det vurderes af annotøren,
+at der er tale om personhenførbare data uden for de ovennævnte kategorier.
+
+Der bruges følgende syntaks til at markere tekststykker med persondata:
+
+[persondata tekst]<kategori>
+
+Det følgende er eksempler, på forskellige dokumenter som indeholder persondata:

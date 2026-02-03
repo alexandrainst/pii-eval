@@ -10,7 +10,7 @@ from dfm_anonymization.util import WordTokenizer, to_dict_recursive
 class PiiDataEntry(object):
     text: str
     tokens: List[str]
-    token_spans: List[Tuple[int,int]] | None = None
+    token_spans: List[Tuple[int, int]] | None = None
     id: int | str | None = None
     bio_tags: List[str] | None = None
     metadata: dict | None = None
@@ -19,9 +19,9 @@ class PiiDataEntry(object):
     def sample() -> "PiiDataEntry":
         return PiiDataEntry(
             id=0,
-            text="\"Hør du nu, jomfru Hermelin,",
-            tokens=["\"", "Hør", "du", "nu", ",", "jomfru", "Hermelin", ","],
-            bio_tags=["O", "O", "O", "O", "O", "O", "B-PERSON", "O"]
+            text='"Hør du nu, jomfru Hermelin,',
+            tokens=['"', "Hør", "du", "nu", ",", "jomfru", "Hermelin", ","],
+            bio_tags=["O", "O", "O", "O", "O", "O", "B-PERSON", "O"],
         )
 
     @staticmethod
@@ -32,23 +32,19 @@ class PiiDataEntry(object):
         text = path.read_text(encoding="utf8")
         word_tokenizer = WordTokenizer()
         words, word_spans = word_tokenizer.word_tokenize(text=text)
-        return PiiDataEntry(
-            text=text,
-            tokens=words,
-            token_spans=word_spans
-        )
+        return PiiDataEntry(text=text, tokens=words, token_spans=word_spans)
 
     @staticmethod
     def from_dict(d: dict) -> "PiiDataEntry":
         attribute_keys = PiiDataEntry.__annotations__.keys()
         sd = {k: v for k, v in d.items() if k in attribute_keys}
         meta = {k: v for k, v in d.items() if k not in attribute_keys}
-        if 'metadata' in d and type(d['metadata']) == dict:
-            meta = meta | d['metadata']
+        if "metadata" in d and type(d["metadata"]) == dict:
+            meta = meta | d["metadata"]
         for k in meta.keys():
-            if k.startswith('__'):
+            if k.startswith("__"):
                 _ = meta.pop(k)
-        sd['metadata'] = meta
+        sd["metadata"] = meta
         return PiiDataEntry(**sd)
 
 
@@ -84,20 +80,19 @@ class PiiDataset(object):
     def from_dict(d: dict) -> "PiiDataset":
         # return PiiDataset(**d)
         entries = []
-        for i, e in enumerate(d['entries']):
-            if 'id' not in e:
-                e['id'] = i
+        for i, e in enumerate(d["entries"]):
+            if "id" not in e:
+                e["id"] = i
             entries.append(PiiDataEntry.from_dict(e))
-        d['entries'] = entries
-        original_metadata = d['metadata'] if 'metadata' in d else dict()
+        d["entries"] = entries
+        original_metadata = d["metadata"] if "metadata" in d else dict()
         metadata = original_metadata | {
-            k: v for k, v in d.items()
-            if k not in PiiDataset.__annotations__.keys()
+            k: v for k, v in d.items() if k not in PiiDataset.__annotations__.keys()
         }
         for k in metadata.keys():
-            if k.startswith('__'):
+            if k.startswith("__"):
                 _ = metadata.pop(k)
-        d['metadata'] = metadata
+        d["metadata"] = metadata
         return PiiDataset(**d)
 
     def to_json_str(self) -> str:
@@ -111,7 +106,7 @@ class PiiDataset(object):
 
     @staticmethod
     def from_list_format_file(
-            file: Path | str, dataset_name: str | None = None
+        file: Path | str, dataset_name: str | None = None
     ) -> "PiiDataset":
         if isinstance(file, str):
             file = Path(file)
@@ -119,15 +114,15 @@ class PiiDataset(object):
         cnt: List[dict] = json.loads(file.read_text(encoding="utf8"))
         entries = []
         for entry in cnt:
-            entry['tokens'] = entry.pop('words')
-            entry['bio_tags'] = entry.pop('true_bio_tags')
-            entry['id'] = entry.pop('document')
+            entry["tokens"] = entry.pop("words")
+            entry["bio_tags"] = entry.pop("true_bio_tags")
+            entry["id"] = entry.pop("document")
             entries.append(PiiDataEntry.from_dict(entry))
         return PiiDataset(
             entries=entries,
             metadata={
                 "dataset_name": dataset_name if dataset_name else file.stem,
                 "is_ground_truth": True,
-                "file_path": str(file)
-            }
+                "file_path": str(file),
+            },
         )

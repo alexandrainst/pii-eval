@@ -28,6 +28,9 @@ dependencies = [
     "tqdm>=4.67.1",
     "transformers>=4.51.0",
     "uvicorn>=0.35.0",
+    "data-generation",
+    "ruff>=0.14.14",
+    "bitsandbytes>=0.49.1",
 ]
 
 [build-system]
@@ -43,6 +46,7 @@ dfm-anonymization = "dfm_anonymization.__main__:main"
 [tool.uv.sources]
 scrambletron = { git = "https://github.com/danish-foundation-models/scrambletron", branch = "jacob-dv" }
 dfm-anonymization = { workspace = true }
+data-generation = { git = "ssh://git@github.com/danish-foundation-models/scrambletron_data_generation.git" }
 
 [dependency-groups]
 dev = [

@@ -1,4 +1,3 @@
-
 from typing import List, Set
 
 import spacy
@@ -7,25 +6,27 @@ from presidio_analyzer.nlp_engine import NlpEngineProvider
 
 from dfm_anonymization.dataset import PiiDataEntry
 from dfm_anonymization.interfaces import PiiModel
-from dfm_anonymization.util import (filter_bio, get_torch_device,
-                                    presidio_result_2_span, spans_to_bio,
-                                    tokens_to_offsets)
+from dfm_anonymization.util import (
+    filter_bio,
+    get_torch_device,
+    presidio_result_2_span,
+    spans_to_bio,
+    tokens_to_offsets,
+)
 
 
 class PresidioModel(PiiModel):
     def __init__(
-            self, name: str = "presidio",
-            lang_code: str = "da",
-            model_name="da_core_news_trf"
+        self,
+        name: str = "presidio",
+        lang_code: str = "da",
+        model_name="da_core_news_trf",
     ):
         super().__init__(name)
         self.lang_code = lang_code
         self.configuration = {
             "nlp_engine_name": "spacy",
-            "models": [{
-                "lang_code": self.lang_code,
-                "model_name": model_name
-            }],
+            "models": [{"lang_code": self.lang_code, "model_name": model_name}],
         }
         if get_torch_device() in ["cuda", "xpu"]:
             spacy.require_gpu(0)
@@ -33,21 +34,20 @@ class PresidioModel(PiiModel):
         nlp_engine_da = provider.create_engine()
 
         self.analyzer = AnalyzerEngine(
-            nlp_engine=nlp_engine_da,
-            supported_languages=[self.lang_code]
+            nlp_engine=nlp_engine_da, supported_languages=[self.lang_code]
         )
 
     def __call__(
-            self, entry: PiiDataEntry, label_whitelist: Set[str] | None = None
+        self, entry: PiiDataEntry, label_whitelist: Set[str] | None = None
     ) -> List[str]:
         try:
-            results = self.analyzer.analyze(
-                entry.text, language=self.lang_code)
+            results = self.analyzer.analyze(entry.text, language=self.lang_code)
             spans = [presidio_result_2_span(r, entry.text) for r in results]
             token_spans = tokens_to_offsets(entry.text, tokens=entry.tokens)
             bio_tags = spans_to_bio(token_spans=token_spans, spans=spans)
-            bio_tags = filter_bio(bio_tags, label_whitelist) \
-                if label_whitelist else bio_tags
+            bio_tags = (
+                filter_bio(bio_tags, label_whitelist) if label_whitelist else bio_tags
+            )
         except Exception as e:
             print(f"warning: error occurred: {e}")
             bio_tags = ["O"] * len(entry.tokens)

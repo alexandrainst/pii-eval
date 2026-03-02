@@ -7,8 +7,8 @@ from typing import Dict, List
 import pandas as pd
 
 from dfm_anonymization.constants import (
+    ALL_ISO_LABELS,
     DATASET_LABEL_MAP,
-    LABEL_DESCRIPTIONS_DA,
     MODEL_LABEL_MAP,
 )
 from dfm_anonymization.dataset import PiiDataset
@@ -97,11 +97,15 @@ def evaluate(
 ) -> Dict[str, MetricResult]:
     dataset_name = ground_truth.metadata["dataset_name"]
     model_name = predictions.metadata["model_name"]
-    dataset_label_map = DATASET_LABEL_MAP[dataset_name]
+    dataset_label_map = (
+        DATASET_LABEL_MAP[dataset_name]
+        if dataset_name in DATASET_LABEL_MAP
+        else {k: k for k in ALL_ISO_LABELS}
+    )
     model_label_map = (
         MODEL_LABEL_MAP[model_name]
         if model_name in MODEL_LABEL_MAP
-        else {k: k for k in LABEL_DESCRIPTIONS_DA.keys()}
+        else {k: k for k in ALL_ISO_LABELS}
     )
     common_iso_labels = set(dataset_label_map.values()).intersection(
         set(model_label_map.values())
@@ -144,7 +148,7 @@ def evaluate(
 
 def evaluate_all():
     results = []
-    for predictions_path in Path("data/predictions").rglob("*.json"):
+    for predictions_path in Path("data/predictions").glob("*/*.json"):
         dataset_name = predictions_path.stem
         model_name = predictions_path.parent.name
         ground_truth_path = f"data/ground_truth/{dataset_name}.json"
@@ -165,6 +169,7 @@ def evaluate_all():
     out_path = Path(f"data/results/{timestamp}.json")
     out_path.parent.mkdir(exist_ok=True, parents=True)
     df.to_json(f"data/results/{timestamp}.json")
+    df = df.dropna(how="any")
     best_models = df.groupby("model")[metrics].mean().sort_values("f5", ascending=False)
     dataset_scores = (
         df.groupby("dataset")[metrics].mean().sort_values("f5", ascending=False)
@@ -182,10 +187,10 @@ def evaluate_all():
     best_model_by_label = best_model_by_label.set_index(["label", "model"])
     with pd.option_context("display.max_rows", None):
         print(df.set_index(["dataset", "model", "label"]), end="\n\n")
-    print(best_models_by_label, end="\n\n")
-    print(dataset_scores, end="\n\n")
-    print(best_models, end="\n\n")
-    print(best_model_by_label)
+        print(best_models_by_label, end="\n\n")
+        print(dataset_scores, end="\n\n")
+        print(best_models, end="\n\n")
+        print(best_model_by_label)
     pass
 
 

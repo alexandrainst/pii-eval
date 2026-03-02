@@ -34,22 +34,20 @@ class EnsembleModel(PiiModel):
     @staticmethod
     def get_gliner_pii_presidio() -> "EnsembleModel":
         gliner_pii_labels = {
-            ISO_LABEL_CARD_NUMBER,
+            ISO_LABEL_PCI,
             ISO_LABEL_SSN,
-            ISO_LABEL_IBAN,
-            ISO_LABEL_DATE_TIME,
+            ISO_LABEL_BANK_ACCOUNT,
             ISO_LABEL_DRIVERS_LICENSE,
-            ISO_LABEL_EMAIL,
-            ISO_LABEL_PHONE,
+            ISO_LABEL_EMAIL_ADDRESS,
+            ISO_LABEL_PHONE_NUMBER,
         }
         gliner_pii_label_map = bidict(
             {k: LABEL_DESCRIPTIONS_DA[k] for k in gliner_pii_labels}
         )
         presidio_labels = {
-            ISO_LABEL_URL,
-            ISO_LABEL_PERSON,
-            ISO_LABEL_ORGANIZATION,
-            ISO_LABEL_LOCATION,
+            ISO_LABEL_PRIVATE_URL,
+            ISO_LABEL_PERSON_NAME,
+            ISO_LABEL_PRECISE_LOCATION,
         }
         return EnsembleModel(
             name="ensemble_gliner_pii_presidio",

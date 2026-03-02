@@ -9,7 +9,7 @@ from dfm_anonymization.constants import LABEL_DESCRIPTIONS_DA
 from dfm_anonymization.dataset import PiiDataEntry, PiiDataset
 from dfm_anonymization.interfaces import PiiModel
 from dfm_anonymization.models.ensemble_model import EnsembleModel
-from dfm_anonymization.models.gliner_model import GLINER_MODEL_EXAMPLES, GlinerModel
+from dfm_anonymization.models.gliner_model import GlinerModel
 from dfm_anonymization.models.ner_model import NerModel
 from dfm_anonymization.models.presidio_model import PresidioModel
 from dfm_anonymization.models.scrambletron import ScrambletronModel
@@ -50,30 +50,35 @@ def convert_datasets_from_words():
 
 
 def generate_predictions(override: bool = False):
-    print("generating predictions")
     models: List[Tuple[str, Callable[[], PiiModel]]] = [
         (
-            "nbailab-base-ner-scandi",
+            "scandiner",
             lambda: NerModel.from_hf("saattrupdan/nbailab-base-ner-scandi"),
         ),
         (
             "gliner-pii",
-            lambda: GlinerModel(GLINER_MODEL_EXAMPLES[0], LABEL_DESCRIPTIONS_DA),
+            lambda: GlinerModel("nvidia/gliner-pii", LABEL_DESCRIPTIONS_DA),
         ),
         (
             "gliner_multi-v2.1",
-            lambda: GlinerModel(GLINER_MODEL_EXAMPLES[1], LABEL_DESCRIPTIONS_DA),
+            lambda: GlinerModel("urchade/gliner_multi-v2.1", LABEL_DESCRIPTIONS_DA),
         ),
         ("presidio", lambda: PresidioModel()),
         ("ensemble_gliner_pii_presidio", EnsembleModel.get_gliner_pii_presidio),
         ("scramletron", ScrambletronModel),
     ]
+    datasets = list(Path("data/ground_truth").glob("*.json"))
+    print(
+        f"generating predictions\nmodels: {', '.join([m[0] for m in models])}\n"
+        f"datasets: {', '.join([d.stem for d in datasets])}"
+    )
+
     for model_name, model_fct in models:
         model = None
         print(f"Model: {model_name}")
-        for in_path in Path("data/ground_truth").glob("*.json"):
+        for in_path in datasets:
             dataset = PiiDataset.from_file(in_path)
-            dataset_name = dataset.metadata["dataset_name"]
+            dataset_name = dataset.metadata.get("dataset_name", in_path.stem)
             print(f"Dataset: {dataset_name}")
             output_file_path = Path(
                 f"data/predictions/{model_name}/{dataset_name}.json"

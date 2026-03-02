@@ -4,29 +4,57 @@ from pathlib import Path
 from dotenv import load_dotenv
 import litellm
 import codetiming
+from tqdm import tqdm
 import yaml
 
 from dfm_anonymization.util import BlockStrDumper
 
 language = "Danish"
 
-DEFAULT_PROMPT = f"""Please generate {language} text material from contexts where PII
-(personal identifiable information) may occur.
-Wherever PII entities occur tag it using xml.
-This is an example:
+SHORT_EXAMPLE = """Det er forperson <person text="Jon Jensen"/>.
+Du kan skrive til ham på <EMAIL_ADDRESS text="jj@stofanet.com"/>.
+<PHONE_NUMBER text="(+45) 12 34 56 78"/> er hans telefonnummer.
+Han blev født <OTHER_PII text="den 7. marts 1982"/>.
+"""
 
-Det er forperson <person text="Jon Jensen"/>. Du kan skrive til ham på
-<email text="jj@stofanet. com"/>. <phone text="+45)1234 5 678"/>"
-er hans telefonnummer. Han blev født
-<dob text="den 7. marts 1982" when="1982-03-07"/>.
+LABELS = """
+BANK_ACCOUNT
+DRIVERS_LICENSE
+EMAIL_ADDRESS
+IP_ADDRESS
+OTHER_PII
+PASSPORT
+PCI (payment card information)
+PERSON_NAME
+PHONE_NUMBER
+PRECISE_LOCATION
+PRIVATE_URL
+SSN (social security number)
+USERNAME
+VEHICLE_ID
+"""
+
+DEFAULT_PROMPT = f"""Your task is to generate {language} text material
+from contexts where PII (personal identifiable information) may occur.
+We use the following categories of PII:
+{LABELS}
+
+Only information which endangers anonymity can fall into any of these categories.
+This includes however also if other context can reveal identity.
+Wherever PII entities occur it should be tagged with the scheme
+<CATEGORY text="string to tag"/>.
+
+Here is a short example:
+'{SHORT_EXAMPLE.strip()}'
 
 Be creative with the text examples and categories.
 Make sure:
-- to vary the length of examples.
- the one given above, along with short onesto also include much longer ones.
+- include all the above categories
+- to vary the length of examples (can be x10 times longer than the one above or more).
 The goal is to include as much different material and categories
 as possible to provide data for a model that can capture all PII data
 it may encounter.
+- to vary the density of PII information (e.g. also include a few examples with no PII data)
 - the examples are similar to how PII would appear in actual {language}
 documents/texts.
 - the response only contain the examples and nothing else, that is,
@@ -70,5 +98,5 @@ def generate_from_prompt(
 
 if __name__ == "__main__":
     load_dotenv()
-    for _ in range(100):
+    for _ in tqdm(range(100), dynamic_ncols=True):
         generate_from_prompt()

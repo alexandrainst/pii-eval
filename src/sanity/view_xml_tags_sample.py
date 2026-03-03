@@ -45,7 +45,7 @@ def visualize_bio_tags(entry):
 
 def main():
     """Load and visualize the first few entries from the generated data."""
-    data_file = Path("data/ground_truth/generated/generated_prompt.json")
+    data_file = Path("data/ground_truth/gen_prompt.json")
 
     if not data_file.exists():
         print(f"Error: {data_file} not found!")

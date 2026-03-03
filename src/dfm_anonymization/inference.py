@@ -1,4 +1,5 @@
 from datetime import datetime
+import itertools
 from pathlib import Path
 from typing import Callable, List, Tuple
 
@@ -16,9 +17,14 @@ from dfm_anonymization.models.scrambletron import ScrambletronModel
 
 
 def inference(
-    model: PiiModel, dataset: PiiDataset, show_progress_bar: bool = True
+    model: PiiModel,
+    dataset: PiiDataset,
+    show_progress_bar: bool = True,
+    max_entries: int = None,
 ) -> PiiDataset:
     it = tqdm(dataset, dynamic_ncols=True) if show_progress_bar else dataset
+    if max_entries:
+        it = itertools.islice(it, max_entries)
     new_entries = []
     for entry in it:
         new_entries.append(
@@ -90,7 +96,7 @@ def generate_predictions(override: bool = False):
                 model = model_fct()
             timer = Timer()
             timer.start()
-            predictions = inference(model=model, dataset=dataset)
+            predictions = inference(model=model, dataset=dataset, max_entries=200)
             timer.stop()
             elapsed_time = timer.last
             predictions.metadata.update(

@@ -4,6 +4,11 @@ from pathlib import Path
 import yaml
 
 
+XML_TAG_PATTERN = re.compile(
+    r'<([A-Z_]+)\s+text\s*=\s*(?:"([^"]*)"|\\"([^"]*)\\")\s*/?>'
+)
+
+
 def tokenize_text(text):
     """Tokenize text splitting on whitespace and punctuation."""
     # Split on whitespace first
@@ -16,17 +21,20 @@ def tokenize_text(text):
 
 
 def parse_xml_tags(text):
-    """Parse XML tags and return clean text with entity positions."""
+    """Parse XML tags and return clean text with entity positions.
+
+    Supports both:
+    - <CATEGORY text="value"/>
+    - <CATEGORY text="value"> </CATEGORY>
+    """
     entities = []
     clean_text = text
     offset = 0
 
-    # Find all XML tags: <CATEGORY text="string"/>
-    pattern = r'<([A-Z_]+)\s+text="([^"]+)"\s*/>'
-
-    for match in re.finditer(pattern, text):
+    # Find XML tags: <CATEGORY text="string"/> or <CATEGORY text="string">
+    for match in XML_TAG_PATTERN.finditer(text):
         tag_name = match.group(1)
-        entity_text = match.group(2)
+        entity_text = match.group(2) if match.group(2) is not None else match.group(3)
         tag_start = match.start() - offset
         tag_end = tag_start + len(entity_text)
 
@@ -41,6 +49,15 @@ def parse_xml_tags(text):
             + clean_text[match.end() - offset :]
         )
         offset += len(match.group(0)) - len(entity_text)
+
+        # Remove one dangling closing tag (e.g. </PRIVATE_URL>) if present later.
+        closing_tag = f"</{tag_name}>"
+        closing_pos = clean_text.find(closing_tag, tag_end)
+        if closing_pos != -1:
+            clean_text = (
+                clean_text[:closing_pos] + clean_text[closing_pos + len(closing_tag) :]
+            )
+            offset += len(closing_tag)
 
     return clean_text, entities
 
@@ -65,7 +82,7 @@ def create_bio_tags(tokens, entities, text):
     for entity in entities:
         start_char = entity["start"]
         end_char = entity["end"]
-        tag_name = entity["tag"].lower()
+        tag_name = entity["tag"]
 
         # Find which tokens overlap with this entity
         tagged_tokens = []
@@ -129,7 +146,12 @@ def process_yaml_files(input_dir, output_file):
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     with open(output_path, "w", encoding="utf-8") as f:
-        json.dump({"entries": entries}, f, ensure_ascii=False, indent=2)
+        json.dump(
+            {"entries": entries, "metadata": {"dataset_name": "gen_prompt"}},
+            f,
+            ensure_ascii=False,
+            indent=2,
+        )
 
     print(f"Processed {len(yaml_files)} YAML files")
     print(f"Created {len(entries)} entries")
@@ -138,5 +160,5 @@ def process_yaml_files(input_dir, output_file):
 
 if __name__ == "__main__":
     input_dir = "data/raw/generated/dfm-anonymization-gen"
-    output_file = "data/ground_truth/generated/generated_prompt.json"
+    output_file = "data/ground_truth/gen_prompt.json"
     process_yaml_files(input_dir, output_file)

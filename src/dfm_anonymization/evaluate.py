@@ -1,7 +1,9 @@
+import json
 import math
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
+from statistics import mean
 from typing import Dict, List
 
 import pandas as pd
@@ -72,13 +74,19 @@ class MetricResult(ConfusionResult):
     def from_confusion(c: ConfusionResult) -> "MetricResult":
         precision = c.tp / c.pp() if c.pp() else math.nan
         recall = c.tp / c.rp() if c.rp() else math.nan
-        if precision + recall > 0:
-            f1, f5 = (
-                2.0 * precision * recall / (precision + recall),
-                (1.0 + 25.0) * precision * recall / (25.0 * precision + recall),
-            )
+
+        f1_denominator = (2 * c.tp) + c.fp + c.fn
+        if f1_denominator > 0:
+            f1 = (2.0 * c.tp) / f1_denominator
         else:
-            f1 = f5 = math.nan
+            f1 = math.nan
+
+        beta_squared = 25.0
+        f5_denominator = ((1.0 + beta_squared) * c.tp) + (beta_squared * c.fn) + c.fp
+        if f5_denominator > 0:
+            f5 = ((1.0 + beta_squared) * c.tp) / f5_denominator
+        else:
+            f5 = math.nan
 
         return MetricResult(
             **asdict(c), precision=precision, f1=f1, f5=f5, recall=recall
@@ -148,6 +156,7 @@ def evaluate(
 
 def evaluate_all():
     results = []
+    performances = {}
     for predictions_path in Path("data/predictions").glob("*/*.json"):
         dataset_name = predictions_path.stem
         model_name = predictions_path.parent.name
@@ -161,6 +170,16 @@ def evaluate_all():
             )
             for label, metrics in metrics_dict.items()
         ]
+        if model_name not in performances:
+            performances[model_name] = []
+        performances[model_name].append(
+            predictions.metadata["computation_time_per_entry"]
+        )
+    performances = pd.DataFrame(
+        [1.0 / mean(vs) for vs in performances.values()],
+        index=performances.keys(),
+        columns=["samples/s"],
+    )
     df = pd.DataFrame(to_dict_recursive(results))
     timestamp = datetime.now().isoformat()
     metrics = ["precision", "f1", "f5", "recall"]
@@ -185,12 +204,14 @@ def evaluate_all():
     ]
     best_models_by_label = best_models_by_label.set_index(["label", "model"])
     best_model_by_label = best_model_by_label.set_index(["label", "model"])
-    with pd.option_context("display.max_rows", None):
+    with pd.option_context("display.max_rows", None, "display.precision", 3):
         print(df.set_index(["dataset", "model", "label"]), end="\n\n")
         print(best_models_by_label, end="\n\n")
         print(dataset_scores, end="\n\n")
         print(best_models, end="\n\n")
-        print(best_model_by_label)
+        print(best_model_by_label, end="\n\n")
+        print(performances)
+
     pass
 
 

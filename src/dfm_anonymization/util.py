@@ -1,12 +1,12 @@
 from collections.abc import Set as AbcSet
 from dataclasses import fields, is_dataclass
-from typing import Any, Dict, List, Mapping, Set, Tuple
+from typing import Any, Dict, List, Mapping, NamedTuple, Set, Tuple
 
 import nltk
+from pydantic import BaseModel
 import torch
 from nltk.tokenize import word_tokenize
 from nltk.tokenize.util import align_tokens
-from presidio_anonymizer import RecognizerResult
 import yaml
 
 
@@ -62,14 +62,18 @@ def filter_bio(bio_tags: List[str], labels: Set[str]) -> List[str]:
     return [tag if tag[2:] in labels else "O" for tag in bio_tags]
 
 
-def spans_to_bio(
-    token_spans: List[tuple[int, int]], spans: List[Dict[str, Any]]
-) -> List[str]:
+class Span(NamedTuple):
+    start: int
+    end: int
+    label: str
+
+
+def spans_to_bio(token_spans: list[tuple[int, int]], spans: list[Span]) -> List[str]:
     tags = ["O"] * len(token_spans)
-    for span in sorted(spans, key=lambda item: (int(item["start"]), int(item["end"]))):
-        start = int(span["start"])
-        end = int(span["end"])
-        label = span["label"]
+    for span in sorted(spans, key=lambda s: (int(s.start), int(s.end))):
+        start = int(span.start)
+        end = int(span.end)
+        label = span.label
         inside = False
         for idx, (tok_start, tok_end) in enumerate(token_spans):
             if tok_end <= start:
@@ -82,15 +86,6 @@ def spans_to_bio(
                     tags[idx] = f"{prefix}-{label}"
                 inside = True
     return tags
-
-
-def presidio_result_2_span(result: RecognizerResult, text: str) -> dict:
-    return {
-        "label": result.entity_type,
-        "start": result.start,
-        "end": result.end,
-        "text": text[result.start : result.end],
-    }
 
 
 def get_torch_device() -> str:

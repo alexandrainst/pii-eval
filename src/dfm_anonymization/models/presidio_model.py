@@ -1,7 +1,7 @@
 from typing import List, Set
 
 import spacy
-from presidio_analyzer import AnalyzerEngine
+from presidio_analyzer import AnalyzerEngine, RecognizerResult
 from presidio_analyzer.nlp_engine import NlpEngineProvider
 
 from dfm_anonymization.dataset import PiiDataEntry
@@ -9,10 +9,18 @@ from dfm_anonymization.interfaces import PiiModel
 from dfm_anonymization.util import (
     filter_bio,
     get_torch_device,
-    presidio_result_2_span,
     spans_to_bio,
     tokens_to_offsets,
 )
+
+
+def presidio_result_2_span(result: RecognizerResult, text: str) -> dict:
+    return {
+        "label": result.entity_type,
+        "start": result.start,
+        "end": result.end,
+        "text": text[result.start : result.end],
+    }
 
 
 class PresidioModel(PiiModel):

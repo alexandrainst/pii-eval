@@ -72,21 +72,21 @@ class MetricResult(ConfusionResult):
 
     @staticmethod
     def from_confusion(c: ConfusionResult) -> "MetricResult":
-        precision = c.tp / c.pp() if c.pp() else math.nan
-        recall = c.tp / c.rp() if c.rp() else math.nan
+        precision = c.tp / c.pp() if c.pp() else 0.0
+        recall = c.tp / c.rp() if c.rp() else 0.0
 
         f1_denominator = (2 * c.tp) + c.fp + c.fn
         if f1_denominator > 0:
             f1 = (2.0 * c.tp) / f1_denominator
         else:
-            f1 = math.nan
+            f1 = 0.0
 
         beta_squared = 25.0
         f5_denominator = ((1.0 + beta_squared) * c.tp) + (beta_squared * c.fn) + c.fp
         if f5_denominator > 0:
             f5 = ((1.0 + beta_squared) * c.tp) / f5_denominator
         else:
-            f5 = math.nan
+            f5 = 0.0
 
         return MetricResult(
             **asdict(c), precision=precision, f1=f1, f5=f5, recall=recall
@@ -204,13 +204,20 @@ def evaluate_all():
     ]
     best_models_by_label = best_models_by_label.set_index(["label", "model"])
     best_model_by_label = best_model_by_label.set_index(["label", "model"])
-    with pd.option_context("display.max_rows", None, "display.precision", 3):
+    with pd.option_context(
+        "display.max_rows",
+        None,
+        # "display.precision",
+        # 3,
+        "display.float_format",
+        lambda x: "%.3f" % x,
+    ):
         print(df.set_index(["dataset", "model", "label"]), end="\n\n")
         print(best_models_by_label, end="\n\n")
         print(dataset_scores, end="\n\n")
         print(best_models, end="\n\n")
         print(best_model_by_label, end="\n\n")
-        print(performances)
+        print(performances.sort_values("samples/s", ascending=False))
 
     pass
 

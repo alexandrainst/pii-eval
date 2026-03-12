@@ -1,7 +1,7 @@
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Tuple
+import random
 
 from dfm_anonymization.util import WordTokenizer, to_dict_recursive
 
@@ -9,11 +9,23 @@ from dfm_anonymization.util import WordTokenizer, to_dict_recursive
 @dataclass
 class PiiDataEntry(object):
     text: str
-    tokens: List[str]
-    token_spans: List[Tuple[int, int]] | None = None
+    tokens: list[str]
+    token_spans: list[tuple[int, int]] | None = None
     id: int | str | None = None
-    bio_tags: List[str] | None = None
+    bio_tags: list[str] | None = None
     metadata: dict | None = None
+
+    def get_token_spans(self) -> list[tuple[int, int]]:
+        if self.token_spans is None:
+            self.token_spans = []
+            i = 0
+            for token in self.tokens:
+                i = self.text.find(token, i)
+                assert i >= 0
+                self.token_spans.append((i, i + len(token)))
+                i += len(token)
+        assert i <= len(self.text)
+        return self.token_spans
 
     @staticmethod
     def sample() -> "PiiDataEntry":
@@ -51,7 +63,7 @@ class PiiDataEntry(object):
 @dataclass
 class PiiDataset(object):
     metadata: dict | None = None
-    entries: List[PiiDataEntry] = field(default_factory=list)
+    entries: list[PiiDataEntry] = field(default_factory=list)
 
     def __iter__(self):
         return self.entries.__iter__()
@@ -61,6 +73,9 @@ class PiiDataset(object):
 
     def labels(self):
         return {t[2:] for e in self.entries for t in e.bio_tags if t != "O"}
+
+    def get_samples(self, samples: int):
+        return random.sample(self.entries, samples)
 
     @staticmethod
     def sample() -> "PiiDataset":
@@ -111,7 +126,7 @@ class PiiDataset(object):
         if isinstance(file, str):
             file = Path(file)
         assert file.exists()
-        cnt: List[dict] = json.loads(file.read_text(encoding="utf8"))
+        cnt: list[dict] = json.loads(file.read_text(encoding="utf8"))
         entries = []
         for entry in cnt:
             entry["tokens"] = entry.pop("words")

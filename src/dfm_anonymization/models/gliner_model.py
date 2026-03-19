@@ -66,7 +66,7 @@ class GlinerModel(PiiModel):
 
 if __name__ == "__main__":
     gliner = GlinerModel(GLINER_MODEL_EXAMPLES[0], bidict({"n": "navn", "m": "verbum"}))
-    sample = PiiDataEntry.sample()
+    sample = PiiDataEntry.example()
     x = gliner(sample, {"m"})
     print(sample)
     print(x)

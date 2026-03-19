@@ -15,14 +15,6 @@ from dfm_anonymization.interfaces import PiiModel
 from dfm_anonymization.util import Span, spans_to_bio
 
 
-# logging.getLogger().setLevel(level=logging.ERROR)
-#
-# import os
-#
-# # Set logging level before importing/initializing vLLM
-# os.environ["VLLM_LOGGING_LEVEL"] = "ERROR"
-
-
 class GenModel(PiiModel):
     def __init__(
         self,
@@ -71,7 +63,6 @@ class GenModel(PiiModel):
                 json=self.model_json_schema,
                 disable_any_whitespace=True,
                 disable_fallback=True,
-
             ),
             max_tokens=300,
             logit_bias={newline_token_id: -1000},
@@ -99,12 +90,10 @@ class GenModel(PiiModel):
             else:
                 logging.warning(
                     f"Failed to find model output substring "
-                    f"'{entity.substring}' in text '{entry.text}'."
+                    f"'{entity.substring}' in text '{entry.text[cursor:]}'."
                 )
-        bio_tags = spans_to_bio(token_spans=entry.get_token_spans(), spans=spans)
+        bio_tags = spans_to_bio(token_spans=entry.token_spans(), spans=spans)
         return bio_tags
-
-class PIILabel(Enum):
 
 
 class NEREntityFormat(BaseModel):
@@ -132,7 +121,7 @@ if __name__ == "__main__":
         label_descriptions=bidict({"n": "navn", "m": "verbum (udsagnsord)"}),
     )
 
-    sample = PiiDataEntry.sample()
+    sample = PiiDataEntry.example()
     x = model(sample)
 
     print(sample)

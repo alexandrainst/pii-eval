@@ -1,15 +1,14 @@
 from datetime import datetime
-import itertools
+import os
 from pathlib import Path
-from typing import Callable, List, Tuple
+from typing import List
 
 from codetiming import Timer
 from tqdm import tqdm
 
-from dfm_anonymization.constants import LABEL_DESCRIPTIONS_DA
 from dfm_anonymization.dataset import PiiDataEntry, PiiDataset
 from dfm_anonymization.interfaces import PiiModel
-from dfm_anonymization.models.gen_model import GenModel
+from dfm_anonymization.models.openai_client_model import OpenAIClientModel
 # from dfm_anonymization.models.ensemble_model import EnsembleModel
 # from dfm_anonymization.models.gliner_model import GlinerModel
 # from dfm_anonymization.models.ner_model import NerModel
@@ -18,15 +17,11 @@ from dfm_anonymization.models.gen_model import GenModel
 
 
 def inference(
-    model: PiiModel,
-    dataset: PiiDataset,
-    show_progress_bar: bool = True,
-    samples: int | None = None,
+    model: PiiModel, dataset: PiiDataset, samples: int | None = None, pbar_pos: int = 0
 ) -> PiiDataset:
     it = dataset if samples is None else dataset.get_samples(samples)
-    it = tqdm(it, dynamic_ncols=True) if show_progress_bar else it
     new_entries = []
-    for entry in it:
+    for entry in tqdm(it, dynamic_ncols=True, leave=True, position=pbar_pos):
         new_entries.append(
             PiiDataEntry(
                 id=entry.id,
@@ -55,15 +50,16 @@ def convert_datasets_from_words():
         dataset.to_file(out_path)
 
 
-qwen_version = "3-0.6B"
-
-
 def generate_predictions(
-    override: bool = False, max_entries_per_config: int | None = None
+    override: bool = False, max_entries_per_config: int | None = None, pbar_pos: int = 0
 ):
-    models: List[Tuple[str, Callable[[], PiiModel]]] = [
-        (f"Qwen{qwen_version}", lambda: GenModel(hf_tag=f"Qwen/Qwen{qwen_version}"))
-        for qwen_version in ["3-0.6B"]
+
+    models: List[PiiModel] = [
+        OpenAIClientModel(
+            model_tag="google/gemma-3n-e4b-it",
+            base_url="https://openrouter.ai/api/v1",
+            api_key=os.getenv("OPENROUTER_API_KEY"),
+        )
         # (
         #     "scandiner",
         #     lambda: NerModel.from_hf("saattrupdan/nbailab-base-ner-scandi"),
@@ -80,31 +76,41 @@ def generate_predictions(
         # ("ensemble_gliner_pii_presidio", EnsembleModel.get_gliner_pii_presidio),
         # ("scramletron", ScrambletronModel),
     ]
-    datasets = list(Path("data/ground_truth").glob("*.json"))
+    # datasets = list(Path("data/ground_truth").glob("*.json"))
+    datasets = [
+        Path(f"data/ground_truth/{stem}.json")
+        for stem in ["gen_presidio", "gen_prompt"]
+    ]
     print(
-        f"generating predictions\nmodels: {', '.join([m[0] for m in models])}\n"
+        f"generating predictions\nmodels: {', '.join([m.name for m in models])}\n"
         f"datasets: {', '.join([d.stem for d in datasets])}"
     )
 
-    for model_name, model_fct in models:
-        model = None
-        print(f"Model: {model_name}")
-        for in_path in datasets:
+    for model in (
+        _pbar_models := tqdm(models, leave=True, position=pbar_pos, dynamic_ncols=True)
+    ):
+        print(f"Model: {model.name}")
+        for in_path in (
+            pbar_datasets := tqdm(
+                datasets, leave=True, position=pbar_pos + 1, dynamic_ncols=True
+            )
+        ):
             dataset = PiiDataset.from_file(in_path)
             dataset_name = dataset.metadata.get("dataset_name", in_path.stem)
             print(f"Dataset: {dataset_name}")
             output_file_path = Path(
-                f"data/predictions/{model_name}/{dataset_name}.json"
+                f"data/predictions/{model.name}/{dataset_name}.json"
             )
             if not override and output_file_path.exists():
-                print("skipping: file already exists")
+                pbar_datasets.desc = f"skipped {dataset_name} (was cached)"
                 continue
-            if not model:
-                model = model_fct()
             timer = Timer()
             timer.start()
             predictions = inference(
-                model=model, dataset=dataset, samples=max_entries_per_config
+                model=model,
+                dataset=dataset,
+                samples=max_entries_per_config,
+                pbar_pos=pbar_pos + 2,
             )
             timer.stop()
             elapsed_time = timer.last
@@ -119,4 +125,4 @@ def generate_predictions(
 
 
 if __name__ == "__main__":
-    generate_predictions(override=True, max_entries_per_config=100)
+    generate_predictions(override=False, max_entries_per_config=100)

@@ -28,7 +28,7 @@ class PiiDataEntry(object):
         return self.token_spans
 
     @staticmethod
-    def sample() -> "PiiDataEntry":
+    def example() -> "PiiDataEntry":
         return PiiDataEntry(
             id=0,
             text='"Hør du nu, jomfru Hermelin,',
@@ -59,11 +59,137 @@ class PiiDataEntry(object):
         sd["metadata"] = meta
         return PiiDataEntry(**sd)
 
+    @staticmethod
+    def example_pii() -> "PiiDataEntry":
+        return PiiDataEntry.from_dict(
+            {
+                "text": "Rapport fra IT: en maskine med MAC-adresse loggede fra IP 10.0.0.42 og var knyttet til kontoret på Blegdamsvej 24, 2100 København Ø. Den ansvarlige medarbejder var registreret som Frederik Sørensen med e-mail frederik.sorensen@firma.dk og intern konto fsorensen.",
+                "tokens": [
+                    "Rapport",
+                    "fra",
+                    "IT",
+                    ":",
+                    "en",
+                    "maskine",
+                    "med",
+                    "MAC",
+                    "-",
+                    "adresse",
+                    "loggede",
+                    "fra",
+                    "IP",
+                    "10",
+                    ".",
+                    "0",
+                    ".",
+                    "0",
+                    ".",
+                    "42",
+                    "og",
+                    "var",
+                    "knyttet",
+                    "til",
+                    "kontoret",
+                    "på",
+                    "Blegdamsvej",
+                    "24",
+                    ",",
+                    "2100",
+                    "København",
+                    "Ø",
+                    ".",
+                    "Den",
+                    "ansvarlige",
+                    "medarbejder",
+                    "var",
+                    "registreret",
+                    "som",
+                    "Frederik",
+                    "Sørensen",
+                    "med",
+                    "e",
+                    "-",
+                    "mail",
+                    "frederik",
+                    ".",
+                    "sorensen",
+                    "@",
+                    "firma",
+                    ".",
+                    "dk",
+                    "og",
+                    "intern",
+                    "konto",
+                    "fsorensen",
+                    ".",
+                ],
+                "bio_tags": [
+                    "O",
+                    "O",
+                    "O",
+                    "O",
+                    "O",
+                    "O",
+                    "O",
+                    "O",
+                    "O",
+                    "O",
+                    "O",
+                    "O",
+                    "O",
+                    "B-IP_ADDRESS",
+                    "I-IP_ADDRESS",
+                    "I-IP_ADDRESS",
+                    "I-IP_ADDRESS",
+                    "I-IP_ADDRESS",
+                    "I-IP_ADDRESS",
+                    "I-IP_ADDRESS",
+                    "O",
+                    "O",
+                    "O",
+                    "O",
+                    "O",
+                    "O",
+                    "B-PRECISE_LOCATION",
+                    "I-PRECISE_LOCATION",
+                    "I-PRECISE_LOCATION",
+                    "I-PRECISE_LOCATION",
+                    "I-PRECISE_LOCATION",
+                    "I-PRECISE_LOCATION",
+                    "O",
+                    "O",
+                    "O",
+                    "O",
+                    "O",
+                    "O",
+                    "O",
+                    "B-PERSON_NAME",
+                    "I-PERSON_NAME",
+                    "O",
+                    "O",
+                    "O",
+                    "O",
+                    "B-EMAIL_ADDRESS",
+                    "I-EMAIL_ADDRESS",
+                    "I-EMAIL_ADDRESS",
+                    "I-EMAIL_ADDRESS",
+                    "I-EMAIL_ADDRESS",
+                    "I-EMAIL_ADDRESS",
+                    "I-EMAIL_ADDRESS",
+                    "O",
+                    "O",
+                    "O",
+                    "B-USERNAME",
+                    "O",
+                ],
+            }
+        )
+
 
 @dataclass
 class PiiDataset(object):
-    metadata: dict | None = None
     entries: list[PiiDataEntry] = field(default_factory=list)
+    metadata: dict | None = None
 
     def __iter__(self):
         return self.entries.__iter__()
@@ -79,7 +205,7 @@ class PiiDataset(object):
 
     @staticmethod
     def sample() -> "PiiDataset":
-        return PiiDataset("sample_dataset", entries=[PiiDataEntry.sample()])
+        return PiiDataset("sample_dataset", entries=[PiiDataEntry.example()])
 
     @staticmethod
     def from_file(file_path: Path | str) -> "PiiDataset":

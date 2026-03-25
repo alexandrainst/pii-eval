@@ -50,22 +50,26 @@ class OpenAIClientModel(PiiModel):
             for k, v in self.label_descriptions.items()
             if label_whitelist is None or k in label_whitelist
         }
-        prompt = (
+        system_prompt = self.preamble + (
             "List of labels to use:\n"
             f"{list(relevant_descriptions.keys())}"
             "pick one for each PII-sensitive substring/entity. "
             "Below are descriptions of each label in the relevant language:\n"
             f"{json.dumps(relevant_descriptions)}\n"
-            "Only use the descriptions to understand the labels - "
+            "Use only the descriptions to understand the labels - "
             "for the actual output labelling use on the (upper-case) labels. "
+        )
+        user_prompt = (
             "Label all (possibly none) PII-entities in the following text:\n"
             f"'{entry.text}'\n"
             "in the order they appear."
         )
-        prompt = "\n".join([self.preamble, prompt])
         response = self.client.chat.completions.parse(
             model=self.model_tag,
-            messages=[{"role": "user", "content": prompt}],
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
             response_format=NERResponse,
         )
         content = response.choices[0].message.content

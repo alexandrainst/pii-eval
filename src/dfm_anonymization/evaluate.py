@@ -207,8 +207,6 @@ def evaluate_all():
     with pd.option_context(
         "display.max_rows",
         None,
-        # "display.precision",
-        # 3,
         "display.float_format",
         lambda x: "%.3f" % x,
     ):

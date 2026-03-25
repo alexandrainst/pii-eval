@@ -56,10 +56,15 @@ def generate_predictions(
 
     models: List[PiiModel] = [
         OpenAIClientModel(
-            model_tag="google/gemma-3n-e4b-it",
-            base_url="https://openrouter.ai/api/v1",
-            api_key=os.getenv("OPENROUTER_API_KEY"),
-        )
+            model_tag="Qwen/Qwen3.5-4B",
+            base_url="http://localhost:8000/v1",
+            api_key="not needed",
+        ),
+        # OpenAIClientModel(
+        #     model_tag="qwen/qwen3.5-27b",
+        #     base_url="https://openrouter.ai/api/v1",
+        #     api_key=os.getenv("OPENROUTER_API_KEY"),
+        # )
         # (
         #     "scandiner",
         #     lambda: NerModel.from_hf("saattrupdan/nbailab-base-ner-scandi"),

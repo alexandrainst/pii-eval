@@ -1,18 +1,19 @@
 from bidict import bidict
 
-ISO_LABEL_BANK_ACCOUNT = "BANK_ACCOUNT"
-ISO_LABEL_DRIVERS_LICENSE = "DRIVERS_LICENSE"
-ISO_LABEL_EMAIL_ADDRESS = "EMAIL_ADDRESS"
-ISO_LABEL_IP_ADDRESS = "IP_ADDRESS"
-ISO_LABEL_OTHER_PII = "OTHER_PII"
-ISO_LABEL_PASSPORT = "PASSPORT"
-ISO_LABEL_PCI = "PCI"
-ISO_LABEL_PERSON_NAME = "PERSON_NAME"
-ISO_LABEL_PHONE_NUMBER = "PHONE_NUMBER"
-ISO_LABEL_PRECISE_LOCATION = "PRECISE_LOCATION"
-ISO_LABEL_SSN = "SSN"
-ISO_LABEL_USERNAME = "USERNAME"
-ISO_LABEL_VEHICLE_ID = "VEHICLE_ID"
+ISO_LABEL_BANK_ACCOUNT = "BANK_ACCOUNT"  # !
+ISO_LABEL_DRIVERS_LICENSE = "DRIVERS_LICENSE"  #
+ISO_LABEL_EMAIL_ADDRESS = "EMAIL_ADDRESS"  #
+ISO_LABEL_IP_ADDRESS = "IP_ADDRESS"  # !
+ISO_LABEL_OTHER_PII = "OTHER_PII"  # !
+ISO_LABEL_PASSPORT = "PASSPORT"  # !
+ISO_LABEL_PCI = "PCI"  #
+ISO_LABEL_PERSON_NAME = "PERSON_NAME"  #
+ISO_LABEL_PHONE_NUMBER = "PHONE_NUMBER"  #
+ISO_LABEL_PRECISE_LOCATION = "PRECISE_LOCATION"  #
+ISO_LABEL_SSN = "SSN"  #
+ISO_LABEL_USERNAME = "USERNAME"  # !
+ISO_LABEL_VEHICLE_ID = "VEHICLE_ID"  # !
+# PRIVATE_URL
 
 ALL_ISO_LABELS = {
     ISO_LABEL_BANK_ACCOUNT,
@@ -35,7 +36,7 @@ LABEL_DESCRIPTIONS_EN = bidict(
         ISO_LABEL_BANK_ACCOUNT: "bank account number",
         ISO_LABEL_DRIVERS_LICENSE: "drivers license number",
         ISO_LABEL_EMAIL_ADDRESS: (
-            "private email address (public/official not included) "
+            "private email address (public/official emails not included) "
             "- e.g. hjohnson@hotmail.com, but not contact@cbs.com"
         ),
         ISO_LABEL_IP_ADDRESS: "IP address",
@@ -64,7 +65,7 @@ LABEL_DESCRIPTIONS_DA = bidict(
         ISO_LABEL_BANK_ACCOUNT: "bankkontonummer",
         ISO_LABEL_DRIVERS_LICENSE: "kørekortnummer",
         ISO_LABEL_EMAIL_ADDRESS: (
-            "private email-adresse (offentlige/officielle er ikke inkluderet) "
+            "private email-adresser (men ikke offentlige/officielle email-adresser) "
             "- f.eks hbergman@gmail.com, men ikke kontakt@dr.dk"
         ),
         ISO_LABEL_IP_ADDRESS: "IP-adresse",
@@ -119,5 +120,29 @@ DATASET_LABEL_MAP: dict[str, dict[str, str]] = {
     },
     "dansk-ner": {
         "PERSON": ISO_LABEL_PERSON_NAME,
+    },
+    "gen_presidio": {
+        "DRIVERS_LICENSE": ISO_LABEL_DRIVERS_LICENSE,
+        "EMAIL_ADDRESS": ISO_LABEL_EMAIL_ADDRESS,
+        "PCI": ISO_LABEL_PCI,
+        "PERSON_NAME": ISO_LABEL_PERSON_NAME,
+        "PHONE_NUMBER": ISO_LABEL_PHONE_NUMBER,
+        "PRECISE_LOCATION": ISO_LABEL_PRECISE_LOCATION,
+        "SSN": ISO_LABEL_SSN,
+    },
+    "gen_prompt": {
+        "BANK_ACCOUNT": ISO_LABEL_BANK_ACCOUNT,
+        "DRIVERS_LICENSE": ISO_LABEL_DRIVERS_LICENSE,
+        "EMAIL_ADDRESS": ISO_LABEL_EMAIL_ADDRESS,
+        "IP_ADDRESS": ISO_LABEL_IP_ADDRESS,
+        "OTHER_PII": ISO_LABEL_OTHER_PII,
+        "PASSPORT": ISO_LABEL_PASSPORT,
+        "PCI": ISO_LABEL_PCI,
+        "PERSON_NAME": ISO_LABEL_PERSON_NAME,
+        "PHONE_NUMBER": ISO_LABEL_PHONE_NUMBER,
+        "PRECISE_LOCATION": ISO_LABEL_PRECISE_LOCATION,
+        "SSN": ISO_LABEL_SSN,
+        "USERNAME": ISO_LABEL_USERNAME,
+        "VEHICLE_ID": ISO_LABEL_VEHICLE_ID,
     },
 }

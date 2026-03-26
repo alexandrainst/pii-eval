@@ -124,7 +124,7 @@ def generate_predictions(
             predictions.metadata.update(
                 {
                     "computation_time_total": elapsed_time,
-                    "computation_time_per_entry": elapsed_time / len(dataset),
+                    "computation_time_per_entry": elapsed_time / len(predictions),
                 }
             )
             predictions.to_file(output_file_path)

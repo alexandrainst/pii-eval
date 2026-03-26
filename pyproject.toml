@@ -14,6 +14,7 @@ dependencies = [
     "gliner>=0.2.25",
     "spacy>=3.8.11",
     "codetiming>=1.4.0",
+    "pytest>=9.0.2",
 ]
 
 [project.scripts]

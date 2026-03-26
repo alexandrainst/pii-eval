@@ -100,6 +100,50 @@ class EvaluationResult(MetricResult):
     label: str
 
 
+def _index_entries_by_id(dataset: PiiDataset, dataset_role: str):
+    indexed_entries = {}
+
+    for index, entry in enumerate(dataset):
+        entry_id = entry.id if entry.id is not None else index
+        if entry_id in indexed_entries:
+            raise ValueError(f"Duplicate entry id {entry_id!r} found in {dataset_role}.")
+        indexed_entries[entry_id] = entry
+
+    return indexed_entries
+
+
+def _get_aligned_entries(
+    ground_truth: PiiDataset, predictions: PiiDataset
+) -> list[tuple]:
+    ground_truth_by_id = _index_entries_by_id(ground_truth, "ground truth")
+    predictions_by_id = _index_entries_by_id(predictions, "predictions")
+
+    unknown_prediction_ids = set(predictions_by_id).difference(ground_truth_by_id)
+    if unknown_prediction_ids:
+        sample_ids = sorted(unknown_prediction_ids)[:5]
+        raise ValueError(
+            "Predictions contain entry ids not present in ground truth: "
+            f"{sample_ids!r}"
+        )
+
+    common_ids = [entry_id for entry_id in ground_truth_by_id if entry_id in predictions_by_id]
+    if not common_ids:
+        raise ValueError("Ground truth and predictions do not share any entry ids.")
+
+    return [
+        (ground_truth_by_id[entry_id], predictions_by_id[entry_id])
+        for entry_id in common_ids
+    ]
+
+
+def _get_iso_label(tag: str, label_map: Dict[str, str | None]) -> str | None:
+    if not tag or tag == "O" or "-" not in tag:
+        return None
+
+    _, raw_label = tag.split("-", 1)
+    return label_map.get(raw_label)
+
+
 def evaluate(
     ground_truth: PiiDataset, predictions: PiiDataset
 ) -> Dict[str, MetricResult]:
@@ -118,25 +162,26 @@ def evaluate(
     common_iso_labels = set(dataset_label_map.values()).intersection(
         set(model_label_map.values())
     )
+    aligned_entries = _get_aligned_entries(ground_truth, predictions)
 
     confusion_counts = {}
     for label in common_iso_labels:
         confusion = ConfusionResult.zero()
         confusion_counts[label] = confusion
-        for true_entry, pred_entry in zip(ground_truth, predictions):
+        for true_entry, pred_entry in aligned_entries:
+            if true_entry.tokens != pred_entry.tokens:
+                raise ValueError(
+                    f"Token mismatch for entry id {true_entry.id!r}; evaluation requires identical tokenization."
+                )
+            if len(true_entry.bio_tags) != len(pred_entry.bio_tags):
+                raise ValueError(
+                    f"Tag length mismatch for entry id {true_entry.id!r}: "
+                    f"{len(true_entry.bio_tags)} != {len(pred_entry.bio_tags)}"
+                )
+
             for true_tag, pred_tag in zip(true_entry.bio_tags, pred_entry.bio_tags):
-                true_orig_label = true_tag[2:] if true_tag != "O" else None
-                pred_orig_label = pred_tag[2:] if pred_tag != "O" else None
-                true_iso_label = (
-                    dataset_label_map[true_orig_label]
-                    if true_orig_label in dataset_label_map
-                    else None
-                )
-                pred_iso_label = (
-                    model_label_map[pred_orig_label]
-                    if pred_orig_label in model_label_map
-                    else None
-                )
+                true_iso_label = _get_iso_label(true_tag, dataset_label_map)
+                pred_iso_label = _get_iso_label(pred_tag, model_label_map)
                 if true_iso_label and true_iso_label == label:
                     if pred_iso_label and pred_iso_label == label:
                         confusion.tp += 1

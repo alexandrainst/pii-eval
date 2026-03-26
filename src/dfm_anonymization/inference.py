@@ -9,6 +9,7 @@ from tqdm import tqdm
 from dfm_anonymization.dataset import PiiDataEntry, PiiDataset
 from dfm_anonymization.interfaces import PiiModel
 from dfm_anonymization.models.openai_client_model import OpenAIClientModel
+# from dfm_anonymization.models.regex_model import RegexModel
 # from dfm_anonymization.models.ensemble_model import EnsembleModel
 # from dfm_anonymization.models.gliner_model import GlinerModel
 # from dfm_anonymization.models.ner_model import NerModel
@@ -56,10 +57,11 @@ def generate_predictions(
 
     models: List[PiiModel] = [
         OpenAIClientModel(
-            model_tag="Qwen/Qwen3.5-4B",
+            model_tag="lovedheart/Qwen3.5-9B-FP8",
             base_url="http://localhost:8000/v1",
             api_key="not needed",
         ),
+        # RegexModel()
         # OpenAIClientModel(
         #     model_tag="qwen/qwen3.5-27b",
         #     base_url="https://openrouter.ai/api/v1",

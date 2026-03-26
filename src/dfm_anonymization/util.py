@@ -1,3 +1,4 @@
+from collections.abc import Mapping as AbcMapping
 from collections.abc import Set as AbcSet
 from dataclasses import fields, is_dataclass
 from typing import Any, Dict, List, Mapping, NamedTuple, Set, Tuple
@@ -68,9 +69,26 @@ class Span(NamedTuple):
     label: str
 
 
-def spans_to_bio(token_spans: list[tuple[int, int]], spans: list[Span]) -> List[str]:
+def _normalize_span(span: Any) -> Span:
+    if isinstance(span, Span):
+        return span
+    if isinstance(span, AbcMapping):
+        return Span(
+            start=int(span["start"]),
+            end=int(span["end"]),
+            label=str(span["label"]),
+        )
+    return Span(
+        start=int(getattr(span, "start")),
+        end=int(getattr(span, "end")),
+        label=str(getattr(span, "label")),
+    )
+
+
+def spans_to_bio(token_spans: list[tuple[int, int]], spans: list[Any]) -> List[str]:
     tags = ["O"] * len(token_spans)
-    for span in sorted(spans, key=lambda s: (int(s.start), int(s.end))):
+    normalized_spans = [_normalize_span(span) for span in spans]
+    for span in sorted(normalized_spans, key=lambda s: (int(s.start), int(s.end))):
         start = int(span.start)
         end = int(span.end)
         label = span.label

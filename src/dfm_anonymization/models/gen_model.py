@@ -92,7 +92,7 @@ class GenModel(PiiModel):
                     f"Failed to find model output substring "
                     f"'{entity.substring}' in text '{entry.text[cursor:]}'."
                 )
-        bio_tags = spans_to_bio(token_spans=entry.token_spans(), spans=spans)
+        bio_tags = spans_to_bio(token_spans=entry.get_token_spans(), spans=spans)
         return bio_tags
 
 

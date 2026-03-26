@@ -34,7 +34,10 @@ LABEL_DESCRIPTIONS_EN = bidict(
     {
         ISO_LABEL_BANK_ACCOUNT: "bank account number",
         ISO_LABEL_DRIVERS_LICENSE: "drivers license number",
-        ISO_LABEL_EMAIL_ADDRESS: "email address",
+        ISO_LABEL_EMAIL_ADDRESS: (
+            "private email address (public/official not included) "
+            "- e.g. hjohnson@hotmail.com, but not contact@cbs.com"
+        ),
         ISO_LABEL_IP_ADDRESS: "IP address",
         ISO_LABEL_OTHER_PII: "other personal identifiable information",
         ISO_LABEL_PASSPORT: "passport number",
@@ -60,7 +63,10 @@ LABEL_DESCRIPTIONS_DA = bidict(
     {
         ISO_LABEL_BANK_ACCOUNT: "bankkontonummer",
         ISO_LABEL_DRIVERS_LICENSE: "kørekortnummer",
-        ISO_LABEL_EMAIL_ADDRESS: "email-adresse",
+        ISO_LABEL_EMAIL_ADDRESS: (
+            "private email-adresse (offentlige/officielle er ikke inkluderet) "
+            "- f.eks hbergman@gmail.com, men ikke kontakt@dr.dk"
+        ),
         ISO_LABEL_IP_ADDRESS: "IP-adresse",
         ISO_LABEL_OTHER_PII: "andet person-identificerende information",
         ISO_LABEL_PASSPORT: "pasnummer",

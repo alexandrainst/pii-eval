@@ -24,7 +24,7 @@ class PiiDataEntry(object):
                 assert i >= 0
                 self.token_spans.append((i, i + len(token)))
                 i += len(token)
-        assert i <= len(self.text)
+            assert i <= len(self.text)
         return self.token_spans
 
     @staticmethod
@@ -226,7 +226,7 @@ class PiiDataset(object):
                 e["id"] = i
             entries.append(PiiDataEntry.from_dict(e))
         d["entries"] = entries
-        original_metadata = d["metadata"] if "metadata" in d else dict()
+        original_metadata = d.get("metadata") or dict()
         metadata = original_metadata | {
             k: v for k, v in d.items() if k not in PiiDataset.__annotations__.keys()
         }

@@ -103,8 +103,8 @@ class EvaluationResult(MetricResult):
 def evaluate(
     ground_truth: PiiDataset, predictions: PiiDataset
 ) -> Dict[str, MetricResult]:
-    dataset_name = ground_truth.metadata["dataset_name"]
-    model_name = predictions.metadata["model_name"]
+    dataset_name = ground_truth.metadata.get("dataset_name") or "some dataset"
+    model_name = predictions.metadata.get("model_name") or "some model"
     dataset_label_map = (
         DATASET_LABEL_MAP[dataset_name]
         if dataset_name in DATASET_LABEL_MAP
@@ -173,7 +173,7 @@ def evaluate_all():
         if model_name not in performances:
             performances[model_name] = []
         performances[model_name].append(
-            predictions.metadata["computation_time_per_entry"]
+            predictions.metadata.get("computation_time_per_entry") or math.nan
         )
     performances = pd.DataFrame(
         [1.0 / mean(vs) for vs in performances.values()],

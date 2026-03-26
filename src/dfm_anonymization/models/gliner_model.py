@@ -23,12 +23,15 @@ class GlinerModel(PiiModel):
         labels: Set[str] | bidict[str, str] = LABEL_DESCRIPTIONS_DA,
     ):
         super().__init__(name=tag.split("/")[-1])
-        self.model = GLiNER.from_pretrained(tag, map_location=get_torch_device())
+        self.tag = tag
+        self.model = None
         self.labels = labels
 
     def __call__(
         self, entry: PiiDataEntry, label_whitelist: Set[str] | None = None
     ) -> List[str]:
+        if not self.model:
+            GLiNER.from_pretrained(self.tag, map_location=get_torch_device())
         descriptions = (
             list(self.labels)
             if isinstance(self.labels, Set)

@@ -17,6 +17,10 @@ from dfm_anonymization.dataset import PiiDataset
 from dfm_anonymization.util import to_dict_recursive
 
 
+CONFUSION_COLUMNS = ["tp", "fp", "fn", "tn"]
+METRIC_COLUMNS = ["precision", "f1", "f5", "recall"]
+
+
 def map_bio_tags(tags: List[str], label_map: Dict[str, str | None]):
     sentinel = object()
     mapped_tags: List[str] = []
@@ -94,10 +98,37 @@ class MetricResult(ConfusionResult):
 
 
 @dataclass
-class EvaluationResult(MetricResult):
+class EvaluationResult(ConfusionResult):
     dataset: str
     model: str
     label: str
+
+
+def add_metric_columns(df: pd.DataFrame) -> pd.DataFrame:
+    missing_columns = [
+        column for column in CONFUSION_COLUMNS if column not in df.columns
+    ]
+    if missing_columns:
+        raise ValueError(
+            f"Dataframe is missing confusion result columns: {missing_columns!r}"
+        )
+
+    result = df.copy()
+    tp = result["tp"]
+    fp = result["fp"]
+    fn = result["fn"]
+
+    result["precision"] = (tp / (tp + fp)).fillna(0.0)
+    result["f1"] = ((2.0 * tp) / ((2.0 * tp) + fp + fn)).fillna(0.0)
+
+    beta_squared = 25.0
+    result["f5"] = (
+        ((1.0 + beta_squared) * tp)
+        / (((1.0 + beta_squared) * tp) + (beta_squared * fn) + fp)
+    ).fillna(0.0)
+    result["recall"] = (tp / (tp + fn)).fillna(0.0)
+
+    return result
 
 
 def _index_entries_by_id(dataset: PiiDataset, dataset_role: str):
@@ -106,7 +137,9 @@ def _index_entries_by_id(dataset: PiiDataset, dataset_role: str):
     for index, entry in enumerate(dataset):
         entry_id = entry.id if entry.id is not None else index
         if entry_id in indexed_entries:
-            raise ValueError(f"Duplicate entry id {entry_id!r} found in {dataset_role}.")
+            raise ValueError(
+                f"Duplicate entry id {entry_id!r} found in {dataset_role}."
+            )
         indexed_entries[entry_id] = entry
 
     return indexed_entries
@@ -122,11 +155,12 @@ def _get_aligned_entries(
     if unknown_prediction_ids:
         sample_ids = sorted(unknown_prediction_ids)[:5]
         raise ValueError(
-            "Predictions contain entry ids not present in ground truth: "
-            f"{sample_ids!r}"
+            f"Predictions contain entry ids not present in ground truth: {sample_ids!r}"
         )
 
-    common_ids = [entry_id for entry_id in ground_truth_by_id if entry_id in predictions_by_id]
+    common_ids = [
+        entry_id for entry_id in ground_truth_by_id if entry_id in predictions_by_id
+    ]
     if not common_ids:
         raise ValueError("Ground truth and predictions do not share any entry ids.")
 
@@ -193,10 +227,7 @@ def evaluate(
                     else:
                         confusion.tn += 1
 
-    return {
-        label: MetricResult.from_confusion(confusion)
-        for label, confusion in confusion_counts.items()
-    }
+    return confusion_counts
 
 
 def evaluate_all():
@@ -225,42 +256,40 @@ def evaluate_all():
         index=performances.keys(),
         columns=["samples/s"],
     )
-    df = pd.DataFrame(to_dict_recursive(results))
+    df = add_metric_columns(pd.DataFrame(to_dict_recursive(results)))
     timestamp = datetime.now().isoformat()
-    metrics = ["precision", "f1", "f5", "recall"]
-    df = df[["dataset", "model", "label"] + metrics]
-    df = df.sort_values(["dataset", "label", "f5"], ascending=[True, True, False])
     out_path = Path(f"data/results/{timestamp}.json")
     out_path.parent.mkdir(exist_ok=True, parents=True)
     df.to_json(f"data/results/{timestamp}.json")
-    df = df.dropna(how="any")
-    best_models = df.groupby("model")[metrics].mean().sort_values("f5", ascending=False)
-    dataset_scores = (
-        df.groupby("dataset")[metrics].mean().sort_values("f5", ascending=False)
+    # df = df.dropna(how="any")
+
+    best_models = add_metric_columns(
+        df.groupby("model")[CONFUSION_COLUMNS].sum()
+    ).sort_values("f5", ascending=False)
+    dataset_scores = add_metric_columns(df.groupby("dataset")[CONFUSION_COLUMNS].sum())
+    models_and_labels = add_metric_columns(
+        df.groupby(["model", "label"])[CONFUSION_COLUMNS].sum().reset_index()
+    ).sort_values(["model", "f5"], ascending=False)
+    best_model_by_label = models_and_labels.loc[
+        models_and_labels.groupby("label").idxmax()["f5"]
+    ].set_index(["label", "model"])
+    models_and_labels = models_and_labels.set_index(["model", "label"])
+
+    df = df.set_index(["model", "dataset", "label"]).sort_values(
+        ["model", "dataset", "f5"], ascending=[True, True, False]
     )
-    best_models_by_label = (
-        df.groupby(["label", "model"])[metrics]
-        .mean()
-        .reset_index()
-        .sort_values(["label", "f5"], ascending=[True, False])
-    )
-    best_model_by_label = best_models_by_label.loc[
-        best_models_by_label.groupby("label").idxmax()["f5"]
-    ]
-    best_models_by_label = best_models_by_label.set_index(["label", "model"])
-    best_model_by_label = best_model_by_label.set_index(["label", "model"])
     with pd.option_context(
         "display.max_rows",
         None,
         "display.float_format",
         lambda x: "%.3f" % x,
     ):
-        print(df.set_index(["dataset", "model", "label"]), end="\n\n")
-        print(best_models_by_label, end="\n\n")
-        print(dataset_scores, end="\n\n")
-        print(best_models, end="\n\n")
-        print(best_model_by_label, end="\n\n")
-        print(performances.sort_values("samples/s", ascending=False))
+        print(df, end="\n\n")
+        # print(models_and_labels, end="\n\n")
+        # print(dataset_scores, end="\n\n")
+        # print(best_models, end="\n\n")
+        # print(best_model_by_label, end="\n\n")
+        # print(performances.sort_values("samples/s", ascending=False))
 
     pass
 

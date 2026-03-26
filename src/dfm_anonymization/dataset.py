@@ -188,8 +188,8 @@ class PiiDataEntry(object):
 
 @dataclass
 class PiiDataset(object):
-    entries: list[PiiDataEntry] = field(default_factory=list)
     metadata: dict | None = None
+    entries: list[PiiDataEntry] = field(default_factory=list)
 
     def __iter__(self):
         return self.entries.__iter__()

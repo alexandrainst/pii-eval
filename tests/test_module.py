@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from src.scripts.ground_truth_categories import update_dataset_metadata
+from scripts.add_label_list_to_metadata import update_dataset_metadata
 
 
 def test_update_dataset_metadata_adds_unique_labels_to_metadata(tmp_path: Path) -> None:

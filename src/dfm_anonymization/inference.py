@@ -6,11 +6,11 @@ from typing import List
 from codetiming import Timer
 from tqdm import tqdm
 
+# from dfm_anonymization.constants import LABEL_DESCRIPTIONS_DA
 from dfm_anonymization.dataset import PiiDataEntry, PiiDataset
 from dfm_anonymization.interfaces import PiiModel
-from dfm_anonymization.models.openai_client_model import OpenAIClientModel
-# from dfm_anonymization.models.regex_model import RegexModel
-# from dfm_anonymization.models.ensemble_model import EnsembleModel
+# from dfm_anonymization.models.openai_client_model import OpenAIClientModel
+from dfm_anonymization.models.regex_model import RegexModel
 # from dfm_anonymization.models.gliner_model import GlinerModel
 # from dfm_anonymization.models.ner_model import NerModel
 # from dfm_anonymization.models.presidio_model import PresidioModel
@@ -56,46 +56,31 @@ def generate_predictions(
 ):
 
     models: List[PiiModel] = [
-        OpenAIClientModel(
-            model_tag="lovedheart/Qwen3.5-9B-FP8",
-            base_url="http://localhost:8000/v1",
-            api_key="not needed",
-        ),
-        # RegexModel()
+        RegexModel(),
+        # NerModel.from_hf("saattrupdan/nbailab-base-ner-scandi"),
+        # PresidioModel(),
+        # GlinerModel("nvidia/gliner-pii", LABEL_DESCRIPTIONS_DA),
+        # GlinerModel("urchade/gliner_multi-v2.1", LABEL_DESCRIPTIONS_DA),
+        # OpenAIClientModel(
+        #     model_tag="lovedheart/Qwen3.5-9B-FP8",
+        #     base_url="http://localhost:8000/v1",
+        #     api_key="not needed",
+        # ),
         # OpenAIClientModel(
         #     model_tag="qwen/qwen3.5-27b",
         #     base_url="https://openrouter.ai/api/v1",
         #     api_key=os.getenv("OPENROUTER_API_KEY"),
-        # )
-        # (
-        #     "scandiner",
-        #     lambda: NerModel.from_hf("saattrupdan/nbailab-base-ner-scandi"),
         # ),
-        # (
-        #     "gliner-pii",
-        #     lambda: GlinerModel("nvidia/gliner-pii", LABEL_DESCRIPTIONS_DA),
-        # ),
-        # (
-        #     "gliner_multi-v2.1",
-        #     lambda: GlinerModel("urchade/gliner_multi-v2.1", LABEL_DESCRIPTIONS_DA),
-        # ),
-        # ("presidio", lambda: PresidioModel()),
-        # ("ensemble_gliner_pii_presidio", EnsembleModel.get_gliner_pii_presidio),
-        # ("scramletron", ScrambletronModel),
+        # ScrambletronModel(),
     ]
-    # datasets = list(Path("data/ground_truth").glob("*.json"))
-    datasets = [
-        Path(f"data/ground_truth/{stem}.json")
-        for stem in ["gen_presidio", "gen_prompt"]
-    ]
+    datasets = list(Path("data/ground_truth").glob("*.json"))
+
     print(
         f"generating predictions\nmodels: {', '.join([m.name for m in models])}\n"
         f"datasets: {', '.join([d.stem for d in datasets])}"
     )
 
-    for model in (
-        _pbar_models := tqdm(models, leave=True, position=pbar_pos, dynamic_ncols=True)
-    ):
+    for model in tqdm(models, leave=True, position=pbar_pos, dynamic_ncols=True):
         print(f"Model: {model.name}")
         for in_path in (
             pbar_datasets := tqdm(
@@ -132,4 +117,4 @@ def generate_predictions(
 
 
 if __name__ == "__main__":
-    generate_predictions(override=False, max_entries_per_config=100)
+    generate_predictions(override=True) # , max_entries_per_config=100)

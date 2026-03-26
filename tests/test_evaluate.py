@@ -1,5 +1,8 @@
+import pandas as pd
+import pytest
+
 from dfm_anonymization.dataset import PiiDataEntry, PiiDataset
-from dfm_anonymization.evaluate import evaluate
+from dfm_anonymization.evaluate import add_metric_columns, evaluate
 
 
 def _dataset(entries: list[PiiDataEntry], dataset_name: str, model_name: str | None = None) -> PiiDataset:
@@ -75,3 +78,24 @@ def test_evaluate_rejects_mismatched_tag_lengths() -> None:
         assert "Tag length mismatch" in str(exc)
     else:
         raise AssertionError("Expected evaluate() to reject mismatched tag lengths")
+
+
+def test_add_metric_columns_derives_metrics_from_confusion_counts() -> None:
+    df = pd.DataFrame(
+        [
+            {"tp": 8, "fp": 2, "fn": 4, "tn": 10},
+            {"tp": 0, "fp": 0, "fn": 0, "tn": 5},
+        ]
+    )
+
+    result = add_metric_columns(df)
+
+    assert result.loc[0, "precision"] == pytest.approx(0.8)
+    assert result.loc[0, "f1"] == pytest.approx(0.7272727272727273)
+    assert result.loc[0, "f5"] == pytest.approx(0.6709677419354839)
+    assert result.loc[0, "recall"] == pytest.approx(0.6666666666666666)
+
+    assert result.loc[1, "precision"] == 0.0
+    assert result.loc[1, "f1"] == 0.0
+    assert result.loc[1, "f5"] == 0.0
+    assert result.loc[1, "recall"] == 0.0

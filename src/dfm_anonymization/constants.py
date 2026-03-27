@@ -127,7 +127,7 @@ MODEL_LABEL_MAP: dict[str, dict[str, str]] = {
 
 DATASET_LABEL_MAP: dict[str, dict[str, str]] = {
     "dane": {
-        "LOC": ISO_LABEL_PRECISE_LOCATION,
+        # "LOC": ISO_LABEL_PRECISE_LOCATION,
         "PER": ISO_LABEL_PERSON_NAME,
     },
     "dansk-ner": {

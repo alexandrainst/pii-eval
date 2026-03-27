@@ -63,7 +63,7 @@ def filter_bio(bio_tags: List[str], labels: Set[str]) -> List[str]:
     return [tag if tag[2:] in labels else "O" for tag in bio_tags]
 
 
-class Span(NamedTuple):
+class Span(BaseModel):
     start: int
     end: int
     label: str

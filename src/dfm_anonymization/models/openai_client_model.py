@@ -114,7 +114,7 @@ class NERResponse(BaseModel):
             else:
                 logging.warning(
                     f"Failed to find model output substring "
-                    f"'{entity.text}' in text '{text}'."
+                    f"'{entity.text}' in text '{text[cursor:]}'."
                 )
         return spans_to_bio(token_spans=token_spans, spans=spans)
 

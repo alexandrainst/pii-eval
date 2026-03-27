@@ -84,7 +84,7 @@ def _is_valid_iban(value: str) -> bool:
 def _is_valid_account_number(value: str) -> bool:
     compact = _compact(value).upper()
     digit_count = len(_digits(compact))
-    return _is_valid_iban(value) or (compact.isalnum() and 7 <= digit_count <= 18)
+    return _is_valid_iban(value) or (compact.isalnum() and 4 <= digit_count <= 18)
 
 
 def _is_valid_phone(value: str) -> bool:
@@ -124,22 +124,55 @@ def _is_valid_us_ssn(value: str) -> bool:
 
 def _is_valid_passport(value: str) -> bool:
     compact = _compact(value).upper()
-    return compact.isalnum() and 6 <= len(compact) <= 12
+    digit_count = len(_digits(compact))
+    letter_count = sum(ch.isalpha() for ch in compact)
+    return (
+        compact.isalnum()
+        and 6 <= len(compact) <= 12
+        and 5 <= digit_count <= 10
+        and letter_count >= 1
+        and letter_count <= 4
+    )
 
 
 def _is_valid_drivers_license(value: str) -> bool:
     compact = _compact(value).upper()
-    return compact.isalnum() and 5 <= len(compact) <= 20
+    digit_count = len(_digits(compact))
+    return compact.isalnum() and 5 <= len(compact) <= 20 and 5 <= digit_count <= 14
 
 
 def _is_valid_vin(value: str) -> bool:
     compact = _compact(value).upper()
-    return len(compact) == 17 and bool(re.fullmatch(r"[A-HJ-NPR-Z0-9]{17}", compact))
+    for prefix in ("VIN", "CHASSISNR", "CHASSIS", "STELNUMMER"):
+        if compact.startswith(prefix):
+            compact = compact[len(prefix):]
+            break
+    return (
+        len(compact) == 17
+        and any(ch.isalpha() for ch in compact)
+        and any(ch.isdigit() for ch in compact)
+        and bool(re.fullmatch(r"[A-HJ-NPR-Z0-9]{17}", compact))
+    )
 
 
 def _is_valid_plate_or_vin(value: str) -> bool:
     compact = _compact(value).upper()
-    return _is_valid_vin(value) or bool(re.fullmatch(r"[A-Z]{2,3}\d{2,5}", compact))
+    for prefix in ("VIN", "CHASSISNR", "CHASSIS", "STELNUMMER"):
+        if compact.startswith(prefix):
+            compact = compact[len(prefix):]
+            break
+    digit_count = len(_digits(compact))
+    return (
+        _is_valid_vin(compact)
+        or bool(re.fullmatch(r"[A-Z]{2,3}\d{4,6}", compact))
+        or bool(re.fullmatch(r"[A-Z]{1,6}\d{4,12}", compact))
+        or (
+            compact.isalnum()
+            and 6 <= len(compact) <= 18
+            and digit_count >= 2
+            and any(ch.isalpha() for ch in compact)
+        )
+    )
 
 
 REGEX_RULES: tuple[RegexRule, ...] = (
@@ -180,6 +213,63 @@ REGEX_RULES: tuple[RegexRule, ...] = (
         priority=30,
     ),
     RegexRule(
+        label=ISO_LABEL_PCI,
+        pattern=_compile(
+            r"""
+            \b(?:
+                card(?:\s+number)?
+                |credit\s+card(?:\s+number)?
+                |debit\s+card(?:\s+number)?
+                |visa(?:-kort)?(?:\s*|-)?(?:nummer|number)?
+                |mastercard(?:\s*|-)?(?:nummer|number)?
+                |kreditkort(?:nummer(?:et)?)?
+                |kortnummer(?:et)?
+                |kortbetaling
+                |kortoplysninger
+                |kortnumre
+                |kort(?:\s+med\s+nummer(?:et)?)?
+            )\b
+            \s*[:#-]?\s*
+            (?P<value>(?:\d[ -]*?){13,19})
+            """
+        ),
+        validator=lambda value: 13 <= len(_digits(value)) <= 19,
+        priority=32,
+    ),
+    RegexRule(
+        label=ISO_LABEL_PCI,
+        pattern=_compile(
+            r"""
+            \b(?:
+                card|credit\s+card|debit\s+card|visa(?:-kort)?|mastercard|kreditkort|kort(?:nummer|betaling|oplysninger|numre)?
+            )\b
+            [^\n\r\d]{0,40}
+            (?P<value>(?:\d[ -]*?){13,19})
+            (?=$|[^A-Za-z0-9])
+            """
+        ),
+        validator=lambda value: 13 <= len(_digits(value)) <= 19,
+        priority=34,
+    ),
+    RegexRule(
+        label=ISO_LABEL_PCI,
+        pattern=_compile(
+            r"""
+            \b(?:cvv|cvc)\b\s*[:#-]?\s*(?P<value>\d{3,4})\b
+            """
+        ),
+        priority=35,
+    ),
+    RegexRule(
+        label=ISO_LABEL_PCI,
+        pattern=_compile(
+            r"""
+            \b(?:udløbsdato|expiry|expiration\s+date|expires?)\b\s*[:#-]?\s*(?P<value>(?:0[1-9]|1[0-2])/[0-9]{2,4})\b
+            """
+        ),
+        priority=36,
+    ),
+    RegexRule(
         label=ISO_LABEL_BANK_ACCOUNT,
         pattern=_compile(
             r"(?P<value>\b[A-Z]{2}\d{2}(?:[ -]?[A-Z0-9]{4}){2,7}[A-Z0-9]{0,2}\b)"
@@ -199,6 +289,52 @@ REGEX_RULES: tuple[RegexRule, ...] = (
         ),
         validator=_is_valid_account_number,
         priority=45,
+    ),
+    RegexRule(
+        label=ISO_LABEL_BANK_ACCOUNT,
+        pattern=_compile(
+            r"""
+            \b(?:bankkonto|kontonummer|kontooplysninger|konto\s+til\s+(?:overførsel|udbetaling|lønudbetaling|refusion)|bankforbindelse)\b
+            [^\n\r]{0,30}?
+            (?P<value>\d{4}[ -]?\d{7,10}|\d{7,10})
+            (?=$|[^A-Za-z0-9])
+            """
+        ),
+        validator=_is_valid_account_number,
+        priority=46,
+    ),
+    RegexRule(
+        label=ISO_LABEL_BANK_ACCOUNT,
+        pattern=_compile(
+            r"""
+            \b(?:reg(?:istrerings)?nr\.?\s*/?\s*konto(?:nr\.)?|reg\.nr\.?\s*/\s*kontonr\.?|bank\s*\(reg\.nr\./konto\))\b
+            \s*[:#-]?\s*
+            (?P<value>\d{4}[ -]?\d{7,10})
+            (?=$|[^A-Za-z0-9])
+            """
+        ),
+        validator=_is_valid_account_number,
+        priority=47,
+    ),
+    RegexRule(
+        label=ISO_LABEL_BANK_ACCOUNT,
+        pattern=_compile(
+            r"""
+            \breg(?:istrerings)?nr\.?\s*[:#-]?\s*(?P<value>\d{4})\b
+            """
+        ),
+        validator=_is_valid_account_number,
+        priority=47,
+    ),
+    RegexRule(
+        label=ISO_LABEL_BANK_ACCOUNT,
+        pattern=_compile(
+            r"""
+            \bkontonr\.?\s*[:#-]?\s*(?P<value>\d{7,10}|\d{4}[ -]\d{7,10})\b
+            """
+        ),
+        validator=_is_valid_account_number,
+        priority=47,
     ),
     RegexRule(
         label=ISO_LABEL_SSN,
@@ -232,25 +368,67 @@ REGEX_RULES: tuple[RegexRule, ...] = (
         label=ISO_LABEL_PASSPORT,
         pattern=_compile(
             r"""
-            \b(?:passport(?:\s+number|\s+no\.?)?|pas(?:nummer|\s+nr\.?)?)\b
+            \b(?:passport(?:\s+number|\s+no\.?)|passnummer|passnr\.?|pasnummer(?:et)?|pasnr\.?)\b
             \s*[:#-]?\s*
-            (?P<value>[A-Z0-9][A-Z0-9 -]{4,11}[A-Z0-9])
+            (?P<value>[A-Z]{0,2}\d{6,9})
+            (?=$|[^A-Za-z0-9])
+            """
+        ),
+        validator=lambda value: _compact(value).isalnum() and 6 <= len(_digits(value)) <= 9,
+        priority=47,
+    ),
+    RegexRule(
+        label=ISO_LABEL_PASSPORT,
+        pattern=_compile(
+            r"""
+            \b(?:passport(?:\s+(?:number|no\.?|id|backup|copy|ved\s+check-in))?|passportnummer|passportkopi|passnummer|passnr\.?|pas(?:nummer(?:et)?|nr\.?|oplysninger?|information)?|rejsepas)\b
+            \s*[:#-]?\s*
+            (?P<value>[A-Z]{0,3}\d{6,9})
+            (?=$|[^A-Za-z0-9])
             """
         ),
         validator=_is_valid_passport,
         priority=48,
     ),
     RegexRule(
+        label=ISO_LABEL_PASSPORT,
+        pattern=_compile(
+            r"""
+            \b(?:passport|passportnummer|passportkopi|passnummer|passnr\.?|pas(?:nummer(?:et)?|nr\.?|oplysninger?|information)?|rejsepas)\b
+            [^\n\r]{0,50}?
+            (?P<value>[A-Z]{0,3}\d{6,9})
+            (?=$|[^A-Za-z0-9])
+            """
+        ),
+        validator=_is_valid_passport,
+        priority=49,
+    ),
+    RegexRule(
         label=ISO_LABEL_DRIVERS_LICENSE,
         pattern=_compile(
             r"""
-            \b(?:driver'?s?\s+licen[sc]e|driving\s+licen[sc]e|licen[sc]e\s+number|kørekort(?:nummer)?|kørekort\s+nr\.?)\b
+            \b(?:driver'?s?\s+licen[sc]e|driving\s+licen[sc]e|licen[sc]e\s+number|driver\s+license(?:\s+id)?|førerkort(?:\s+nr\.?)?|kørekort(?:nummer)?|kørekort\s+nr\.?)\b
             \s*[:#-]?\s*
-            (?P<value>[A-Z0-9][A-Z0-9 -]{3,18}[A-Z0-9])
+            (?P<value>[A-Z0-9]+(?:[- ][A-Z0-9]+)*)
+            (?=$|[^A-Za-z0-9])
             """
         ),
         validator=_is_valid_drivers_license,
         priority=80,
+    ),
+    RegexRule(
+        label=ISO_LABEL_DRIVERS_LICENSE,
+        pattern=_compile(
+            r"""
+            \b(?:driver'?s?\s+licen[sc]e|driving\s+licen[sc]e|licen[sc]e\s+number|driver\s+license(?:\s+id)?|førerkort(?:\s+nr\.?)?|kørekort(?:nummer)?|kørekort\s+nr\.?)\w*\b
+            (?:\s+(?:er|var|som|blev|oplyst(?:e)?|registreret(?:\s+som)?|fremvist|fundet|nummer(?:et)?))?
+            \s*[:#-]?\s*
+            (?P<value>(?:[A-Z]{1,6}[- ]?)?\d{5,12}|[A-Z]{1,6}(?:[- ]?[A-Z0-9]{2,}){2,})
+            (?=$|[^A-Za-z0-9])
+            """
+        ),
+        validator=_is_valid_drivers_license,
+        priority=82,
     ),
     RegexRule(
         label=ISO_LABEL_VEHICLE_ID,
@@ -264,22 +442,75 @@ REGEX_RULES: tuple[RegexRule, ...] = (
             r"""
             \b(?:license\s+plate|number\s+plate|registration(?:\s+number)?|vehicle\s+id|vin|nummerplade|registreringsnummer)\b
             \s*[:#-]?\s*
-            (?P<value>(?:[A-Z]{2,3}[ -]?\d{2,5})|(?:[A-HJ-NPR-Z0-9]{17}))
+            (?P<value>(?:[A-Z]{2,3}(?:[ -]?\d){4,6})|(?:[A-Z]{1,6}[ -]?\d{4,12})|(?:[A-Z0-9]{8,20}))
+            (?=$|[^A-Za-z0-9])
             """
         ),
         validator=_is_valid_plate_or_vin,
         priority=95,
     ),
     RegexRule(
+        label=ISO_LABEL_VEHICLE_ID,
+        pattern=_compile(
+            r"""
+            \b(?:køretøj(?:et)?|firmabil(?:en|ens)?|udlejningsbil(?:en|ens)?|nummerplade(?:n)?|reg(?:istrerings)?nr\.?|registreringsnummer(?:\s+for\s+køretøjet)?|leasede\s+køretøjer|trailer\s+id|stelnummer|chassisnr\.?)\b
+            (?:\s+(?:er|var|som|med|på|for|:|nr\.?|nummer(?:plade)?|registreret(?:\s+som)?))?
+            \s*[:#-]?\s*
+            (?P<value>(?:[A-Z]{2,3}(?:[ -]?\d){4,6})|(?:[A-Z]{1,8}[ -]?\d{4,12})|(?:[A-Z0-9]{8,20}))
+            (?=$|[^A-Za-z0-9])
+            """
+        ),
+        validator=_is_valid_plate_or_vin,
+        priority=96,
+    ),
+    RegexRule(
+        label=ISO_LABEL_VEHICLE_ID,
+        pattern=_compile(
+            r"""
+            \b(?:bilen\s+.*?registreringsnummer|bilens\s+registreringsnummer|bilnummerplade|firmabilernes\s+nummerplader|fragtbil|lastbilplade|nummerplade(?:n)?|registreringsnummer(?:\s*\(nummerplade\))?|stelnummer|chassisnr\.?)\b
+            [^\n\r]{0,45}?
+            (?P<value>(?:[A-Z]{2,3}(?:[ -]?\d){4,6})|(?:VIN)?[A-Z0-9]{8,20})
+            (?=$|[^A-Za-z0-9])
+            """
+        ),
+        validator=_is_valid_plate_or_vin,
+        priority=97,
+    ),
+    RegexRule(
+        label=ISO_LABEL_VEHICLE_ID,
+        pattern=_compile(
+            r"""
+            \b(?:bilen|bilens|firmabil(?:en|ens)?|fragtbil(?:en)?|lastbilen)\b
+            [^\n\r]{0,50}?\b(?:registreringsnummer|nummerplade|plade|registreret\s+som)\b
+            [^\n\r]{0,20}?
+            (?P<value>(?:[A-Z]{2,3}(?:[ -]?\d){4,6})|(?:VIN)?[A-Z0-9]{8,20})
+            (?=$|[^A-Za-z0-9])
+            """
+        ),
+        validator=_is_valid_plate_or_vin,
+        priority=98,
+    ),
+    RegexRule(
         label=ISO_LABEL_PRECISE_LOCATION,
         pattern=_compile(
             r"""
             (?P<value>
-                \b[+-]?(?:90(?:\.0+)?|[1-8]?\d(?:\.\d+)?)\s*[,;/]\s*[+-]?(?:180(?:\.0+)?|1[0-7]\d(?:\.\d+)?|\d{1,2}(?:\.\d+)?)\b
+                \b[+-]?(?:90(?:\.0+)?|[1-8]?\d\.\d{3,})\s*[,;/]\s*[+-]?(?:180(?:\.0+)?|1[0-7]\d(?:\.\d+)?|\d{1,2}\.\d{3,})\b
             )
             """
         ),
         priority=100,
+    ),
+    RegexRule(
+        label=ISO_LABEL_PRECISE_LOCATION,
+        pattern=_compile(
+            r"""
+            (?P<value>
+                \b(?:[0-8]?\d(?:\.\d+)?|90(?:\.0+)?)°?\s*[NS]\s*[,;/]\s*(?:[0-9]{1,3}(?:\.\d+)?|1[0-7]\d(?:\.\d+)?|180(?:\.0+)?)°?\s*[EW]\b
+            )
+            """
+        ),
+        priority=101,
     ),
     RegexRule(
         label=ISO_LABEL_PRECISE_LOCATION,
@@ -301,8 +532,27 @@ REGEX_RULES: tuple[RegexRule, ...] = (
         pattern=_compile(
             r"""
             (?P<value>
-                \b(?:[A-ZÆØÅ][\w'.-]+\s+){0,3}
-                [A-ZÆØÅ][\w'.-]*(?:gade|vej|alle|allé|boulevard|plads|torv|stræde|sti|street|st\.?|road|rd\.?|avenue|ave\.?|lane|ln\.?|drive|dr\.?|way|court|ct\.?|place|pl\.?|terrace|ter\.?|parkway|pkwy\.?|highway|hwy\.?)
+                \b(?:[A-ZÆØÅ][A-Za-zÆØÅæøå'.-]*\s+){1,5}
+                \d{1,5}[A-Z]?
+                (?:,\s*(?:st\.?|th\.?|tv\.?|mf\.?|\d+\.\s*(?:th\.?|tv\.?|mf\.?)))?
+                (?:,\s*|\s+)\d{4}\s+[A-ZÆØÅ][A-Za-zÆØÅæøå.-]*(?:\s+(?:[A-ZÆØÅ][A-Za-zÆØÅæøå.-]*|[A-ZÆØÅ])){0,3}
+            )
+            """,
+            ignore_case=False,
+        ),
+        priority=108,
+    ),
+    RegexRule(
+        label=ISO_LABEL_PRECISE_LOCATION,
+        pattern=_compile(
+            r"""
+            (?P<value>
+                \b(?:[A-ZÆØÅ][\w'.-]+\s+){0,4}
+                (?:
+                    [A-ZÆØÅ][\w'.-]*(?:gade|vej|vejen|alle|allé|boulevard|bakken|draget|stræde|stien|sti|havn|bro)
+                    |
+                    (?:[A-ZÆØÅ][\w'.-]+\s+)?(?:Plads|Torv|Street|St\.?|Road|Rd\.?|Avenue|Ave\.?|Lane|Ln\.?|Drive|Dr\.?|Way|Court|Ct\.?|Place|Pl\.?|Terrace|Ter\.?|Parkway|Pkwy\.?|Highway|Hwy\.?)
+                )
                 \s+\d{1,5}[A-Z]?
                 (?:,\s*\d{4}\s*[A-ZÆØÅ][A-Za-zÆØÅæøå-]*(?:\s+(?:[A-ZÆØÅ][A-Za-zÆØÅæøå-]*|[A-ZÆØÅ])){0,3})?
             )
@@ -310,6 +560,32 @@ REGEX_RULES: tuple[RegexRule, ...] = (
             ignore_case=False,
         ),
         priority=110,
+    ),
+    RegexRule(
+        label=ISO_LABEL_PRECISE_LOCATION,
+        pattern=_compile(
+            r"""
+            (?P<value>
+                \bpostboks\s+\d{1,5}(?:,\s*|\s+)\d{4}\s+[A-ZÆØÅ][A-Za-zÆØÅæøå.-]*(?:\s+(?:[A-ZÆØÅ][A-Za-zÆØÅæøå.-]*|[A-ZÆØÅ])){0,3}
+            )
+            """
+        ),
+        priority=112,
+    ),
+    RegexRule(
+        label=ISO_LABEL_PRECISE_LOCATION,
+        pattern=_compile(
+            r"""
+            (?P<value>
+                \b(?:[A-ZÆØÅ][A-Za-zÆØÅæøå'.-]*(?:gade|vej|vejen|allé|alle|boulevard|plads|torv|stræde|sti|havn|bro)|[A-ZÆØÅ][A-Za-zÆØÅæøå'.-]+(?:\s+[A-ZÆØÅ][A-Za-zÆØÅæøå'.-]+){0,2})
+                \s+og\s+
+                (?:[A-ZÆØÅ][A-Za-zÆØÅæøå'.-]*(?:gade|vej|vejen|allé|alle|boulevard|plads|torv|stræde|sti|havn|bro)|[A-ZÆØÅ][A-Za-zÆØÅæøå'.-]+(?:\s+[A-ZÆØÅ][A-Za-zÆØÅæøå'.-]+){0,2})
+                ,\s*\d{4}\s+[A-ZÆØÅ][A-Za-zÆØÅæøå.-]*(?:\s+(?:[A-ZÆØÅ][A-Za-zÆØÅæøå.-]*|[A-ZÆØÅ])){0,3}
+            )
+            """,
+            ignore_case=False,
+        ),
+        priority=114,
     ),
 )
 

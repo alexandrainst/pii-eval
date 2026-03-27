@@ -7,6 +7,7 @@ from dfm_anonymization.dataset import PiiDataEntry
 from dfm_anonymization.interfaces import PiiModel
 from dfm_anonymization.models.gliner_model import GlinerModel
 from dfm_anonymization.models.presidio_model import PresidioModel
+from .regex_model import RegexModel
 
 
 class EnsembleModel(PiiModel):
@@ -32,6 +33,19 @@ class EnsembleModel(PiiModel):
         return predictions
 
     @staticmethod
+    def get_gliner_pii_regex() -> "EnsembleModel":
+        return EnsembleModel(
+            name="gliner_pii_and_regex",
+            models=[
+                (RegexModel(), ALL_ISO_LABELS),
+                (
+                    GlinerModel("nvidia/gliner-pii"),
+                    ALL_ISO_LABELS,
+                ),
+            ],
+        )
+
+    @staticmethod
     def get_gliner_pii_presidio() -> "EnsembleModel":
         gliner_pii_labels = {
             ISO_LABEL_PCI,
@@ -45,7 +59,6 @@ class EnsembleModel(PiiModel):
             {k: LABEL_DESCRIPTIONS_DA[k] for k in gliner_pii_labels}
         )
         presidio_labels = {
-            ISO_LABEL_PRIVATE_URL,
             ISO_LABEL_PERSON_NAME,
             ISO_LABEL_PRECISE_LOCATION,
         }

@@ -269,11 +269,17 @@ def evaluate_all():
     dataset_scores = add_metric_columns(df.groupby("dataset")[CONFUSION_COLUMNS].sum())
     models_and_labels = add_metric_columns(
         df.groupby(["model", "label"])[CONFUSION_COLUMNS].sum().reset_index()
-    ).sort_values(["model", "f5"], ascending=False)
+    )
     best_model_by_label = models_and_labels.loc[
         models_and_labels.groupby("label").idxmax()["f5"]
     ].set_index(["label", "model"])
-    models_and_labels = models_and_labels.set_index(["model", "label"])
+    labels_and_models = models_and_labels.set_index(["label", "model"]).sort_values(
+        ["label", "f5"], ascending=False
+    )
+    models_and_labels = models_and_labels.set_index(["model", "label"]).sort_values(
+        ["model", "f5"], ascending=False
+    )
+
 
     df = df.set_index(["model", "dataset", "label"]).sort_values(
         ["model", "dataset", "f5"], ascending=[True, True, False]
@@ -284,12 +290,13 @@ def evaluate_all():
         "display.float_format",
         lambda x: "%.3f" % x,
     ):
-        print(df, end="\n\n")
-        # print(models_and_labels, end="\n\n")
-        # print(dataset_scores, end="\n\n")
-        # print(best_models, end="\n\n")
-        # print(best_model_by_label, end="\n\n")
-        # print(performances.sort_values("samples/s", ascending=False))
+        # print(df, end="\n\n")
+        print(dataset_scores, end="\n\n")
+        print(best_model_by_label, end="\n\n")
+        print(best_models, end="\n\n")
+        print(models_and_labels, end="\n\n")
+        print(labels_and_models, end="\n\n")
+        print(performances.sort_values("samples/s", ascending=False))
 
     pass
 

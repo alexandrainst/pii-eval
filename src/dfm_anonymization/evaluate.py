@@ -230,10 +230,12 @@ def evaluate(
     return confusion_counts
 
 
-def evaluate_all():
+def evaluate_all(base_directory: Path | str = "data/predictions"):
+    if type(base_directory) == str:
+        base_directory = Path(base_directory)
     results = []
     performances = {}
-    for predictions_path in Path("data/predictions").glob("*/*.json"):
+    for predictions_path in base_directory.glob("*/*.json"):
         dataset_name = predictions_path.stem
         model_name = predictions_path.parent.name
         ground_truth_path = f"data/ground_truth/{dataset_name}.json"
@@ -274,12 +276,11 @@ def evaluate_all():
         models_and_labels.groupby("label").idxmax()["f5"]
     ].set_index(["label", "model"])
     labels_and_models = models_and_labels.set_index(["label", "model"]).sort_values(
-        ["label", "f5"], ascending=False
+        ["label", "f5"], ascending=[True, False]
     )
     models_and_labels = models_and_labels.set_index(["model", "label"]).sort_values(
-        ["model", "f5"], ascending=False
+        ["model", "f5"], ascending=[True, False]
     )
-
 
     df = df.set_index(["model", "dataset", "label"]).sort_values(
         ["model", "dataset", "f5"], ascending=[True, True, False]
@@ -292,14 +293,15 @@ def evaluate_all():
     ):
         # print(df, end="\n\n")
         print(dataset_scores, end="\n\n")
-        print(best_model_by_label, end="\n\n")
-        print(best_models, end="\n\n")
         print(models_and_labels, end="\n\n")
         print(labels_and_models, end="\n\n")
+        if len(best_models) > 1:
+            print(best_model_by_label, end="\n\n")
+        print(best_models, end="\n\n")
         print(performances.sort_values("samples/s", ascending=False))
 
     pass
 
 
 if __name__ == "__main__":
-    evaluate_all()
+    evaluate_all(base_directory="data/predictions_ensemble")

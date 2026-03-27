@@ -1,7 +1,7 @@
+from collections.abc import Set as AbcSet
 from typing import Any, Dict, List, Set
 
 from bidict import bidict
-from gliner import GLiNER
 
 from dfm_anonymization.constants import LABEL_DESCRIPTIONS_DA
 from dfm_anonymization.dataset import PiiDataEntry
@@ -24,20 +24,33 @@ class GlinerModel(PiiModel):
     ):
         super().__init__(name=tag.split("/")[-1])
         self.tag = tag
-        self.model = None
+        self.model: Any | None = None
         self.labels = labels
+
+    def _load_model(self) -> Any:
+        try:
+            from gliner import GLiNER
+        except Exception as exc:
+            raise RuntimeError(
+                f"Failed to import GLiNER for model '{self.tag}'. "
+                "The installed gliner/transformers/torch stack appears incompatible "
+                "with the current Python runtime. This commonly fails on Python 3.13; "
+                "try a Python 3.12 environment or a dependency combination known to "
+                "support your interpreter."
+            ) from exc
+        return GLiNER.from_pretrained(self.tag, map_location=get_torch_device())
 
     def __call__(
         self, entry: PiiDataEntry, label_whitelist: Set[str] | None = None
     ) -> List[str]:
-        if not self.model:
-            GLiNER.from_pretrained(self.tag, map_location=get_torch_device())
+        if self.model is None:
+            self.model = self._load_model()
         descriptions = (
             list(self.labels)
-            if isinstance(self.labels, Set)
+            if isinstance(self.labels, AbcSet)
             else list(self.labels.values())
         )
-        token_spans = tokens_to_offsets(entry.text, entry.tokens)
+        token_spans = entry.get_token_spans() or tokens_to_offsets(entry.text, entry.tokens)
         max_sentence_len = 500
         c = 0
         subtexts = []
@@ -51,7 +64,7 @@ class GlinerModel(PiiModel):
         if c < len(entry.text) - 1:
             subtexts.append(entry.text[c:])
             span_inits.append(c)
-        subspan_list: List[List[Dict[str, Any]]] = self.model.run(
+        subspan_list: List[List[Dict[str, Any]]] = self.model.batch_predict_entities(
             subtexts, descriptions
         )
         spans = []

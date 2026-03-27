@@ -3,7 +3,7 @@ name = "dfm-anonymization"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.13,<3.14" # vLLM doesn't like >=3.14
+requires-python = "==3.12.*" # ,<3.14" # vLLM supports 3.12-3.13; GLiNER is currently more reliable on 3.12
 dependencies = [
     "bidict>=0.23.1",
     "nltk>=3.9.3",

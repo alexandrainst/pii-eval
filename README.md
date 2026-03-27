@@ -33,6 +33,10 @@ Developer:
    therein.
 2. Run `source .venv/bin/activate` to activate the virtual environment.
 
+If you need to run GLiNER-based inference, prefer Python 3.12 for the virtual
+environment. In this repo, Python 3.13 can fail during `gliner` import inside
+the `transformers`/`torch` stack.
+
 ### Example usage
 
 ```bash

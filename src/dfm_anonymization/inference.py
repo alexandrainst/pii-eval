@@ -10,7 +10,6 @@ from tqdm import tqdm
 # from dfm_anonymization.constants import LABEL_DESCRIPTIONS_DA
 from dfm_anonymization.dataset import PiiDataEntry, PiiDataset
 from dfm_anonymization.interfaces import PiiModel
-from dfm_anonymization.models.ensemble_model import EnsembleModel
 # from dfm_anonymization.models.openai_client_model import OpenAIClientModel
 # from dfm_anonymization.models.regex_model import RegexModel
 # from dfm_anonymization.models.gliner_model import GlinerModel
@@ -28,9 +27,11 @@ def inference(
     for entry in tqdm(it, dynamic_ncols=True, leave=True, position=pbar_pos):
         try:
             prediction = model(entry)
-        except Exception as e:
-            print(e)
-            continue
+        except Exception as exc:
+            entry_id = entry.id if entry.id is not None else "<unknown>"
+            raise RuntimeError(
+                f"Inference failed for model '{model.name}' on entry '{entry_id}'."
+            ) from exc
         new_entries.append(
             PiiDataEntry(
                 id=entry.id,
@@ -63,6 +64,7 @@ def generate_predictions(
     override: bool = False, max_entries_per_config: int | None = None, pbar_pos: int = 0
 ):
     load_dotenv()
+    from dfm_anonymization.models.ensemble_model import EnsembleModel
 
     models: List[PiiModel] = [
         # RegexModel(),

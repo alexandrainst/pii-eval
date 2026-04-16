@@ -375,10 +375,34 @@ REGEX_RULES: tuple[RegexRule, ...] = (
         priority=50,
     ),
     RegexRule(
+        label=ISO_LABEL_SSN,
+        pattern=_compile(
+            r"""
+            \b(?:cpr(?:-?nummer|nr\.?)?|personnummer|ssn|social\s*security\s*number)\b
+            [^\n\r\d]{0,40}?
+            (?P<value>\d{6}[- ]?\d{4})
+            (?=$|[^A-Za-z0-9])
+            """
+        ),
+        priority=51,
+    ),
+    RegexRule(
         label=ISO_LABEL_PHONE_NUMBER,
         pattern=_compile(r"(?P<value>\b\d{8}\b)"),
         validator=_is_valid_phone,
         priority=60,
+    ),
+    RegexRule(
+        label=ISO_LABEL_PHONE_NUMBER,
+        pattern=_compile(
+            r"""
+            \b(?:tlf|telefon|mobil|phone|telefonnummer|mobilnummer)\b
+            [^\n\r\d]{0,20}?
+            (?P<value>\+?[0-9][0-9 -]{6,15}[0-9])
+            (?=$|[^A-Za-z0-9])
+            """
+        ),
+        priority=62,
     ),
     RegexRule(
         label=ISO_LABEL_PHONE_NUMBER,
@@ -420,13 +444,25 @@ REGEX_RULES: tuple[RegexRule, ...] = (
         label=ISO_LABEL_PASSPORT,
         pattern=_compile(
             r"""
-            \b(?:passport|passportnummer|passportkopi|passnummer|passnr\.?|pas(?:nummer(?:et)?|nr\.?|oplysninger?|information)?|rejsepas)\b
+            \b(?:passport(?:\s+(?:number|no\.?|id|backup|copy|ved\s+check-in))?|passportnummer|passportkopi|passnummer|passnr\.?|pas(?:nummer(?:et)?|nr\.?|oplysninger?|information)?|rejsepas)\b
             [^\n\r]{0,50}?
             (?P<value>[A-Z]{0,3}\d{6,9})
             (?=$|[^A-Za-z0-9])
             """
         ),
         validator=_is_valid_passport,
+        priority=49,
+    ),
+    RegexRule(
+        label=ISO_LABEL_PASSPORT,
+        pattern=_compile(
+            r"""
+            \b(?:passport(?:\s+(?:number|no\.?|id))?|passnummer|pasnummer|pasnr\.?|rejsepas)\b
+            [^\n\r\d]{0,40}?
+            (?P<value>[A-Z0-9]{6,12})
+            (?=$|[^A-Za-z0-9])
+            """
+        ),
         priority=49,
     ),
     RegexRule(

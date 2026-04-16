@@ -206,9 +206,37 @@ REGEX_RULES: tuple[RegexRule, ...] = (
         label=ISO_LABEL_PCI,
         pattern=_compile(r"(?P<value>\b(?:\d[ -]*?){13,19}\b)"),
         validator=lambda value: (
-            13 <= len(_digits(value)) <= 19 and _is_luhn_valid(_digits(value))
+            13 <= len(_digits(value)) <= 19
+            and (
+                _is_luhn_valid(_digits(value))
+                or _digits(value).startswith(
+                    ("4", "5", "6", "34", "37", "30", "36", "38")
+                )
+            )
         ),
         priority=30,
+    ),
+    RegexRule(
+        label=ISO_LABEL_PCI,
+        pattern=_compile(
+            r"""
+            (?P<value>
+                \b(?:\d{4}[ -]?){3}\d{4}\b
+            )
+            """
+        ),
+        priority=31,
+    ),
+    RegexRule(
+        label=ISO_LABEL_PCI,
+        pattern=_compile(
+            r"""
+            (?P<value>
+                \b(?:\d{4}[ -]?\d{6}[ -]?\d{5})\b
+            )
+            """
+        ),
+        priority=31,
     ),
     RegexRule(
         label=ISO_LABEL_PCI,
@@ -437,8 +465,7 @@ REGEX_RULES: tuple[RegexRule, ...] = (
         label=ISO_LABEL_DRIVERS_LICENSE,
         pattern=_compile(r"(?P<value>\b[A-Z0-9]{10}\b)"),
         validator=lambda value: (
-            len(_digits(value)) >= 1
-            and sum(ch.isalpha() for ch in value) >= 3
+            len(_digits(value)) >= 1 and sum(ch.isalpha() for ch in value) >= 3
         ),
         priority=85,
     ),
@@ -561,7 +588,7 @@ REGEX_RULES: tuple[RegexRule, ...] = (
             (?P<value>
                 \b(?:[A-ZÆØÅ][\w'.-]+\s+){0,4}
                 (?:
-                    [A-ZÆØÅ][\w'.-]*(?:gade|vej|vejen|alle|allé|boulevard|bakken|draget|stræde|stien|sti|havn|bro)
+                    [A-ZÆØÅ][\w'.-]*(?:gade|vej|vejen|alle|allé|boulevard|bakken|draget|stræde|stien|sti|havn|bro|park|parken|have|haven|vænget|holm|hus|høj|højen|skov|skoven|kær|kæret|mark|marken|dal|dalen|toft|toften|lunden|lund|gård|gården|bjerg|bjerget)
                     |
                     (?:[A-ZÆØÅ][\w'.-]+\s+)?(?:Plads|Torv|Street|St\.?|Road|Rd\.?|Avenue|Ave\.?|Lane|Ln\.?|Drive|Dr\.?|Way|Court|Ct\.?|Place|Pl\.?|Terrace|Ter\.?|Parkway|Pkwy\.?|Highway|Hwy\.?)
                 )
@@ -572,6 +599,18 @@ REGEX_RULES: tuple[RegexRule, ...] = (
             ignore_case=False,
         ),
         priority=110,
+    ),
+    RegexRule(
+        label=ISO_LABEL_PRECISE_LOCATION,
+        pattern=_compile(
+            r"""
+            (?P<value>
+                \b(?:[A-ZÆØÅ][a-zæøåA-ZÆØÅ.-]+\s+){1,4}\d{1,4}[a-z]?[A-Z]?,\s+\d{4}\s+[A-ZÆØÅ][a-zæøåA-ZÆØÅ.-]+
+            )
+            """,
+            ignore_case=False,
+        ),
+        priority=111,
     ),
     RegexRule(
         label=ISO_LABEL_PRECISE_LOCATION,

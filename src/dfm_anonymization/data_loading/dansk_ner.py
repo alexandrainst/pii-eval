@@ -1,48 +1,10 @@
-from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import List
+
 import pandas as pd
 
 from dfm_anonymization.dataset import PiiDataEntry, PiiDataset
-
-
-@dataclass
-class Span:
-    start: int
-    end: int
-
-
-@dataclass
-class LabelSpan(Span):
-    label: str
-
-
-def spans_to_bio(label_spans: List[LabelSpan], token_spans: List[Span]) -> List[str]:
-    if not token_spans:
-        return []
-
-    sorted_labels = sorted(label_spans, key=lambda span: span.start)
-    tags: List[str] = []
-    label_idx = 0
-    current = sorted_labels[label_idx] if sorted_labels else None
-
-    for token in token_spans:
-        while current is not None and token.start >= current.end:
-            label_idx += 1
-            if label_idx >= len(sorted_labels):
-                current = None
-                break
-            current = sorted_labels[label_idx]
-
-        if current is None or token.end <= current.start:
-            tags.append("O")
-            continue
-
-        prefix = "B" if token.start <= current.start else "I"
-        tags.append(f"{prefix}-{current.label}")
-
-    return tags
+from dfm_anonymization.util.spans import LabelSpan, Span, spans_to_bio
 
 
 def generate_dataset_file(override: bool = False):

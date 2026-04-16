@@ -13,7 +13,7 @@ from dfm_anonymization.dataset import PiiDataEntry
 from dfm_anonymization.interfaces import PiiModel
 from dfm_anonymization.models.ensemble_model import EnsembleModel
 from dfm_anonymization.models.gliner_model import GlinerModel
-from dfm_anonymization.util import WordTokenizer
+from dfm_anonymization.util.util import WordTokenizer
 
 
 def spans_from_bio_tags(

@@ -1,14 +1,13 @@
 from collections.abc import Mapping as AbcMapping
 from collections.abc import Set as AbcSet
 from dataclasses import fields, is_dataclass
-from typing import Any, Dict, List, Mapping, NamedTuple, Set, Tuple
+from typing import Any, Mapping
 
-import nltk
-from pydantic import BaseModel
+import spacy
 import torch
-from nltk.tokenize import word_tokenize
-from nltk.tokenize.util import align_tokens
 import yaml
+from pydantic import BaseModel
+from spacy.cli import download
 
 
 class BlockStrDumper(yaml.SafeDumper):
@@ -34,17 +33,28 @@ class Singleton(type):
 
 class WordTokenizer(metaclass=Singleton):
     def __init__(self):
-        nltk.download("punkt")
-        nltk.download("punkt_tab")
+        # nltk.download("punkt")
+        # nltk.download("punkt_tab")
+        try:
+            self.nlp = spacy.load("da_core_news_sm")
+        except OSError:
+            download("da_core_news_sm")
+            self.nlp = spacy.load("da_core_news_sm")
 
-    def word_tokenize(self, text: str) -> Tuple[List[str], List[Tuple[int, int]]]:
-        words = word_tokenize(text, language="danish")
-        word_spans = align_tokens(tokens=words, sentence=text)
-        return words, word_spans
+    def word_tokenize(self, text: str) -> tuple[list[str], list[tuple[int, int]]]:
+        # words = word_tokenize(text, language="danish")
+        # word_spans = align_tokens(tokens=words, sentence=text)
+        words = []
+        spans = []
+        doc = self.nlp(text)
+        for word in doc:
+            words.append(word.text)
+            spans.append((word.idx, word.idx + len(word.text)))
+        return words, spans
 
 
-def tokens_to_offsets(text: str, tokens: List[str]) -> List[tuple[int, int]]:
-    offsets: List[tuple[int, int]] = []
+def tokens_to_offsets(text: str, tokens: list[str]) -> list[tuple[int, int]]:
+    offsets: list[tuple[int, int]] = []
     cursor = 0
     for token in tokens:
         if not token:
@@ -59,7 +69,7 @@ def tokens_to_offsets(text: str, tokens: List[str]) -> List[tuple[int, int]]:
     return offsets
 
 
-def filter_bio(bio_tags: List[str], labels: Set[str]) -> List[str]:
+def filter_bio(bio_tags: list[str], labels: set[str]) -> list[str]:
     return [tag if tag[2:] in labels else "O" for tag in bio_tags]
 
 
@@ -85,7 +95,7 @@ def _normalize_span(span: Any) -> Span:
     )
 
 
-def spans_to_bio(token_spans: list[tuple[int, int]], spans: list[Any]) -> List[str]:
+def spans_to_bio(token_spans: list[tuple[int, int]], spans: list[Any]) -> list[str]:
     tags = ["O"] * len(token_spans)
     normalized_spans = [_normalize_span(span) for span in spans]
     for span in sorted(normalized_spans, key=lambda s: (int(s.start), int(s.end))):

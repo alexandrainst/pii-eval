@@ -1,5 +1,5 @@
 from dfm_anonymization.models.presidio_model import PresidioModel
-from dfm_anonymization.util import get_torch_device
+from dfm_anonymization.util.util import get_torch_device
 
 from scrambletron.main import create_analyzer
 

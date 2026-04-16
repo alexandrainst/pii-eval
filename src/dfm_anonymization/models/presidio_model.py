@@ -6,7 +6,7 @@ from presidio_analyzer.nlp_engine import NlpEngineProvider
 
 from dfm_anonymization.dataset import PiiDataEntry
 from dfm_anonymization.interfaces import PiiModel
-from dfm_anonymization.util import (
+from dfm_anonymization.util.util import (
     filter_bio,
     get_torch_device,
     spans_to_bio,

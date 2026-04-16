@@ -15,6 +15,8 @@ dependencies = [
     "spacy>=3.8.11",
     "codetiming>=1.4.0",
     "pytest>=9.0.2",
+    "datasets>=4.8.4",
+    "pip>=26.0.1",
 ]
 
 [project.scripts]

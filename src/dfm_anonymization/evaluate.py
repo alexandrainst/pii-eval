@@ -14,7 +14,7 @@ from dfm_anonymization.constants import (
     MODEL_LABEL_MAP,
 )
 from dfm_anonymization.dataset import PiiDataset
-from dfm_anonymization.util import to_dict_recursive
+from dfm_anonymization.util.util import to_dict_recursive
 
 
 CONFUSION_COLUMNS = ["tp", "fp", "fn", "tn"]

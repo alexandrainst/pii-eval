@@ -7,7 +7,7 @@ import codetiming
 from tqdm import tqdm
 import yaml
 
-from dfm_anonymization.util import BlockStrDumper
+from dfm_anonymization.util.util import BlockStrDumper
 
 language = "Danish"
 

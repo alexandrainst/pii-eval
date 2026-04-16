@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 from tqdm import tqdm
 
 from dfm_anonymization.constants import LABEL_DESCRIPTIONS_DA
-from dfm_anonymization.util import BlockStrDumper, Span
+from dfm_anonymization.util.util import BlockStrDumper, Span
 
 
 class GenItem(BaseModel):

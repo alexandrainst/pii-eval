@@ -3,7 +3,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 import random
 
-from dfm_anonymization.util import WordTokenizer, to_dict_recursive
+from dfm_anonymization.util.util import WordTokenizer, to_dict_recursive
+from dfm_anonymization.util.spans import LabelSpan, Span, spans_to_bio
 
 
 @dataclass
@@ -58,6 +59,16 @@ class PiiDataEntry(object):
                 _ = meta.pop(k)
         sd["metadata"] = meta
         return PiiDataEntry(**sd)
+
+    @staticmethod
+    def from_spans(text: str, spans: list[LabelSpan]) -> "PiiDataEntry":
+        words, word_spans = WordTokenizer().word_tokenize(text=text)
+        return PiiDataEntry(
+            text=text,
+            tokens=words,
+            token_spans=word_spans,
+            bio_tags=spans_to_bio(label_spans=spans, token_spans=[Span(*x) for x in word_spans]),
+        )
 
     @staticmethod
     def example_pii() -> "PiiDataEntry":
@@ -244,6 +255,15 @@ class PiiDataset(object):
             path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
         return path.write_text(self.to_json_str(), encoding="utf8")
+
+    @staticmethod
+    def from_span_dataset(dataset: list[tuple[str, list[LabelSpan]]]):
+        return PiiDataset(
+            entries=[
+                PiiDataEntry.from_spans(text=text, spans=spans)
+                for text, spans in dataset
+            ]
+        )
 
     @staticmethod
     def from_list_format_file(

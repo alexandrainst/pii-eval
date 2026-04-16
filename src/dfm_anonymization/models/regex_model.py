@@ -7,7 +7,7 @@ from typing import Callable, Iterable
 from ..constants import *
 from ..dataset import PiiDataEntry
 from ..interfaces import PiiModel
-from ..util import Span, filter_bio, spans_to_bio
+from ..util.util import Span, filter_bio, spans_to_bio
 
 REGEX_COMPATIBLE_LABELS = {
     ISO_LABEL_BANK_ACCOUNT,

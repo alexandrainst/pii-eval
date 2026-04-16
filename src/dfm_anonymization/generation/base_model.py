@@ -8,7 +8,7 @@ import yaml
 from dotenv import load_dotenv
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
-from dfm_anonymization.util import BlockStrDumper
+from dfm_anonymization.util.util import BlockStrDumper
 
 
 def generate_from_base_model():

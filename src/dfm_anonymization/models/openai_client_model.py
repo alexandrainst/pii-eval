@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 from dfm_anonymization.constants import LABEL_DESCRIPTIONS_DA
 from dfm_anonymization.dataset import PiiDataEntry
 from dfm_anonymization.interfaces import PiiModel
-from dfm_anonymization.util import Span, spans_to_bio
+from dfm_anonymization.util.util import Span, spans_to_bio
 
 
 class OpenAIClientModel(PiiModel):

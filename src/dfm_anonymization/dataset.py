@@ -1,18 +1,19 @@
+from datetime import datetime
 import json
+import random
 from dataclasses import dataclass, field
 from pathlib import Path
-import random
 
-from dfm_anonymization.util.util import WordTokenizer, to_dict_recursive
 from dfm_anonymization.util.spans import LabelSpan, Span, spans_to_bio
+from dfm_anonymization.util.util import WordTokenizer, to_dict_recursive
 
 
 @dataclass
 class PiiDataEntry(object):
+    id: int | str
     text: str
     tokens: list[str]
     token_spans: list[tuple[int, int]] | None = None
-    id: int | str | None = None
     bio_tags: list[str] | None = None
     metadata: dict | None = None
 
@@ -61,13 +62,16 @@ class PiiDataEntry(object):
         return PiiDataEntry(**sd)
 
     @staticmethod
-    def from_spans(text: str, spans: list[LabelSpan]) -> "PiiDataEntry":
+    def from_spans(id: int | str, text: str, spans: list[LabelSpan]) -> "PiiDataEntry":
         words, word_spans = WordTokenizer().word_tokenize(text=text)
         return PiiDataEntry(
+            id=id,
             text=text,
             tokens=words,
             token_spans=word_spans,
-            bio_tags=spans_to_bio(label_spans=spans, token_spans=[Span(*x) for x in word_spans]),
+            bio_tags=spans_to_bio(
+                label_spans=spans, token_spans=[Span(*x) for x in word_spans]
+            ),
         )
 
     @staticmethod
@@ -212,7 +216,7 @@ class PiiDataset(object):
         return {t[2:] for e in self.entries for t in e.bio_tags if t != "O"}
 
     def get_samples(self, samples: int):
-        return random.sample(self.entries, samples)
+        return random.sample(self.entries, min(samples, len(self)))
 
     @staticmethod
     def sample() -> "PiiDataset":
@@ -257,12 +261,18 @@ class PiiDataset(object):
         return path.write_text(self.to_json_str(), encoding="utf8")
 
     @staticmethod
-    def from_span_dataset(dataset: list[tuple[str, list[LabelSpan]]]):
+    def from_span_dataset(
+        name: str, dataset: list[tuple[int | str, str, list[LabelSpan]]]
+    ):
         return PiiDataset(
+            metadata={
+                "dataset_name": name,
+                "created": datetime.now().isoformat(),
+            },
             entries=[
-                PiiDataEntry.from_spans(text=text, spans=spans)
-                for text, spans in dataset
-            ]
+                PiiDataEntry.from_spans(id=id, text=text, spans=spans)
+                for id, text, spans in dataset
+            ],
         )
 
     @staticmethod

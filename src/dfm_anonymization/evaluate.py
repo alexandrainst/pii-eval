@@ -304,4 +304,4 @@ def evaluate_all(base_directory: Path | str = "data/predictions"):
 
 
 if __name__ == "__main__":
-    evaluate_all(base_directory="data/predictions_ensemble")
+    evaluate_all(base_directory="data/predictions_openpii_s")

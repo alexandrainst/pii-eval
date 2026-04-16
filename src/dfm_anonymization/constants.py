@@ -157,7 +157,7 @@ DATASET_LABEL_MAP: dict[str, dict[str, str]] = {
         "USERNAME": ISO_LABEL_USERNAME,
         "VEHICLE_ID": ISO_LABEL_VEHICLE_ID,
     },
-    "openpii-1m-da-sample": {
+    "openpii-1m-da": {
         # "DATE",
         "GIVENNAME": ISO_LABEL_PERSON_NAME,
         "SURNAME": ISO_LABEL_PERSON_NAME,
@@ -178,4 +178,8 @@ DATASET_LABEL_MAP: dict[str, dict[str, str]] = {
         "SOCIALNUM": ISO_LABEL_SSN,
         "PASSPORTNUM": ISO_LABEL_PASSPORT,
     },
+}
+
+DATASET_LABEL_MAP = DATASET_LABEL_MAP | {
+    "openpii-1m-da-s": DATASET_LABEL_MAP["openpii-1m-da"]
 }

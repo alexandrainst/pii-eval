@@ -1,22 +1,20 @@
 from datetime import datetime
-import os
 from pathlib import Path
-from typing import List
 
 from codetiming import Timer
 from dotenv import load_dotenv
 from tqdm import tqdm
 
-# from dfm_anonymization.constants import LABEL_DESCRIPTIONS_DA
 from dfm_anonymization.dataset import PiiDataEntry, PiiDataset
 from dfm_anonymization.interfaces import PiiModel
-# from dfm_anonymization.models.openai_client_model import OpenAIClientModel
-# from dfm_anonymization.models.regex_model import RegexModel
+
+# from dfm_anonymization.models.ensemble_model import EnsembleModel
+from dfm_anonymization.models.regex_model import RegexModel
 # from dfm_anonymization.models.gliner_model import GlinerModel
 # from dfm_anonymization.models.ner_model import NerModel
+# from dfm_anonymization.models.openai_client_model import OpenAIClientModel
 # from dfm_anonymization.models.presidio_model import PresidioModel
 # from dfm_anonymization.models.scrambletron import ScrambletronModel
-
 
 
 def inference(
@@ -64,10 +62,9 @@ def generate_predictions(
     override: bool = False, max_entries_per_config: int | None = None, pbar_pos: int = 0
 ):
     load_dotenv()
-    from dfm_anonymization.models.ensemble_model import EnsembleModel
 
-    models: List[PiiModel] = [
-        # RegexModel(),
+    models: list[PiiModel] = [
+        RegexModel(),
         # NerModel.from_hf("saattrupdan/nbailab-base-ner-scandi"),
         # PresidioModel(),
         # GlinerModel("nvidia/gliner-pii", LABEL_DESCRIPTIONS_DA),
@@ -88,9 +85,10 @@ def generate_predictions(
         #     api_key=os.getenv("OPENROUTER_API_KEY"),
         # ),
         # ScrambletronModel(),
-        EnsembleModel.get_gliner_pii_regex()
+        # EnsembleModel.get_gliner_pii_regex()
     ]
-    datasets = list(Path("data/ground_truth").glob("*.json"))
+    # datasets = list(Path("data/ground_truth").glob("*.json"))
+    datasets = [Path("data/ground_truth/openpii-1m-da-s.json")]
 
     print(
         f"generating predictions\nmodels: {', '.join([m.name for m in models])}\n"
@@ -134,4 +132,4 @@ def generate_predictions(
 
 
 if __name__ == "__main__":
-    generate_predictions(override=False, max_entries_per_config=500)
+    generate_predictions(override=False)  # , max_entries_per_config=500)

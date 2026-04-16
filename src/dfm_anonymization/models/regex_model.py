@@ -9,19 +9,6 @@ from ..dataset import PiiDataEntry
 from ..interfaces import PiiModel
 from ..util.util import Span, filter_bio, spans_to_bio
 
-REGEX_COMPATIBLE_LABELS = {
-    ISO_LABEL_BANK_ACCOUNT,
-    ISO_LABEL_DRIVERS_LICENSE,
-    ISO_LABEL_EMAIL_ADDRESS,
-    ISO_LABEL_PASSPORT,
-    ISO_LABEL_PHONE_NUMBER,
-    ISO_LABEL_PCI,
-    ISO_LABEL_IP_ADDRESS,
-    ISO_LABEL_VEHICLE_ID,
-    ISO_LABEL_SSN,
-    ISO_LABEL_PRECISE_LOCATION,
-}
-
 
 RegexValidator = Callable[[str], bool]
 
@@ -119,7 +106,12 @@ def _is_valid_us_ssn(value: str) -> bool:
     area = compact[:3]
     group = compact[3:5]
     serial = compact[5:]
-    return area not in {"000", "666"} and not area.startswith("9") and group != "00" and serial != "0000"
+    return (
+        area not in {"000", "666"}
+        and not area.startswith("9")
+        and group != "00"
+        and serial != "0000"
+    )
 
 
 def _is_valid_passport(value: str) -> bool:
@@ -130,7 +122,6 @@ def _is_valid_passport(value: str) -> bool:
         compact.isalnum()
         and 6 <= len(compact) <= 12
         and 5 <= digit_count <= 10
-        and letter_count >= 1
         and letter_count <= 4
     )
 
@@ -138,14 +129,19 @@ def _is_valid_passport(value: str) -> bool:
 def _is_valid_drivers_license(value: str) -> bool:
     compact = _compact(value).upper()
     digit_count = len(_digits(compact))
-    return compact.isalnum() and 5 <= len(compact) <= 20 and 5 <= digit_count <= 14
+    return (
+        compact.isalnum()
+        and 5 <= len(compact) <= 20
+        and digit_count >= 1
+        and any(ch.isalpha() for ch in compact)
+    )
 
 
 def _is_valid_vin(value: str) -> bool:
     compact = _compact(value).upper()
     for prefix in ("VIN", "CHASSISNR", "CHASSIS", "STELNUMMER"):
         if compact.startswith(prefix):
-            compact = compact[len(prefix):]
+            compact = compact[len(prefix) :]
             break
     return (
         len(compact) == 17
@@ -159,7 +155,7 @@ def _is_valid_plate_or_vin(value: str) -> bool:
     compact = _compact(value).upper()
     for prefix in ("VIN", "CHASSISNR", "CHASSIS", "STELNUMMER"):
         if compact.startswith(prefix):
-            compact = compact[len(prefix):]
+            compact = compact[len(prefix) :]
             break
     digit_count = len(_digits(compact))
     return (
@@ -209,7 +205,9 @@ REGEX_RULES: tuple[RegexRule, ...] = (
     RegexRule(
         label=ISO_LABEL_PCI,
         pattern=_compile(r"(?P<value>\b(?:\d[ -]*?){13,19}\b)"),
-        validator=lambda value: 13 <= len(_digits(value)) <= 19 and _is_luhn_valid(_digits(value)),
+        validator=lambda value: (
+            13 <= len(_digits(value)) <= 19 and _is_luhn_valid(_digits(value))
+        ),
         priority=30,
     ),
     RegexRule(
@@ -228,12 +226,16 @@ REGEX_RULES: tuple[RegexRule, ...] = (
                 |kortoplysninger
                 |kortnumre
                 |kort(?:\s+med\s+nummer(?:et)?)?
+                |kortet
+                |betalingskort(?:nummer(?:et)?)?
+                |dankort(?:nummer(?:et)?)?
+                |bankkort(?:nummer(?:et)?)?
             )\b
             \s*[:#-]?\s*
-            (?P<value>(?:\d[ -]*?){13,19})
+            (?P<value>(?:\d[ -]*?){12,19})
             """
         ),
-        validator=lambda value: 13 <= len(_digits(value)) <= 19,
+        validator=lambda value: 12 <= len(_digits(value)) <= 19,
         priority=32,
     ),
     RegexRule(
@@ -241,14 +243,14 @@ REGEX_RULES: tuple[RegexRule, ...] = (
         pattern=_compile(
             r"""
             \b(?:
-                card|credit\s+card|debit\s+card|visa(?:-kort)?|mastercard|kreditkort|kort(?:nummer|betaling|oplysninger|numre)?
+                card|credit\s+card|debit\s+card|visa(?:-kort)?|mastercard|kreditkort|kort(?:nummer|betaling|oplysninger|numre)?|kortet|betalingskort|dankort|bankkort
             )\b
             [^\n\r\d]{0,40}
-            (?P<value>(?:\d[ -]*?){13,19})
+            (?P<value>(?:\d[ -]*?){12,19})
             (?=$|[^A-Za-z0-9])
             """
         ),
-        validator=lambda value: 13 <= len(_digits(value)) <= 19,
+        validator=lambda value: 12 <= len(_digits(value)) <= 19,
         priority=34,
     ),
     RegexRule(
@@ -338,17 +340,11 @@ REGEX_RULES: tuple[RegexRule, ...] = (
     ),
     RegexRule(
         label=ISO_LABEL_SSN,
-        pattern=_compile(r"(?P<value>\b(?:0[1-9]|[12]\d|3[01])(?:0[1-9]|1[0-2])\d{2}[- ]?\d{4}\b)"),
+        pattern=_compile(
+            r"(?P<value>\b(?:0[1-9]|[12]\d|3[01])(?:0[1-9]|1[0-2])\d{2}[- ]?\d{4}\b)"
+        ),
         validator=_is_valid_cpr,
         priority=50,
-    ),
-    RegexRule(
-        label=ISO_LABEL_SSN,
-        pattern=_compile(
-            r"(?P<value>\b(?!000|666|9\d\d)\d{3}[- ]?(?!00)\d{2}[- ]?(?!0000)\d{4}\b)"
-        ),
-        validator=_is_valid_us_ssn,
-        priority=55,
     ),
     RegexRule(
         label=ISO_LABEL_PHONE_NUMBER,
@@ -374,7 +370,9 @@ REGEX_RULES: tuple[RegexRule, ...] = (
             (?=$|[^A-Za-z0-9])
             """
         ),
-        validator=lambda value: _compact(value).isalnum() and 6 <= len(_digits(value)) <= 9,
+        validator=lambda value: (
+            _compact(value).isalnum() and 6 <= len(_digits(value)) <= 9
+        ),
         priority=47,
     ),
     RegexRule(
@@ -404,12 +402,17 @@ REGEX_RULES: tuple[RegexRule, ...] = (
         priority=49,
     ),
     RegexRule(
+        label=ISO_LABEL_PASSPORT,
+        pattern=_compile(r"(?P<value>\b\d{9}\b)"),
+        priority=52,
+    ),
+    RegexRule(
         label=ISO_LABEL_DRIVERS_LICENSE,
         pattern=_compile(
             r"""
-            \b(?:driver'?s?\s+licen[sc]e|driving\s+licen[sc]e|licen[sc]e\s+number|driver\s+license(?:\s+id)?|førerkort(?:\s+nr\.?)?|kørekort(?:nummer)?|kørekort\s+nr\.?)\b
+            \b(?:driver'?s?\s+licen[sc]e|driving\s+licen[sc]e|licen[sc]e\s+number|driver\s+license(?:\s+id)?|førerkort(?:\s+nr\.?)?|kørekort(?:nummer(?:et)?|oplysninger)?|kørekort\s+nr\.?)\b
             \s*[:#-]?\s*
-            (?P<value>[A-Z0-9]+(?:[- ][A-Z0-9]+)*)
+            (?P<value>[A-Z0-9]+(?:-[A-Z0-9]+)*)
             (?=$|[^A-Za-z0-9])
             """
         ),
@@ -420,15 +423,24 @@ REGEX_RULES: tuple[RegexRule, ...] = (
         label=ISO_LABEL_DRIVERS_LICENSE,
         pattern=_compile(
             r"""
-            \b(?:driver'?s?\s+licen[sc]e|driving\s+licen[sc]e|licen[sc]e\s+number|driver\s+license(?:\s+id)?|førerkort(?:\s+nr\.?)?|kørekort(?:nummer)?|kørekort\s+nr\.?)\w*\b
+            \b(?:driver'?s?\s+licen[sc]e|driving\s+licen[sc]e|licen[sc]e\s+number|driver\s+license(?:\s+id)?|førerkort(?:\s+nr\.?)?|kørekort(?:nummer(?:et)?|oplysninger)?|kørekort\s+nr\.?)\w*\b
             (?:\s+(?:er|var|som|blev|oplyst(?:e)?|registreret(?:\s+som)?|fremvist|fundet|nummer(?:et)?))?
             \s*[:#-]?\s*
-            (?P<value>(?:[A-Z]{1,6}[- ]?)?\d{5,12}|[A-Z]{1,6}(?:[- ]?[A-Z0-9]{2,}){2,})
+            (?P<value>(?:[A-Z]{1,6}[- ]?)?\d{5,12}|[A-Z]{1,6}(?:[- ]?[A-Z0-9]{2,}){2,}|[A-Z0-9]{5,20})
             (?=$|[^A-Za-z0-9])
             """
         ),
         validator=_is_valid_drivers_license,
         priority=82,
+    ),
+    RegexRule(
+        label=ISO_LABEL_DRIVERS_LICENSE,
+        pattern=_compile(r"(?P<value>\b[A-Z0-9]{10}\b)"),
+        validator=lambda value: (
+            len(_digits(value)) >= 1
+            and sum(ch.isalpha() for ch in value) >= 3
+        ),
+        priority=85,
     ),
     RegexRule(
         label=ISO_LABEL_VEHICLE_ID,
@@ -609,11 +621,16 @@ def _iter_rule_spans(text: str, rule: RegexRule) -> Iterable[Span]:
 def _select_non_overlapping_spans(spans: list[tuple[int, Span]]) -> list[Span]:
     selected: list[Span] = []
     seen: set[tuple[int, int, str]] = set()
-    for _, span in sorted(spans, key=lambda item: (item[1].start, item[0], -(item[1].end - item[1].start))):
+    for _, span in sorted(
+        spans, key=lambda item: (item[1].start, item[0], -(item[1].end - item[1].start))
+    ):
         key = (span.start, span.end, span.label)
         if key in seen:
             continue
-        if any(span.start < existing.end and existing.start < span.end for existing in selected):
+        if any(
+            span.start < existing.end and existing.start < span.end
+            for existing in selected
+        ):
             continue
         selected.append(span)
         seen.add(key)

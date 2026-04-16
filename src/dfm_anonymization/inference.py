@@ -22,7 +22,7 @@ def inference(
 ) -> PiiDataset:
     it = dataset if samples is None else dataset.get_samples(samples)
     new_entries = []
-    for entry in tqdm(it, dynamic_ncols=True, leave=True, position=pbar_pos):
+    for entry in tqdm(it, dynamic_ncols=True, leave=False, position=pbar_pos):
         try:
             prediction = model(entry)
         except Exception as exc:
@@ -95,11 +95,11 @@ def generate_predictions(
         f"datasets: {', '.join([d.stem for d in datasets])}"
     )
 
-    for model in tqdm(models, leave=True, position=pbar_pos, dynamic_ncols=True):
+    for model in tqdm(models, leave=False, position=pbar_pos, dynamic_ncols=True):
         print(f"Model: {model.name}")
         for in_path in (
             pbar_datasets := tqdm(
-                datasets, leave=True, position=pbar_pos + 1, dynamic_ncols=True
+                datasets, leave=False, position=pbar_pos + 1, dynamic_ncols=True
             )
         ):
             dataset = PiiDataset.from_file(in_path)
@@ -132,4 +132,4 @@ def generate_predictions(
 
 
 if __name__ == "__main__":
-    generate_predictions(override=False)  # , max_entries_per_config=500)
+    generate_predictions(override=True)  # , max_entries_per_config=500)

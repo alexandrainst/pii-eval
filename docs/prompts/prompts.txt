@@ -1,0 +1,3 @@
+
+2026-04-16 14:11
+I need to improve this regex model for PII identification (in danish contexts). To test performance first run (in the src/dfm_anonymization/ directory) the inference.py script and then evaluate.py script. The metric of primary interest is the f5-score. Please edit only the regex_model.py - may suggest edits to other files if you spot bugs.

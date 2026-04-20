@@ -119,3 +119,6 @@ wandb
 agents_log.md
 agent_history.md
 agents.md
+
+# Rust
+Cargo.lock

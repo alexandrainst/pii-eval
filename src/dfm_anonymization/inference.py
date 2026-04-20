@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from pathlib import Path
 
@@ -5,15 +6,16 @@ from codetiming import Timer
 from dotenv import load_dotenv
 from tqdm import tqdm
 
+from dfm_anonymization.constants import LABEL_DESCRIPTIONS_DA
 from dfm_anonymization.dataset import PiiDataEntry, PiiDataset
 from dfm_anonymization.interfaces import PiiModel
+from dfm_anonymization.models.gliner_model import GlinerModel
+from dfm_anonymization.models.ner_model import NerModel
+from dfm_anonymization.models.openai_client_model import OpenAIClientModel
+from dfm_anonymization.models.presidio_model import PresidioModel
+from dfm_anonymization.models.regex_model import RegexModel
 
 # from dfm_anonymization.models.ensemble_model import EnsembleModel
-from dfm_anonymization.models.regex_model import RegexModel
-# from dfm_anonymization.models.gliner_model import GlinerModel
-# from dfm_anonymization.models.ner_model import NerModel
-# from dfm_anonymization.models.openai_client_model import OpenAIClientModel
-# from dfm_anonymization.models.presidio_model import PresidioModel
 # from dfm_anonymization.models.scrambletron import ScrambletronModel
 
 
@@ -64,9 +66,10 @@ def generate_predictions(
     load_dotenv()
 
     models: list[PiiModel] = [
-        RegexModel(),
-        # NerModel.from_hf("saattrupdan/nbailab-base-ner-scandi"),
         # PresidioModel(),
+        # RegexModel(),
+        # NerModel.from_hf("tabularisai/eu-pii-safeguard"),
+        # NerModel.from_hf("saattrupdan/nbailab-base-ner-scandi"),
         # GlinerModel("nvidia/gliner-pii", LABEL_DESCRIPTIONS_DA),
         # GlinerModel("urchade/gliner_multi-v2.1", LABEL_DESCRIPTIONS_DA),
         # OpenAIClientModel(
@@ -74,11 +77,11 @@ def generate_predictions(
         #     base_url="http://localhost:8000/v1",
         #     api_key="not needed",
         # ),
-        # OpenAIClientModel(
-        #     model_tag="qwen-235b",
-        #     base_url="https://inference.projects.alexandrainst.dk/v1",
-        #     api_key=os.getenv("ALEXANDRA_INFERENCE_API_KEY"),
-        # ),
+        OpenAIClientModel(
+            model_tag="qwen-235b",
+            base_url="https://inference.projects.alexandrainst.dk/v1",
+            api_key=os.getenv("ALEXANDRA_INFERENCE_API_KEY"),
+        ),
         # OpenAIClientModel(
         #     model_tag="Qwen/Qwen3.5-27B",
         #     base_url="https://openrouter.ai/api/v1",
@@ -132,4 +135,4 @@ def generate_predictions(
 
 
 if __name__ == "__main__":
-    generate_predictions(override=True)  # , max_entries_per_config=500)
+    generate_predictions(override=False)  # , max_entries_per_config=500)

@@ -1,5 +1,33 @@
 from bidict import bidict
 
+# Labels to consider including:
+#
+# DEVICE_ID (eu-pii-safeguard) (*)
+# DOB (multiple) *
+# MAC_ADDRESS (eu-pii-safeguard) *
+# PASSWORD (eu-pii-safeguard) (*)
+# PRIVATE_URL (*)
+# TAX_NUMBER (openpii-1m) *
+#
+# Labels tentatively excluded:
+#
+# AGE (eu-pii-safeguard) (*)
+# AMOUNT (eu-pii-safeguard) *
+# COMPANY_NAME (eu-pii-safeguard) (*)
+# CURRENCY (eu-pii-safeguard) *
+# ETHNICITY (eu-pii-safeguard) (*)
+# GENDER (eu-pii-safeguard) *
+# HEALTH_CONDITION (eu-pii-safeguard) (*)
+# JOB_TITLE (eu-pii-safeguard) (*)
+# POLITICAL_OPINION (eu-pii-safeguard) (*)
+# PREFIX (eu-pii-safeguard) (*)
+# RELIGION (eu-pii-safeguard) (*)
+# SALARY (eu-pii-safeguard) *
+# SEXUAL_ORIENTATION (eu-pii-safeguard) (*)
+# URL (eu-pii-safeguard) (*)
+#
+# * = detectable by regex (*) = potentially
+
 ISO_LABEL_BANK_ACCOUNT = "BANK_ACCOUNT"  # !
 ISO_LABEL_DRIVERS_LICENSE = "DRIVERS_LICENSE"  #
 ISO_LABEL_EMAIL_ADDRESS = "EMAIL_ADDRESS"  #
@@ -13,7 +41,6 @@ ISO_LABEL_PRECISE_LOCATION = "PRECISE_LOCATION"  #
 ISO_LABEL_SSN = "SSN"  #
 ISO_LABEL_USERNAME = "USERNAME"  # !
 ISO_LABEL_VEHICLE_ID = "VEHICLE_ID"  # !
-# PRIVATE_URL
 
 ALL_ISO_LABELS = {
     ISO_LABEL_BANK_ACCOUNT,
@@ -68,8 +95,8 @@ LABEL_DESCRIPTIONS_DA = bidict(
             "private email-adresser (men ikke offentlige/officielle email-adresser) "
             "- f.eks hbergman@gmail.com, men ikke kontakt@dr.dk"
         ),
-        ISO_LABEL_IP_ADDRESS: "IP-adresse",
-        ISO_LABEL_OTHER_PII: "andet person-identificerende information",
+        ISO_LABEL_IP_ADDRESS: "IP-adresser",
+        ISO_LABEL_OTHER_PII: "andet information som kan være person-identificerende",
         ISO_LABEL_PASSPORT: "pasnummer",
         ISO_LABEL_PCI: "betalingskortoplysninger",
         ISO_LABEL_PERSON_NAME: (
@@ -78,10 +105,10 @@ LABEL_DESCRIPTIONS_DA = bidict(
             "personer ikke betragtes under denne kategori "
             "(f.eks. folk som har en side på wikipedia)"
         ),
-        ISO_LABEL_PHONE_NUMBER: "telefonnummer - alle landekoder",
+        ISO_LABEL_PHONE_NUMBER: "telefonnummer (alle landekoder)",
         ISO_LABEL_PRECISE_LOCATION: "præcis lokation - gadenavn med husnummer eller koordinater",
         ISO_LABEL_SSN: "CPR-nummer",
-        ISO_LABEL_USERNAME: "brugernavn",
+        ISO_LABEL_USERNAME: "brugernavne (fx. på online platforme)",
         ISO_LABEL_VEHICLE_ID: "registreringsnummer / nummerplade",
     }
 )
@@ -125,7 +152,52 @@ MODEL_LABEL_MAP: dict[str, dict[str, str]] = {
         "CREDIT_CARD": ISO_LABEL_PCI,
     },
     "regex": {k: k for k in REGEX_COMPATIBLE_LABELS},
+    "eu-pii-safeguard": {
+        "ACCOUNT_NUMBER": ISO_LABEL_BANK_ACCOUNT,
+        "ADDRESS": ISO_LABEL_PRECISE_LOCATION,
+        # "AGE",
+        # "AMOUNT",
+        "BUILDING_NUMBER": ISO_LABEL_PRECISE_LOCATION,
+        "CITY": ISO_LABEL_PRECISE_LOCATION,
+        # "COMPANY_NAME",
+        "COUNTRY": ISO_LABEL_PRECISE_LOCATION,
+        # "CURRENCY",
+        "CREDIT_CARD_NUMBER": ISO_LABEL_PCI,
+        "DEVICE_ID": ISO_LABEL_OTHER_PII,
+        "DOB": ISO_LABEL_OTHER_PII,
+        "DRIVER_LICENSE": ISO_LABEL_DRIVERS_LICENSE,
+        "EMAIL": ISO_LABEL_EMAIL_ADDRESS,
+        # "ETHNICITY",
+        "FIRSTNAME": ISO_LABEL_PERSON_NAME,
+        # "GENDER",
+        # "HEALTH_CONDITION",
+        "HEALTH_INSURANCE_ID": ISO_LABEL_SSN,
+        "IBAN": ISO_LABEL_BANK_ACCOUNT,
+        "IP_ADDRESS": ISO_LABEL_IP_ADDRESS,
+        # "JOB_TITLE",
+        "LASTNAME": ISO_LABEL_PERSON_NAME,
+        "LATITUDE": ISO_LABEL_PRECISE_LOCATION,
+        "LONGITUDE": ISO_LABEL_PRECISE_LOCATION,
+        "MAC_ADDRESS": ISO_LABEL_OTHER_PII,
+        "MIDDLENAME": ISO_LABEL_PERSON_NAME,
+        "NATIONAL_ID": ISO_LABEL_SSN,
+        "PASSPORT_NUMBER": ISO_LABEL_PASSPORT,
+        "PASSWORD": ISO_LABEL_OTHER_PII,
+        "PHONE_NUMBER": ISO_LABEL_PHONE_NUMBER,
+        # "POLITICAL_OPINION",
+        "POSTAL_CODE": ISO_LABEL_PRECISE_LOCATION,
+        # "PREFIX",
+        # "RELIGION",
+        # "SALARY",
+        # "SEXUAL_ORIENTATION",
+        "STATE": ISO_LABEL_PRECISE_LOCATION,
+        "STREET": ISO_LABEL_PRECISE_LOCATION,
+        "TAX_ID": ISO_LABEL_OTHER_PII,
+        # "URL",
+        "USERNAME": ISO_LABEL_USERNAME,
+    },
 }
+
 
 DATASET_LABEL_MAP: dict[str, dict[str, str]] = {
     "dane": {
@@ -160,25 +232,25 @@ DATASET_LABEL_MAP: dict[str, dict[str, str]] = {
         "VEHICLE_ID": ISO_LABEL_VEHICLE_ID,
     },
     "openpii-1m-da": {
-        # "DATE",
-        "GIVENNAME": ISO_LABEL_PERSON_NAME,
-        "SURNAME": ISO_LABEL_PERSON_NAME,
-        "EMAIL": ISO_LABEL_EMAIL_ADDRESS,
-        "CITY": ISO_LABEL_PRECISE_LOCATION,
-        # "TITLE",
-        "TELEPHONENUM": ISO_LABEL_PHONE_NUMBER,
         # "AGE",
-        "STREET": ISO_LABEL_PRECISE_LOCATION,
         "BUILDINGNUM": ISO_LABEL_PRECISE_LOCATION,
-        "ZIPCODE": ISO_LABEL_PRECISE_LOCATION,
-        "IDCARDNUM": ISO_LABEL_OTHER_PII,
+        "CITY": ISO_LABEL_PRECISE_LOCATION,
         "CREDITCARDNUMBER": ISO_LABEL_PCI,
+        # "DATE",
         "DRIVERLICENSENUM": ISO_LABEL_DRIVERS_LICENSE,
+        "EMAIL": ISO_LABEL_EMAIL_ADDRESS,
         # "GENDER",
-        # "TAXNUM",
+        "GIVENNAME": ISO_LABEL_PERSON_NAME,
+        "IDCARDNUM": ISO_LABEL_OTHER_PII,
+        "PASSPORTNUM": ISO_LABEL_PASSPORT,
         # "SEX",
         "SOCIALNUM": ISO_LABEL_SSN,
-        "PASSPORTNUM": ISO_LABEL_PASSPORT,
+        "STREET": ISO_LABEL_PRECISE_LOCATION,
+        "SURNAME": ISO_LABEL_PERSON_NAME,
+        # "TAXNUM",
+        "TELEPHONENUM": ISO_LABEL_PHONE_NUMBER,
+        # "TITLE",
+        "ZIPCODE": ISO_LABEL_PRECISE_LOCATION,
     },
 }
 

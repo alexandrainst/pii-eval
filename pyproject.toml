@@ -17,6 +17,7 @@ dependencies = [
     "pytest>=9.0.2",
     "datasets>=4.8.4",
     "pip>=26.0.1",
+    "rich>=14.3.3",
 ]
 
 [project.scripts]

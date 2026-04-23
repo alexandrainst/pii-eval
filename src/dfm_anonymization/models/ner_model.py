@@ -1,4 +1,5 @@
 from typing import Any, List, Optional, Set, Tuple
+from bidict import bidict
 import torch
 from transformers import AutoModelForTokenClassification, AutoTokenizer
 
@@ -20,9 +21,11 @@ class TransformersTokenizer(Tokenizer):
 
 
 class TransformersTokenClassifier(TokenClassifier):
-    def __init__(self, model: AutoModelForTokenClassification):
+    def __init__(self, model: AutoModelForTokenClassification, out_bias: float = 0.0):
         self.model = model
-        self.id2label = model.config.id2label
+        self.id2label = bidict(model.config.id2label)
+        self.o_id = self.id2label.inv["O"]
+        self.out_bias = out_bias
         self.device = torch.device(get_torch_device())
         self.model.to(self.device)
         self.model.eval()
@@ -31,25 +34,36 @@ class TransformersTokenClassifier(TokenClassifier):
         with torch.no_grad():
             token_batch = tokens.to(self.device)
             outputs = self.model(**token_batch)
-            predictions = torch.argmax(outputs.logits, dim=-1)[0].tolist()
-        return [self.id2label[prediction] for prediction in predictions]
+            biased_logits = outputs.logits.clone()
+            biased_logits[0,:,self.o_id] += self.out_bias
+            predictions = torch.argmax(biased_logits, dim=-1)[0].tolist()
+        labels = [self.id2label[prediction] for prediction in predictions]
+        return labels
 
 
 class NerModel(PiiModel):
-    def __init__(self, name: str, tokenizer: Tokenizer, model: TokenClassifier):
+    def __init__(
+        self,
+        name: str,
+        tokenizer: Tokenizer,
+        model: TokenClassifier,
+    ):
         super().__init__(name)
         self.tokenizer = tokenizer
         self.model = model
 
     @staticmethod
-    def from_hf(tag: str):
+    def from_hf(tag: str, out_bias: float = 0.0):
+        bias_suffix = "" if out_bias == 0.0 else f"_biased_{out_bias}"
+        name = tag.split("/")[-1] + bias_suffix
         return NerModel(
-            name=tag.split("/")[-1],
+            name=name,
             tokenizer=TransformersTokenizer(
-                AutoTokenizer.from_pretrained(tag, use_fast=True)
+                tokenizer=AutoTokenizer.from_pretrained(tag, use_fast=True)
             ),
             model=TransformersTokenClassifier(
-                AutoModelForTokenClassification.from_pretrained(tag)
+                model=AutoModelForTokenClassification.from_pretrained(tag),
+                out_bias=out_bias,
             ),
         )
 

@@ -1,3 +1,5 @@
+import re
+
 from bidict import bidict
 
 # Labels to consider including:
@@ -98,7 +100,7 @@ LABEL_DESCRIPTIONS_DA = bidict(
         ISO_LABEL_IP_ADDRESS: "IP-adresser",
         ISO_LABEL_OTHER_PII: "andet information som kan være person-identificerende",
         ISO_LABEL_PASSPORT: "pasnummer",
-        ISO_LABEL_PCI: "betalingskortoplysninger",
+        ISO_LABEL_PCI: "betalingskortoplysninger, CVV",
         ISO_LABEL_PERSON_NAME: (
             "navn på en person (når dette navn gør det muligt at identificere "
             "personen) - f.eks. navn + efternavn - med den undtagelse at offentlige "
@@ -130,6 +132,17 @@ REGEX_COMPATIBLE_LABELS = {
     ISO_LABEL_PRECISE_LOCATION,
 }
 
+
+def get_model_label_map(
+    model_name: str, default: dict[str, str] = None
+) -> dict[str, str] | None:
+    for key, label_map in MODEL_LABEL_MAP.items():
+        pattern = re.compile(key)
+        if pattern.match(model_name):
+            return label_map
+    return default
+
+
 MODEL_LABEL_MAP: dict[str, dict[str, str]] = {
     "nbailab-base-ner-scandi": {
         "LOC": ISO_LABEL_PRECISE_LOCATION,
@@ -152,7 +165,17 @@ MODEL_LABEL_MAP: dict[str, dict[str, str]] = {
         "CREDIT_CARD": ISO_LABEL_PCI,
     },
     "regex": {k: k for k in REGEX_COMPATIBLE_LABELS},
-    "eu-pii-safeguard": {
+    "privacy-filter": {
+        "account_number": ISO_LABEL_BANK_ACCOUNT,
+        "private_address": ISO_LABEL_PRECISE_LOCATION,
+        "private_email": ISO_LABEL_EMAIL_ADDRESS,
+        "private_person": ISO_LABEL_PERSON_NAME,
+        "private_phone": ISO_LABEL_PHONE_NUMBER,
+        "private_url": ISO_LABEL_OTHER_PII,
+        "private_date": ISO_LABEL_OTHER_PII,
+        "secret": ISO_LABEL_OTHER_PII,
+    },
+    r"eu-pii-safeguard*": {
         "ACCOUNT_NUMBER": ISO_LABEL_BANK_ACCOUNT,
         "ADDRESS": ISO_LABEL_PRECISE_LOCATION,
         # "AGE",
@@ -199,13 +222,42 @@ MODEL_LABEL_MAP: dict[str, dict[str, str]] = {
 }
 
 
+def get_dataset_label_map(
+    dataset_name: str, default: dict[str, str] = None
+) -> dict[str, str] | None:
+    for key, label_map in DATASET_LABEL_MAP.items():
+        pattern = re.compile(key)
+        if pattern.match(dataset_name):
+            return label_map
+    return default
+
+
 DATASET_LABEL_MAP: dict[str, dict[str, str]] = {
     "dane": {
-        # "LOC": ISO_LABEL_PRECISE_LOCATION,
+        "LOC": ISO_LABEL_PRECISE_LOCATION,
+        # "MISC",
+        # "ORG",
         "PER": ISO_LABEL_PERSON_NAME,
     },
     "dansk-ner": {
+        # "CARDINAL",
+        # "DATE",
+        # "EVENT",
+        # "FACILITY",
+        # "GPE",
+        # "LANGUAGE",
+        # "LAW",
+        "LOCATION": ISO_LABEL_PRECISE_LOCATION,
+        # "MONEY",
+        # "NORP",
+        # "ORDINAL",
+        # "ORGANIZATION",
+        # "PERCENT",
         "PERSON": ISO_LABEL_PERSON_NAME,
+        # "PRODUCT",
+        # "QUANTITY",
+        # "TIME",
+        # "WORK OF ART"
     },
     "gen_presidio": {
         "DRIVERS_LICENSE": ISO_LABEL_DRIVERS_LICENSE,
@@ -231,7 +283,7 @@ DATASET_LABEL_MAP: dict[str, dict[str, str]] = {
         "USERNAME": ISO_LABEL_USERNAME,
         "VEHICLE_ID": ISO_LABEL_VEHICLE_ID,
     },
-    "openpii-1m-da": {
+    "openpii-1m-da*": {
         # "AGE",
         "BUILDINGNUM": ISO_LABEL_PRECISE_LOCATION,
         "CITY": ISO_LABEL_PRECISE_LOCATION,
@@ -252,8 +304,4 @@ DATASET_LABEL_MAP: dict[str, dict[str, str]] = {
         # "TITLE",
         "ZIPCODE": ISO_LABEL_PRECISE_LOCATION,
     },
-}
-
-DATASET_LABEL_MAP = DATASET_LABEL_MAP | {
-    "openpii-1m-da-s": DATASET_LABEL_MAP["openpii-1m-da"]
 }

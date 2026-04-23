@@ -13,6 +13,17 @@ from dfm_anonymization.util.util import (
     tokens_to_offsets,
 )
 
+try:
+    from gliner import GLiNER
+except Exception as exc:
+    raise RuntimeError(
+        f"Failed to import GLiNER. "
+        "The installed gliner/transformers/torch stack appears incompatible "
+        "with the current Python runtime. This commonly fails on Python 3.13; "
+        "try a Python 3.12 environment or a dependency combination known to "
+        "support your interpreter."
+    ) from exc
+
 GLINER_MODEL_EXAMPLES = ["nvidia/gliner-pii", "urchade/gliner_multi-v2.1"]
 
 
@@ -21,23 +32,15 @@ class GlinerModel(PiiModel):
         self,
         tag: str = GLINER_MODEL_EXAMPLES[0],
         labels: Set[str] | bidict[str, str] = LABEL_DESCRIPTIONS_DA,
+        threshold: float = 0.5,
     ):
-        super().__init__(name=tag.split("/")[-1])
+        super().__init__(name=tag.split("/")[-1] + f"_th_{threshold:.3f}")
         self.tag = tag
         self.model: Any | None = None
         self.labels = labels
+        self.threshold = threshold
 
     def _load_model(self) -> Any:
-        try:
-            from gliner import GLiNER
-        except Exception as exc:
-            raise RuntimeError(
-                f"Failed to import GLiNER for model '{self.tag}'. "
-                "The installed gliner/transformers/torch stack appears incompatible "
-                "with the current Python runtime. This commonly fails on Python 3.13; "
-                "try a Python 3.12 environment or a dependency combination known to "
-                "support your interpreter."
-            ) from exc
         return GLiNER.from_pretrained(self.tag, map_location=get_torch_device())
 
     def __call__(
@@ -50,7 +53,9 @@ class GlinerModel(PiiModel):
             if isinstance(self.labels, AbcSet)
             else list(self.labels.values())
         )
-        token_spans = entry.get_token_spans() or tokens_to_offsets(entry.text, entry.tokens)
+        token_spans = entry.get_token_spans() or tokens_to_offsets(
+            entry.text, entry.tokens
+        )
         max_sentence_len = 500
         c = 0
         subtexts = []
@@ -64,9 +69,10 @@ class GlinerModel(PiiModel):
         if c < len(entry.text) - 1:
             subtexts.append(entry.text[c:])
             span_inits.append(c)
-        subspan_list: List[List[Dict[str, Any]]] = self.model.batch_predict_entities(
-            subtexts, descriptions
+        subspan_list: list[list[dict[str, Any]]] = self.model.inference(
+            subtexts, descriptions, threshold=self.threshold
         )
+
         spans = []
         for c, subspans in zip(span_inits, subspan_list):
             for span in subspans:

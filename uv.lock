@@ -512,6 +512,7 @@ dependencies = [
     { name = "presidio-anonymizer" },
     { name = "presidio-evaluator" },
     { name = "pytest" },
+    { name = "rich" },
     { name = "spacy" },
     { name = "vllm" },
 ]
@@ -528,6 +529,7 @@ requires-dist = [
     { name = "presidio-anonymizer", specifier = ">=2.2.360" },
     { name = "presidio-evaluator", specifier = ">=0.2.5" },
     { name = "pytest", specifier = ">=9.0.2" },
+    { name = "rich", specifier = ">=14.3.3" },
     { name = "spacy", specifier = ">=3.8.11" },
     { name = "vllm", specifier = ">=0.16.0" },
 ]

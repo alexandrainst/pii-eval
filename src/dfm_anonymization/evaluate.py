@@ -7,11 +7,13 @@ from statistics import mean
 from typing import Dict, List
 
 import pandas as pd
+from rich.progress import Progress
 
 from dfm_anonymization.constants import (
     ALL_ISO_LABELS,
     DATASET_LABEL_MAP,
     MODEL_LABEL_MAP,
+    get_model_label_map,
 )
 from dfm_anonymization.dataset import PiiDataset
 from dfm_anonymization.util.util import to_dict_recursive
@@ -188,10 +190,8 @@ def evaluate(
         if dataset_name in DATASET_LABEL_MAP
         else {k: k for k in ALL_ISO_LABELS}
     )
-    model_label_map = (
-        MODEL_LABEL_MAP[model_name]
-        if model_name in MODEL_LABEL_MAP
-        else {k: k for k in ALL_ISO_LABELS}
+    model_label_map = get_model_label_map(
+        model_name, default={k: k for k in ALL_ISO_LABELS}
     )
     common_iso_labels = set(dataset_label_map.values()).intersection(
         set(model_label_map.values())
@@ -230,12 +230,17 @@ def evaluate(
     return confusion_counts
 
 
-def evaluate_all(base_directory: Path | str = "data/predictions"):
+def evaluate_all(base_directory: Path | str = "data/predictions", cache: bool = False):
     if type(base_directory) == str:
         base_directory = Path(base_directory)
     results = []
     performances = {}
-    for predictions_path in base_directory.glob("*/*.json"):
+    prediction_paths = list(base_directory.glob("*/*.json"))
+    progress = Progress()
+    progress.start()
+    predictions_progress = progress.add_task("Prediction paths...", total=len(prediction_paths))
+    for predictions_path in prediction_paths:
+        progress.advance(predictions_progress)
         dataset_name = predictions_path.stem
         model_name = predictions_path.parent.name
         ground_truth_path = f"data/ground_truth/{dataset_name}.json"
@@ -259,11 +264,12 @@ def evaluate_all(base_directory: Path | str = "data/predictions"):
         columns=["samples/s"],
     )
     df = add_metric_columns(pd.DataFrame(to_dict_recursive(results)))
-    timestamp = datetime.now().isoformat()
-    out_path = Path(f"data/results/{timestamp}.json")
-    out_path.parent.mkdir(exist_ok=True, parents=True)
-    df.to_json(f"data/results/{timestamp}.json")
-    # df = df.dropna(how="any")
+    # TODO: df = .. remove rows where label == "OTHER_PII"
+    if cache:
+        timestamp = datetime.now().isoformat()
+        out_path = Path(f"data/results/{timestamp}.json")
+        out_path.parent.mkdir(exist_ok=True, parents=True)
+        df.to_json(f"data/results/{timestamp}.json")
 
     best_models = add_metric_columns(
         df.groupby("model")[CONFUSION_COLUMNS].sum()

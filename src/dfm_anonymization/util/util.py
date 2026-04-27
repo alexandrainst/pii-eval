@@ -22,6 +22,11 @@ def _repr_str(dumper: BlockStrDumper, data: str) -> yaml.Node:
 BlockStrDumper.add_representer(str, _repr_str)
 
 
+class IdenMap:
+    def __getitem__(self, key):
+        return key
+
+
 class Singleton(type):
     _instances = {}
 

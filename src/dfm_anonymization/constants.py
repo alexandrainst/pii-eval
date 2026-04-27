@@ -283,7 +283,7 @@ DATASET_LABEL_MAP: dict[str, dict[str, str]] = {
         "USERNAME": ISO_LABEL_USERNAME,
         "VEHICLE_ID": ISO_LABEL_VEHICLE_ID,
     },
-    "openpii-1m-da*": {
+    "openpii-1m-da": {
         # "AGE",
         "BUILDINGNUM": ISO_LABEL_PRECISE_LOCATION,
         "CITY": ISO_LABEL_PRECISE_LOCATION,

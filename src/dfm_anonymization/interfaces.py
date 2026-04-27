@@ -25,6 +25,6 @@ class PiiModel(ABC):
 
     @abstractmethod
     def __call__(
-        self, entry: PiiDataEntry, label_whitelist: Set[str] | None = None
+        self, entry: PiiDataEntry, label_map: dict[str, str] | None = None
     ) -> List[str]:
         pass

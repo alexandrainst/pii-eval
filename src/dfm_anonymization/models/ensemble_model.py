@@ -1,32 +1,38 @@
-from typing import List, Set, Tuple
-
 from bidict import bidict
 
 from dfm_anonymization.constants import *
 from dfm_anonymization.dataset import PiiDataEntry
 from dfm_anonymization.interfaces import PiiModel
+from dfm_anonymization.util.util import IdenMap
 
 
 class EnsembleModel(PiiModel):
-    def __init__(self, name: str, models: List[Tuple[PiiModel, Set[str]]]):
+    def __init__(self, name: str, models: list[tuple[PiiModel, dict[str, str]]]):
         super().__init__(name)
         self.models = models
 
-    def __call__(self, entry: PiiDataEntry) -> List[str]:
+    def __call__(
+        self, entry: PiiDataEntry, label_map: dict[str, str] | None = None
+    ) -> list[str]:
+        if label_map is None:
+            label_map = IdenMap()
         n = len(entry.bio_tags) if entry.bio_tags else len(entry.tokens)
         predictions = ["O"] * n
-        for model, label_whitelist in self.models:
+        for model, model_label_map in self.models:
             for i, new_tag in enumerate(
-                model(entry=entry, label_whitelist=label_whitelist)
+                model(entry=entry, label_whitelist=model_label_map)
             ):
                 if predictions[i] == "O" and new_tag != "O":
+                    new_tag_mapped = (
+                        new_tag[:2] + label_map[model_label_map[new_tag[2:]]]
+                    )
                     if (
-                        new_tag.startswith("I-")
-                        and predictions[i - 1][2:] != new_tag[2:]
+                        new_tag_mapped.startswith("I-")
+                        and predictions[i - 1][2:] != new_tag_mapped[2:]
                     ):
-                        predictions[i] = f"B-{new_tag[2:]}"
+                        predictions[i] = f"B-{new_tag_mapped[2:]}"
                     else:
-                        predictions[i] = new_tag
+                        predictions[i] = new_tag_mapped
         return predictions
 
     @staticmethod

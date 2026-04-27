@@ -7,7 +7,7 @@ from statistics import mean
 from typing import Dict, List
 
 import pandas as pd
-from rich.progress import Progress
+from rich.progress import track
 
 from dfm_anonymization.constants import (
     ALL_ISO_LABELS,
@@ -182,7 +182,7 @@ def _get_iso_label(tag: str, label_map: Dict[str, str | None]) -> str | None:
 
 def evaluate(
     ground_truth: PiiDataset, predictions: PiiDataset
-) -> Dict[str, MetricResult]:
+) -> tuple[dict[str, ConfusionResult], ConfusionResult]:
     dataset_name = ground_truth.metadata.get("dataset_name") or "some dataset"
     model_name = predictions.metadata.get("model_name") or "some model"
     dataset_label_map = (
@@ -198,6 +198,22 @@ def evaluate(
     )
     aligned_entries = _get_aligned_entries(ground_truth, predictions)
 
+    confusion_all = ConfusionResult.zero()
+    dataset_valid_labels = set(dataset_label_map.values())
+    for true_entry, pred_entry in aligned_entries:
+        for true_tag, pred_tag in zip(true_entry.bio_tags, pred_entry.bio_tags):
+            true_iso_label = _get_iso_label(true_tag, dataset_label_map)
+            pred_iso_label = _get_iso_label(pred_tag, model_label_map)
+            if true_iso_label:
+                if pred_iso_label in dataset_valid_labels:
+                    confusion_all.tp += 1
+                else:
+                    confusion_all.fn += 1
+            else:
+                if pred_iso_label in dataset_valid_labels:
+                    confusion_all.fp += 1
+                else:
+                    confusion_all.tn += 1
     confusion_counts = {}
     for label in common_iso_labels:
         confusion = ConfusionResult.zero()
@@ -227,31 +243,42 @@ def evaluate(
                     else:
                         confusion.tn += 1
 
-    return confusion_counts
+    return confusion_counts, confusion_all
 
 
-def evaluate_all(base_directory: Path | str = "data/predictions", cache: bool = False):
+def evaluate_all(
+    base_directory: Path | str = "data/predictions", write_cache: bool = False
+):
     if type(base_directory) == str:
         base_directory = Path(base_directory)
     results = []
+    results_one_label = []
     performances = {}
     prediction_paths = list(base_directory.glob("*/*.json"))
-    progress = Progress()
-    progress.start()
-    predictions_progress = progress.add_task("Prediction paths...", total=len(prediction_paths))
-    for predictions_path in prediction_paths:
-        progress.advance(predictions_progress)
+    for predictions_path in track(prediction_paths):
         dataset_name = predictions_path.stem
         model_name = predictions_path.parent.name
-        ground_truth_path = f"data/ground_truth/{dataset_name}.json"
+        ground_truth_path = Path(f"data/ground_truth/{dataset_name}.json")
         predictions = PiiDataset.from_file(predictions_path)
+        if not ground_truth_path.exists():
+            continue
         ground_truth = PiiDataset.from_file(ground_truth_path)
-        metrics_dict = evaluate(ground_truth=ground_truth, predictions=predictions)
+        confusion_dict, confusion_one_label = evaluate(
+            ground_truth=ground_truth, predictions=predictions
+        )
         results += [
             EvaluationResult(
-                **asdict(metrics), dataset=dataset_name, model=model_name, label=label
+                **asdict(confusion), dataset=dataset_name, model=model_name, label=label
             )
-            for label, metrics in metrics_dict.items()
+            for label, confusion in confusion_dict.items()
+        ]
+        results_one_label += [
+            EvaluationResult(
+                **asdict(confusion_one_label),
+                dataset=dataset_name,
+                model=model_name,
+                label="all_labels",
+            )
         ]
         if model_name not in performances:
             performances[model_name] = []
@@ -264,8 +291,11 @@ def evaluate_all(base_directory: Path | str = "data/predictions", cache: bool = 
         columns=["samples/s"],
     )
     df = add_metric_columns(pd.DataFrame(to_dict_recursive(results)))
-    # TODO: df = .. remove rows where label == "OTHER_PII"
-    if cache:
+    # df = df[df["label"] != "OTHER_PII"]
+    df_one_label = add_metric_columns(
+        pd.DataFrame(to_dict_recursive(results_one_label)).groupby("model").sum()
+    ).sort_values("f5", ascending=False)
+    if write_cache:
         timestamp = datetime.now().isoformat()
         out_path = Path(f"data/results/{timestamp}.json")
         out_path.parent.mkdir(exist_ok=True, parents=True)
@@ -294,6 +324,8 @@ def evaluate_all(base_directory: Path | str = "data/predictions", cache: bool = 
     with pd.option_context(
         "display.max_rows",
         None,
+        "display.max_columns",
+        None,
         "display.float_format",
         lambda x: "%.3f" % x,
     ):
@@ -304,9 +336,9 @@ def evaluate_all(base_directory: Path | str = "data/predictions", cache: bool = 
         if len(best_models) > 1:
             print(best_model_by_label, end="\n\n")
         print(best_models, end="\n\n")
-        print(performances.sort_values("samples/s", ascending=False))
-
-    pass
+        print(performances.sort_values("samples/s", ascending=False), end="\n\n")
+        print("Treating all labels as one:")
+        print(df_one_label, end="\n\n")
 
 
 if __name__ == "__main__":

@@ -5,9 +5,13 @@ from pathlib import Path
 from codetiming import Timer
 from dotenv import load_dotenv
 from tqdm import tqdm
-from rich.progress import Progress, TaskID
+from rich.progress import track
 
-from dfm_anonymization.constants import LABEL_DESCRIPTIONS_DA
+from dfm_anonymization.constants import (
+    ALL_ISO_LABELS,
+    LABEL_DESCRIPTIONS_DA,
+    MODEL_LABEL_MAP,
+)
 from dfm_anonymization.dataset import PiiDataEntry, PiiDataset
 from dfm_anonymization.interfaces import PiiModel
 from dfm_anonymization.models.gliner_model import GlinerModel
@@ -15,7 +19,8 @@ from dfm_anonymization.models.ner_model import NerModel
 from dfm_anonymization.models.openai_client_model import OpenAIClientModel
 from dfm_anonymization.models.presidio_model import PresidioModel
 from dfm_anonymization.models.regex_model import RegexModel
-# from dfm_anonymization.models.ensemble_model import EnsembleModel
+from dfm_anonymization.models.ensemble_model import EnsembleModel
+from dfm_anonymization.util.util import IdenMap
 # from dfm_anonymization.models.scrambletron import ScrambletronModel
 
 
@@ -23,17 +28,15 @@ def inference(
     model: PiiModel,
     dataset: PiiDataset,
     samples: int | None = None,
-    progress: Progress | None = None,  # pbar_pos: int = 0
-    task_id: TaskID | None = None,
+    # progress: Progress | None = None,  # pbar_pos: int = 0
+    # task_id: TaskID | None = None,
 ) -> PiiDataset:
-    if progress is None:
-        progress = Progress()
-    it = dataset if samples is None else dataset.get_samples(samples)
+    it = track(
+        dataset if samples is None else dataset.get_samples(samples),
+        description="Entries...",
+    )
     new_entries = []
-    # entries_task = progress.add_task("Entries...", total=len(it))
-    progress.reset(task_id=task_id, total=len(it))
-    for entry in it:  # tqdm(it, dynamic_ncols=True, leave=False, position=pbar_pos):
-        progress.advance(task_id=task_id)
+    for entry in it:
         try:
             prediction = model(entry)
         except Exception as exc:
@@ -50,6 +53,7 @@ def inference(
                 metadata=entry.metadata,
             )
         )
+    # progress.remove_task(entries_task)
     timestamp = datetime.now().isoformat()
     return PiiDataset(
         entries=new_entries,
@@ -75,17 +79,35 @@ def generate_predictions(
     load_dotenv()
 
     models: list[PiiModel] = [
-        # NerModel.from_hf(tag="tabularisai/eu-pii-safeguard", out_bias=20.0 - 5.0 * x)
+        # NerModel.from_hf(tag="tabularisai/eu-pii-safeguard")  # , out_bias=-10.0)
         # NerModel.from_hf(tag="saattrupdan/nbailab-base-ner-scandi", out_bias=20.0 - 5.0 * x)
-        NerModel.from_hf(tag="openai/privacy-filter") # , out_bias=20.0 - 5.0 * x)
-        # for x in range(10)
+        # NerModel.from_hf(tag="openai/privacy-filter") # , out_bias=20.0 - 5.0 * x)
         # PresidioModel(),
+        EnsembleModel(
+            name="ensemble_ner",
+            models=[
+                (PresidioModel(), MODEL_LABEL_MAP["presidio"]),
+                (
+                    GlinerModel(
+                        "nvidia/gliner-pii", LABEL_DESCRIPTIONS_DA, threshold=0.01
+                    ),
+                    {k: k for k in ALL_ISO_LABELS},
+                ),
+                (
+                    NerModel.from_hf("tabularisai/eu-pii-safeguard", out_bias=-10.0),
+                    MODEL_LABEL_MAP["eu-pii-safeguard*"],
+                ),
+                (
+                    NerModel.from_hf(
+                        "saattrupdan/nbailab-base-ner-scandi", out_bias=-5.0
+                    ),
+                    MODEL_LABEL_MAP["nbailab-base-ner-scandi"],
+                ),
+            ],
+        )
         # RegexModel(),
         # NerModel.from_hf("saattrupdan/nbailab-base-ner-scandi"),
-        # GlinerModel(
-        #     "nvidia/gliner-pii", LABEL_DESCRIPTIONS_DA, threshold=x
-        # )
-        # for x in [0.001, 0.0]
+        # GlinerModel("nvidia/gliner-pii", LABEL_DESCRIPTIONS_DA, threshold=0.01)
         # GlinerModel("urchade/gliner_multi-v2.1", LABEL_DESCRIPTIONS_DA),
         # OpenAIClientModel(
         #     model_tag="Qwen/Qwen3.5-4B",
@@ -113,23 +135,22 @@ def generate_predictions(
         f"datasets: {', '.join([d.stem for d in datasets])}"
     )
 
-    progress = Progress()
-    progress.start()
-    model_task = progress.add_task("Models...", total=len(models))
-    dataset_task = progress.add_task("Datasets...", total=len(datasets))
-    entries_task = progress.add_task("Entries")
-    for model in models:
-        progress.advance(model_task)
-        progress.reset(dataset_task)
-        for in_path in datasets:
-            progress.advance(dataset_task)
+    # progress = Progress()
+    # progress.start()
+    # model_task = progress.add_task("Models...", total=len(models))
+    # dataset_task = progress.add_task("Datasets...", total=len(datasets))
+    for model in track(models, description="Models..."):
+        # progress.advance(model_task)
+        # progress.reset(dataset_task)
+        for in_path in track(datasets, description="Datasets..."):
+            # progress.advance(dataset_task)
             dataset = PiiDataset.from_file(in_path)
             dataset_name = dataset.metadata.get("dataset_name", in_path.stem)
             output_file_path = Path(
                 f"data/predictions/{model.name}/{dataset_name}.json"
             )
             if not override and output_file_path.exists():
-                progress.console.print(f"skipped {dataset_name} (was cached)")
+                print(f"skipped {dataset_name} (was cached)")
             else:
                 timer = Timer(logger=None)
                 timer.start()
@@ -137,8 +158,8 @@ def generate_predictions(
                     model=model,
                     dataset=dataset,
                     samples=max_entries_per_config,
-                    progress=progress,
-                    task_id=entries_task,
+                    # progress=progress,
+                    # task_id=None,
                 )
                 timer.stop()
                 elapsed_time = timer.last
@@ -149,7 +170,7 @@ def generate_predictions(
                     }
                 )
                 predictions.to_file(output_file_path)
-    progress.stop()
+    # progress.stop()
 
 
 if __name__ == "__main__":

@@ -293,7 +293,9 @@ def evaluate_all(
     df = add_metric_columns(pd.DataFrame(to_dict_recursive(results)))
     # df = df[df["label"] != "OTHER_PII"]
     df_one_label = add_metric_columns(
-        pd.DataFrame(to_dict_recursive(results_one_label)).groupby("model").sum()
+        pd.DataFrame(to_dict_recursive(results_one_label))
+        .groupby("model")[CONFUSION_COLUMNS]
+        .sum()
     ).sort_values("f5", ascending=False)
     if write_cache:
         timestamp = datetime.now().isoformat()
@@ -324,8 +326,8 @@ def evaluate_all(
     with pd.option_context(
         "display.max_rows",
         None,
-        "display.max_columns",
-        None,
+        # "display.max_columns",
+        # None,
         "display.float_format",
         lambda x: "%.3f" % x,
     ):

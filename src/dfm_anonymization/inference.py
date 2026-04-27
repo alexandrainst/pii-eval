@@ -34,6 +34,7 @@ def inference(
     it = track(
         dataset if samples is None else dataset.get_samples(samples),
         description="Entries...",
+        transient=True,
     )
     new_entries = []
     for entry in it:
@@ -79,7 +80,7 @@ def generate_predictions(
     load_dotenv()
 
     models: list[PiiModel] = [
-        # NerModel.from_hf(tag="tabularisai/eu-pii-safeguard")  # , out_bias=-10.0)
+        NerModel.from_hf(tag="tabularisai/eu-pii-safeguard", out_bias=-10.0),
         # NerModel.from_hf(tag="saattrupdan/nbailab-base-ner-scandi", out_bias=20.0 - 5.0 * x)
         # NerModel.from_hf(tag="openai/privacy-filter") # , out_bias=20.0 - 5.0 * x)
         # PresidioModel(),
@@ -139,13 +140,15 @@ def generate_predictions(
     # progress.start()
     # model_task = progress.add_task("Models...", total=len(models))
     # dataset_task = progress.add_task("Datasets...", total=len(datasets))
-    for model in track(models, description="Models..."):
+    for model in track(models):
+        track.columns[0].text = f"Model: {model.name}"
         # progress.advance(model_task)
         # progress.reset(dataset_task)
-        for in_path in track(datasets, description="Datasets..."):
+        for in_path in track(datasets):
             # progress.advance(dataset_task)
             dataset = PiiDataset.from_file(in_path)
             dataset_name = dataset.metadata.get("dataset_name", in_path.stem)
+            track.columns[1].text = f"Dataset: {dataset.name}"
             output_file_path = Path(
                 f"data/predictions/{model.name}/{dataset_name}.json"
             )
@@ -175,5 +178,6 @@ def generate_predictions(
 
 if __name__ == "__main__":
     generate_predictions(
-        override=False, max_entries_per_config=5000
-    )  # , max_entries_per_config=500)
+        override=False,
+        # max_entries_per_config=500,
+    )

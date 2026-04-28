@@ -4,7 +4,6 @@ from pathlib import Path
 
 from codetiming import Timer
 from dotenv import load_dotenv
-from tqdm import tqdm
 from rich.progress import track
 
 from dfm_anonymization.constants import (
@@ -141,14 +140,12 @@ def generate_predictions(
     # model_task = progress.add_task("Models...", total=len(models))
     # dataset_task = progress.add_task("Datasets...", total=len(datasets))
     for model in track(models):
-        track.columns[0].text = f"Model: {model.name}"
         # progress.advance(model_task)
         # progress.reset(dataset_task)
         for in_path in track(datasets):
             # progress.advance(dataset_task)
             dataset = PiiDataset.from_file(in_path)
             dataset_name = dataset.metadata.get("dataset_name", in_path.stem)
-            track.columns[1].text = f"Dataset: {dataset.name}"
             output_file_path = Path(
                 f"data/predictions/{model.name}/{dataset_name}.json"
             )
@@ -179,5 +176,5 @@ def generate_predictions(
 if __name__ == "__main__":
     generate_predictions(
         override=False,
-        # max_entries_per_config=500,
+        max_entries_per_config=1000,
     )

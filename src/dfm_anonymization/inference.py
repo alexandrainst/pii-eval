@@ -79,36 +79,38 @@ def generate_predictions(
     load_dotenv()
 
     models: list[PiiModel] = [
+        NerModel.from_hf(tag="tabularisai/eu-pii-safeguard"),
         NerModel.from_hf(tag="tabularisai/eu-pii-safeguard", out_bias=-10.0),
         # NerModel.from_hf(tag="saattrupdan/nbailab-base-ner-scandi", out_bias=20.0 - 5.0 * x)
-        # NerModel.from_hf(tag="openai/privacy-filter") # , out_bias=20.0 - 5.0 * x)
-        # PresidioModel(),
-        EnsembleModel(
-            name="ensemble_ner",
-            models=[
-                (PresidioModel(), MODEL_LABEL_MAP["presidio"]),
-                (
-                    GlinerModel(
-                        "nvidia/gliner-pii", LABEL_DESCRIPTIONS_DA, threshold=0.01
-                    ),
-                    {k: k for k in ALL_ISO_LABELS},
-                ),
-                (
-                    NerModel.from_hf("tabularisai/eu-pii-safeguard", out_bias=-10.0),
-                    MODEL_LABEL_MAP["eu-pii-safeguard*"],
-                ),
-                (
-                    NerModel.from_hf(
-                        "saattrupdan/nbailab-base-ner-scandi", out_bias=-5.0
-                    ),
-                    MODEL_LABEL_MAP["nbailab-base-ner-scandi"],
-                ),
-            ],
-        )
+        NerModel.from_hf(tag="openai/privacy-filter"), # , out_bias=20.0 - 5.0 * x)
+        PresidioModel(),
+        # EnsembleModel(
+        #     name="ensemble_ner",
+        #     models=[
+        #         (PresidioModel(), MODEL_LABEL_MAP["presidio"]),
+        #         (
+        #             GlinerModel(
+        #                 "nvidia/gliner-pii", LABEL_DESCRIPTIONS_DA, threshold=0.01
+        #             ),
+        #             {k: k for k in ALL_ISO_LABELS},
+        #         ),
+        #         (
+        #             NerModel.from_hf("tabularisai/eu-pii-safeguard", out_bias=-10.0),
+        #             MODEL_LABEL_MAP["eu-pii-safeguard*"],
+        #         ),
+        #         (
+        #             NerModel.from_hf(
+        #                 "saattrupdan/nbailab-base-ner-scandi", out_bias=-5.0
+        #             ),
+        #             MODEL_LABEL_MAP["nbailab-base-ner-scandi"],
+        #         ),
+        #     ],
+        # )
         # RegexModel(),
         # NerModel.from_hf("saattrupdan/nbailab-base-ner-scandi"),
-        # GlinerModel("nvidia/gliner-pii", LABEL_DESCRIPTIONS_DA, threshold=0.01)
-        # GlinerModel("urchade/gliner_multi-v2.1", LABEL_DESCRIPTIONS_DA),
+        GlinerModel("nvidia/gliner-pii", LABEL_DESCRIPTIONS_DA),
+        GlinerModel("nvidia/gliner-pii", LABEL_DESCRIPTIONS_DA, threshold=0.01),
+        GlinerModel("urchade/gliner_multi-v2.1", LABEL_DESCRIPTIONS_DA),
         # OpenAIClientModel(
         #     model_tag="Qwen/Qwen3.5-4B",
         #     base_url="http://localhost:8000/v1",
@@ -127,8 +129,9 @@ def generate_predictions(
         # ScrambletronModel(),
         # EnsembleModel.get_gliner_pii_regex()
     ]
-    datasets = list(Path("data/ground_truth").glob("*.json"))
+    # datasets = list(Path("data/ground_truth").glob("*.json"))
     # datasets = [Path("data/ground_truth/openpii-1m.json")]
+    datasets = [Path("data/ground_truth/dimmi.json")]
 
     print(
         f"generating predictions\nmodels: {', '.join([m.name for m in models])}\n"

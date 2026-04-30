@@ -35,7 +35,7 @@ class TransformersTokenClassifier(TokenClassifier):
             token_batch = tokens.to(self.device)
             outputs = self.model(**token_batch)
             biased_logits = outputs.logits.clone()
-            biased_logits[0,:,self.o_id] += self.out_bias
+            biased_logits[0, :, self.o_id] += self.out_bias
             predictions = torch.argmax(biased_logits, dim=-1)[0].tolist()
         labels = [self.id2label[prediction] for prediction in predictions]
         return labels
@@ -53,16 +53,31 @@ class NerModel(PiiModel):
         self.model = model
 
     @staticmethod
+    def _load_tokenizer(tag: str):
+        """Load tokenizer, working around models that specify an invalid tokenizer_class
+        in their tokenizer_config.json (e.g. 'TokenizersBackend')."""
+        try:
+            return AutoTokenizer.from_pretrained(
+                tag, use_fast=True, trust_remote_code=True
+            )
+        except ValueError:
+            # Some models set tokenizer_class to a non-existent class (e.g. 'TokenizersBackend').
+            # Load the tokenizer config, clear the bad field, and retry.
+            from transformers import PreTrainedTokenizerFast
+
+            return PreTrainedTokenizerFast.from_pretrained(tag, trust_remote_code=True)
+
+    @staticmethod
     def from_hf(tag: str, out_bias: float = 0.0):
         bias_suffix = "" if out_bias == 0.0 else f"_biased_{out_bias}"
         name = tag.split("/")[-1] + bias_suffix
         return NerModel(
             name=name,
-            tokenizer=TransformersTokenizer(
-                tokenizer=AutoTokenizer.from_pretrained(tag, use_fast=True)
-            ),
+            tokenizer=TransformersTokenizer(tokenizer=NerModel._load_tokenizer(tag)),
             model=TransformersTokenClassifier(
-                model=AutoModelForTokenClassification.from_pretrained(tag),
+                model=AutoModelForTokenClassification.from_pretrained(
+                    tag, trust_remote_code=True
+                ),
                 out_bias=out_bias,
             ),
         )

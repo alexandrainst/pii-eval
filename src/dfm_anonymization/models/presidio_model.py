@@ -1,6 +1,7 @@
 from typing import List, Set
 
 import spacy
+import spacy_curated_transformers  # registers 'curated_transformer' factory needed by da_core_news_trf
 from presidio_analyzer import AnalyzerEngine, RecognizerResult
 from presidio_analyzer.nlp_engine import NlpEngineProvider
 

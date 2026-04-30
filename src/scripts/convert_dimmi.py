@@ -106,10 +106,7 @@ def convert_dimmi() -> None:
     all_entries: list[dict] = []
     all_labels: set[str] = set()
 
-    sources = [
-        (raw_dir / "cvs.csv", "cvs"),
-        (raw_dir / "passport.csv", "passport"),
-    ]
+    sources = [(p, p.stem) for p in raw_dir.glob("*.csv")]
 
     for csv_path, source_name in sources:
         if not csv_path.exists():

@@ -507,6 +507,7 @@ dependencies = [
     { name = "datasets" },
     { name = "gliner" },
     { name = "nltk" },
+    { name = "opf" },
     { name = "pip" },
     { name = "presidio" },
     { name = "presidio-anonymizer" },
@@ -524,6 +525,7 @@ requires-dist = [
     { name = "datasets", specifier = ">=4.8.4" },
     { name = "gliner", specifier = ">=0.2.25" },
     { name = "nltk", specifier = ">=3.9.3" },
+    { name = "opf", git = "https://github.com/openai/privacy-filter.git" },
     { name = "pip", specifier = ">=26.0.1" },
     { name = "presidio", specifier = ">=0.1.0" },
     { name = "presidio-anonymizer", specifier = ">=2.2.360" },
@@ -1724,6 +1726,19 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/4b/33/b5db29a6c00eb8f50708110d8d453747ca125c8b805bc437b289dbdcc057/opencv_python_headless-4.13.0.92-cp37-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:0bd48544f77c68b2941392fcdf9bcd2b9cdf00e98cb8c29b2455d194763cf99e", size = 60391106, upload-time = "2026-02-05T10:30:14.236Z" },
     { url = "https://files.pythonhosted.org/packages/fb/c3/52cfea47cd33e53e8c0fbd6e7c800b457245c1fda7d61660b4ffe9596a7f/opencv_python_headless-4.13.0.92-cp37-abi3-win32.whl", hash = "sha256:a7cf08e5b191f4ebb530791acc0825a7986e0d0dee2a3c491184bd8599848a4b", size = 30812232, upload-time = "2026-02-05T07:02:29.594Z" },
     { url = "https://files.pythonhosted.org/packages/4a/90/b338326131ccb2aaa3c2c85d00f41822c0050139a4bfe723cfd95455bd2d/opencv_python_headless-4.13.0.92-cp37-abi3-win_amd64.whl", hash = "sha256:77a82fe35ddcec0f62c15f2ba8a12ecc2ed4207c17b0902c7a3151ae29f37fb6", size = 40070414, upload-time = "2026-02-05T07:02:26.448Z" },
+]
+
+[[package]]
+name = "opf"
+version = "0.1.0"
+source = { git = "https://github.com/openai/privacy-filter.git#f7f00ca7fb869683eb732c010299d901457f19c3" }
+dependencies = [
+    { name = "huggingface-hub" },
+    { name = "numpy" },
+    { name = "packaging" },
+    { name = "safetensors" },
+    { name = "tiktoken" },
+    { name = "torch" },
 ]
 
 [[package]]

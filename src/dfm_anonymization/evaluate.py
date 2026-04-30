@@ -344,4 +344,4 @@ def evaluate_all(
 
 
 if __name__ == "__main__":
-    evaluate_all(base_directory="data/predictions")
+    evaluate_all(base_directory="data/predictions", write_cache=True)

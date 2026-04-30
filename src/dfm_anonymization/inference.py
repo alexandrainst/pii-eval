@@ -15,6 +15,7 @@ from dfm_anonymization.dataset import PiiDataEntry, PiiDataset
 from dfm_anonymization.interfaces import PiiModel
 from dfm_anonymization.models.gliner_model import GlinerModel
 from dfm_anonymization.models.ner_model import NerModel
+from dfm_anonymization.models.opf_model import OpfNerModel
 from dfm_anonymization.models.openai_client_model import OpenAIClientModel
 from dfm_anonymization.models.presidio_model import PresidioModel
 from dfm_anonymization.models.regex_model import RegexModel
@@ -82,7 +83,7 @@ def generate_predictions(
         NerModel.from_hf(tag="tabularisai/eu-pii-safeguard"),
         NerModel.from_hf(tag="tabularisai/eu-pii-safeguard", out_bias=-10.0),
         # NerModel.from_hf(tag="saattrupdan/nbailab-base-ner-scandi", out_bias=20.0 - 5.0 * x)
-        NerModel.from_hf(tag="openai/privacy-filter"), # , out_bias=20.0 - 5.0 * x)
+        OpfNerModel(),
         PresidioModel(),
         # EnsembleModel(
         #     name="ensemble_ner",

@@ -4,7 +4,7 @@ from pathlib import Path
 
 from codetiming import Timer
 from dotenv import load_dotenv
-from rich.progress import track
+from rich.progress import Progress, track
 
 from dfm_anonymization.constants import (
     ALL_ISO_LABELS,
@@ -28,16 +28,19 @@ def inference(
     model: PiiModel,
     dataset: PiiDataset,
     samples: int | None = None,
-    # progress: Progress | None = None,  # pbar_pos: int = 0
+    progress: Progress | None = None,  # pbar_pos: int = 0
     # task_id: TaskID | None = None,
 ) -> PiiDataset:
-    it = track(
-        dataset if samples is None else dataset.get_samples(samples),
-        description="Entries...",
-        transient=True,
-    )
+    it = dataset.entries if samples is None else dataset.get_samples(samples)
     new_entries = []
+    entries_task = progress.add_task("", total=len(it))
     for entry in it:
+        progress.update(
+            entries_task,
+            advance=1,
+            description=f"Entry: {entry.id[:10]:<10}",
+            transient=True,
+        )
         try:
             prediction = model(entry)
         except Exception as exc:
@@ -54,7 +57,7 @@ def inference(
                 metadata=entry.metadata,
             )
         )
-    # progress.remove_task(entries_task)
+    progress.remove_task(entries_task)
     timestamp = datetime.now().isoformat()
     return PiiDataset(
         entries=new_entries,
@@ -80,76 +83,47 @@ def generate_predictions(
     load_dotenv()
 
     models: list[PiiModel] = [
-        NerModel.from_hf(tag="tabularisai/eu-pii-safeguard"),
-        NerModel.from_hf(tag="tabularisai/eu-pii-safeguard", out_bias=-10.0),
-        # NerModel.from_hf(tag="saattrupdan/nbailab-base-ner-scandi", out_bias=20.0 - 5.0 * x)
-        OpfNerModel(),
-        PresidioModel(),
-        # EnsembleModel(
-        #     name="ensemble_ner",
-        #     models=[
-        #         (PresidioModel(), MODEL_LABEL_MAP["presidio"]),
-        #         (
-        #             GlinerModel(
-        #                 "nvidia/gliner-pii", LABEL_DESCRIPTIONS_DA, threshold=0.01
-        #             ),
-        #             {k: k for k in ALL_ISO_LABELS},
-        #         ),
-        #         (
-        #             NerModel.from_hf("tabularisai/eu-pii-safeguard", out_bias=-10.0),
-        #             MODEL_LABEL_MAP["eu-pii-safeguard*"],
-        #         ),
-        #         (
-        #             NerModel.from_hf(
-        #                 "saattrupdan/nbailab-base-ner-scandi", out_bias=-5.0
-        #             ),
-        #             MODEL_LABEL_MAP["nbailab-base-ner-scandi"],
-        #         ),
-        #     ],
-        # )
-        # RegexModel(),
-        # NerModel.from_hf("saattrupdan/nbailab-base-ner-scandi"),
-        GlinerModel("nvidia/gliner-pii", LABEL_DESCRIPTIONS_DA),
-        GlinerModel("nvidia/gliner-pii", LABEL_DESCRIPTIONS_DA, threshold=0.01),
-        GlinerModel("urchade/gliner_multi-v2.1", LABEL_DESCRIPTIONS_DA),
-        # OpenAIClientModel(
-        #     model_tag="Qwen/Qwen3.5-4B",
-        #     base_url="http://localhost:8000/v1",
-        #     api_key="not needed",
-        # ),
-        # OpenAIClientModel(
-        #     model_tag="qwen-235b",
-        #     base_url="https://inference.projects.alexandrainst.dk/v1",
-        #     api_key=os.getenv("ALEXANDRA_INFERENCE_API_KEY"),
-        # ),
-        # OpenAIClientModel(
-        #     model_tag="Qwen/Qwen3.5-27B",
-        #     base_url="https://openrouter.ai/api/v1",
-        #     api_key=os.getenv("OPENROUTER_API_KEY"),
-        # ),
-        # ScrambletronModel(),
-        # EnsembleModel.get_gliner_pii_regex()
+        NerModel.from_hf(
+            tag="tabularisai/eu-pii-safeguard", out_bias=-55.0
+        )  # , out_bias=5.0 - 5.0 * x)
+        # for x in range(10)
     ]
-    # datasets = list(Path("data/ground_truth").glob("*.json"))
+    # + [
+    #     GlinerModel(
+    #         "nvidia/gliner-pii", LABEL_DESCRIPTIONS_DA, threshold=0.01 - 0.001 * x
+    #     )
+    #     for x in range(10)
+    # ]
+    datasets = list(Path("data/ground_truth").glob("*.json"))
     # datasets = [Path("data/ground_truth/openpii-1m.json")]
-    datasets = [Path("data/ground_truth/dimmi.json")]
+    # datasets = [Path("data/ground_truth/dimmi.json")]
 
     print(
         f"generating predictions\nmodels: {', '.join([m.name for m in models])}\n"
         f"datasets: {', '.join([d.stem for d in datasets])}"
     )
 
-    # progress = Progress()
-    # progress.start()
-    # model_task = progress.add_task("Models...", total=len(models))
-    # dataset_task = progress.add_task("Datasets...", total=len(datasets))
-    for model in track(models):
-        # progress.advance(model_task)
-        # progress.reset(dataset_task)
-        for in_path in track(datasets):
-            # progress.advance(dataset_task)
+    progress = Progress()
+    progress.start()
+    model_task = progress.add_task("", total=len(models))
+    while models:
+        model = models.pop(0)
+        progress.update(
+            model_task,
+            advance=1,
+            description=f"Model: {model.name[:10]:<10}",
+            transient=True,
+        )
+        dataset_task = progress.add_task("", total=len(datasets))
+        for in_path in datasets:
             dataset = PiiDataset.from_file(in_path)
             dataset_name = dataset.metadata.get("dataset_name", in_path.stem)
+            progress.update(
+                dataset_task,
+                advance=1,
+                description=f"Dataset: {dataset_name[:10]:<10}",
+                transient=True,
+            )
             output_file_path = Path(
                 f"data/predictions/{model.name}/{dataset_name}.json"
             )
@@ -162,7 +136,7 @@ def generate_predictions(
                     model=model,
                     dataset=dataset,
                     samples=max_entries_per_config,
-                    # progress=progress,
+                    progress=progress,
                     # task_id=None,
                 )
                 timer.stop()
@@ -174,11 +148,14 @@ def generate_predictions(
                     }
                 )
                 predictions.to_file(output_file_path)
+        progress.remove_task(dataset_task)
+    progress.remove_task(model_task)
+    print()
     # progress.stop()
 
 
 if __name__ == "__main__":
     generate_predictions(
         override=False,
-        max_entries_per_config=1000,
+        # max_entries_per_config=500,
     )

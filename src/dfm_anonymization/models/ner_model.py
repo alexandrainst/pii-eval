@@ -21,21 +21,30 @@ class TransformersTokenizer(Tokenizer):
 
 
 class TransformersTokenClassifier(TokenClassifier):
-    def __init__(self, model: AutoModelForTokenClassification, out_bias: float = 0.0):
+    def __init__(
+        self,
+        model: AutoModelForTokenClassification,
+        o_bias: float = 0.0,
+        label_subset: set[str] | None = None,
+    ):
         self.model = model
         self.id2label = bidict(model.config.id2label)
         self.o_id = self.id2label.inv["O"]
-        self.out_bias = out_bias
+        self.o_bias = o_bias
         self.device = torch.device(get_torch_device())
         self.model.to(self.device)
         self.model.eval()
+
+        self.label_subset = label_subset
+        self.logit_mask = #TODO
 
     def __call__(self, tokens: Any) -> List[str]:
         with torch.no_grad():
             token_batch = tokens.to(self.device)
             outputs = self.model(**token_batch)
             biased_logits = outputs.logits.clone()
-            biased_logits[0, :, self.o_id] += self.out_bias
+            biased_logits[0, :, self.o_id] += self.o_bias
+            # TODO biased_logits += self.logit_mask ...
             predictions = torch.argmax(biased_logits, dim=-1)[0].tolist()
         labels = [self.id2label[prediction] for prediction in predictions]
         return labels
@@ -47,10 +56,12 @@ class NerModel(PiiModel):
         name: str,
         tokenizer: Tokenizer,
         model: TokenClassifier,
+        label_subset: set[str] | None = None,
     ):
         super().__init__(name)
         self.tokenizer = tokenizer
         self.model = model
+        self.label_subset = label_subset
 
     @staticmethod
     def _load_tokenizer(tag: str):
@@ -78,7 +89,7 @@ class NerModel(PiiModel):
                 model=AutoModelForTokenClassification.from_pretrained(
                     tag, trust_remote_code=True
                 ),
-                out_bias=out_bias,
+                o_bias=out_bias,
             ),
         )
 

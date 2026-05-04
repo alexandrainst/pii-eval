@@ -15,7 +15,7 @@ from dfm_anonymization.constants import (
     MODEL_LABEL_MAP,
     get_model_label_map,
 )
-from dfm_anonymization.dataset import PiiDataset
+from dfm_anonymization.dataset import PiiDataEntry, PiiDataset
 from dfm_anonymization.util.util import to_dict_recursive
 
 
@@ -133,7 +133,7 @@ def add_metric_columns(df: pd.DataFrame) -> pd.DataFrame:
     return result
 
 
-def _index_entries_by_id(dataset: PiiDataset, dataset_role: str):
+def _index_entries_by_id(dataset: PiiDataset, dataset_role: str) -> list[PiiDataEntry]:
     indexed_entries = {}
 
     for index, entry in enumerate(dataset):
@@ -149,7 +149,7 @@ def _index_entries_by_id(dataset: PiiDataset, dataset_role: str):
 
 def _get_aligned_entries(
     ground_truth: PiiDataset, predictions: PiiDataset
-) -> list[tuple]:
+) -> list[tuple[PiiDataEntry, PiiDataEntry]]:
     ground_truth_by_id = _index_entries_by_id(ground_truth, "ground truth")
     predictions_by_id = _index_entries_by_id(predictions, "predictions")
 
@@ -182,7 +182,7 @@ def _get_iso_label(tag: str, label_map: Dict[str, str | None]) -> str | None:
 
 def evaluate(
     ground_truth: PiiDataset, predictions: PiiDataset
-) -> tuple[dict[str, ConfusionResult], ConfusionResult]:
+) -> tuple[ConfusionResult, dict[str, ConfusionResult], dict[str, ConfusionResult]]:
     dataset_name = ground_truth.metadata.get("dataset_name") or "some dataset"
     model_name = predictions.metadata.get("model_name") or "some model"
     dataset_label_map = (
@@ -198,26 +198,37 @@ def evaluate(
     )
     aligned_entries = _get_aligned_entries(ground_truth, predictions)
 
-    confusion_all = ConfusionResult.zero()
+    onelabel_confusion = ConfusionResult.zero()
     dataset_valid_labels = set(dataset_label_map.values())
+
+    entrywise_confusion = {}
     for true_entry, pred_entry in aligned_entries:
+        confusion = ConfusionResult.zero()
         for true_tag, pred_tag in zip(true_entry.bio_tags, pred_entry.bio_tags):
             true_iso_label = _get_iso_label(true_tag, dataset_label_map)
             pred_iso_label = _get_iso_label(pred_tag, model_label_map)
             if true_iso_label:
                 if pred_iso_label in dataset_valid_labels:
-                    confusion_all.tp += 1
+                    confusion.tp += 1
+                    onelabel_confusion.tp += 1
                 else:
-                    confusion_all.fn += 1
+                    confusion.fn += 1
+                    onelabel_confusion.fn += 1
             else:
                 if pred_iso_label in dataset_valid_labels:
-                    confusion_all.fp += 1
+                    confusion.fp + 1
+                    onelabel_confusion.fp += 1
                 else:
-                    confusion_all.tn += 1
-    confusion_counts = {}
+                    confusion.tn += 1
+                    onelabel_confusion.tn += 1
+        entrywise_confusion[true_entry.id] = (
+            confusion  # MetricResult.from_confusion(confusion)
+        )
+
+    labelwise_confusion = {}
     for label in common_iso_labels:
         confusion = ConfusionResult.zero()
-        confusion_counts[label] = confusion
+        labelwise_confusion[label] = confusion
         for true_entry, pred_entry in aligned_entries:
             if true_entry.tokens != pred_entry.tokens:
                 raise ValueError(
@@ -243,7 +254,8 @@ def evaluate(
                     else:
                         confusion.tn += 1
 
-    return confusion_counts, confusion_all
+    worst_case = max(entrywise_confusion.items(), key=lambda x: x[1].fn)
+    return onelabel_confusion, labelwise_confusion, worst_case
 
 
 def evaluate_all(
@@ -263,22 +275,23 @@ def evaluate_all(
         if not ground_truth_path.exists():
             continue
         ground_truth = PiiDataset.from_file(ground_truth_path)
-        confusion_dict, confusion_one_label = evaluate(
+        onelabel_confusion, labelwise_confusion, worst_case = evaluate(
             ground_truth=ground_truth, predictions=predictions
         )
         results += [
             EvaluationResult(
                 **asdict(confusion), dataset=dataset_name, model=model_name, label=label
             )
-            for label, confusion in confusion_dict.items()
+            for label, confusion in labelwise_confusion.items()
         ]
         results_one_label += [
-            EvaluationResult(
-                **asdict(confusion_one_label),
-                dataset=dataset_name,
-                model=model_name,
-                label="all_labels",
-            )
+            {
+                "dataset": dataset_name,
+                "model": model_name,
+                "label": "all_labels",
+                "worst": worst_case,
+            }
+            | asdict(onelabel_confusion),
         ]
         if model_name not in performances:
             performances[model_name] = []
@@ -294,7 +307,7 @@ def evaluate_all(
     # df = df[df["label"] != "OTHER_PII"]
     df_one_label = add_metric_columns(
         pd.DataFrame(to_dict_recursive(results_one_label))
-        .groupby("model")[CONFUSION_COLUMNS]
+        .groupby("model")[CONFUSION_COLUMNS + ["worst"]]
         .sum()
     ).sort_values("f5", ascending=False)
     if write_cache:

@@ -84,7 +84,7 @@ def generate_predictions(
 
     models: list[PiiModel] = [
         NerModel.from_hf(
-            tag="tabularisai/eu-pii-safeguard", out_bias=-55.0
+            tag="tabularisai/eu-pii-safeguard", out_bias=-60.0
         )  # , out_bias=5.0 - 5.0 * x)
         # for x in range(10)
     ]
@@ -150,7 +150,7 @@ def generate_predictions(
                 predictions.to_file(output_file_path)
         progress.remove_task(dataset_task)
     progress.remove_task(model_task)
-    print()
+    # print()
     # progress.stop()
 
 

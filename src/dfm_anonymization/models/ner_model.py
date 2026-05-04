@@ -3,6 +3,7 @@ from bidict import bidict
 import torch
 from transformers import AutoModelForTokenClassification, AutoTokenizer
 
+from dfm_anonymization.constants import MODEL_LABEL_MAP, get_model_label_map
 from dfm_anonymization.dataset import PiiDataEntry
 from dfm_anonymization.interfaces import PiiModel, TokenClassifier, Tokenizer
 from dfm_anonymization.util.util import filter_bio, get_torch_device
@@ -13,6 +14,9 @@ class TransformersTokenizer(Tokenizer):
         self.tokenizer = tokenizer
 
     def __call__(self, words: List[str]) -> Tuple[Any, List[Optional[int]]]:
+        # TODO: There is a bug here when len(words) > self.tokenizer.model_max_length
+        # 'encoding' and 'word_ids' should have at least (usually many more) as many elements
+        # as 'words'
         encoding = self.tokenizer(
             words, is_split_into_words=True, return_tensors="pt", truncation=True
         )
@@ -36,7 +40,15 @@ class TransformersTokenClassifier(TokenClassifier):
         self.model.eval()
 
         self.label_subset = label_subset
-        self.logit_mask = #TODO
+        num_labels = len(self.id2label)
+        if label_subset is not None:
+            mask = torch.full((num_labels,), float("-inf"))
+            for label_id, label in self.id2label.items():
+                if label == "O" or label[2:] in label_subset:
+                    mask[label_id] = 0.0
+        else:
+            mask = torch.zeros(num_labels)
+        self.logit_mask = mask.to(self.device)
 
     def __call__(self, tokens: Any) -> List[str]:
         with torch.no_grad():
@@ -44,7 +56,7 @@ class TransformersTokenClassifier(TokenClassifier):
             outputs = self.model(**token_batch)
             biased_logits = outputs.logits.clone()
             biased_logits[0, :, self.o_id] += self.o_bias
-            # TODO biased_logits += self.logit_mask ...
+            biased_logits += self.logit_mask
             predictions = torch.argmax(biased_logits, dim=-1)[0].tolist()
         labels = [self.id2label[prediction] for prediction in predictions]
         return labels
@@ -82,6 +94,7 @@ class NerModel(PiiModel):
     def from_hf(tag: str, out_bias: float = 0.0):
         bias_suffix = "" if out_bias == 0.0 else f"_biased_{out_bias}"
         name = tag.split("/")[-1] + bias_suffix
+        map = get_model_label_map(name)
         return NerModel(
             name=name,
             tokenizer=TransformersTokenizer(tokenizer=NerModel._load_tokenizer(tag)),
@@ -90,6 +103,7 @@ class NerModel(PiiModel):
                     tag, trust_remote_code=True
                 ),
                 o_bias=out_bias,
+                label_subset=set(map.keys()) if map else None,
             ),
         )
 
@@ -118,4 +132,6 @@ class NerModel(PiiModel):
                     bio_tags[word_id] = "B-" + entity
             else:
                 bio_tags[word_id] = "O"
+        if len(bio_tags) > 500:
+            pass
         return filter_bio(bio_tags, label_whitelist) if label_whitelist else bio_tags

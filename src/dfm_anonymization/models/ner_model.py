@@ -1,7 +1,7 @@
 from typing import Any, List, Optional, Set, Tuple
 from bidict import bidict
 import torch
-from transformers import AutoModelForTokenClassification, AutoTokenizer
+from transformers import AutoModelForTokenClassification, AutoTokenizer, BatchEncoding
 
 from dfm_anonymization.constants import MODEL_LABEL_MAP, get_model_label_map
 from dfm_anonymization.dataset import PiiDataEntry
@@ -14,14 +14,122 @@ class TransformersTokenizer(Tokenizer):
         self.tokenizer = tokenizer
 
     def __call__(self, words: List[str]) -> Tuple[Any, List[Optional[int]]]:
-        # TODO: There is a bug here when len(words) > self.tokenizer.model_max_length
-        # 'encoding' and 'word_ids' should have at least (usually many more) as many elements
-        # as 'words'
-        encoding = self.tokenizer(
-            words, is_split_into_words=True, return_tensors="pt", truncation=True
-        )
-        word_ids = encoding.word_ids()
-        return encoding, word_ids
+        max_length = self.tokenizer.model_max_length
+        # Reserve space for special tokens ([CLS] and [SEP]) added per chunk.
+        # We use a conservative budget; if model_max_length is unreasonably large
+        # (some tokenizers set it to sys.maxsize), fall back to 512.
+        if max_length > 1_000_000:
+            max_length = 512
+        max_tokens_per_chunk = max_length - 2  # subtract CLS + SEP
+
+        # Split words into chunks such that each chunk fits within the model's
+        # context window.  We tokenize words one-by-one to count subtokens and
+        # greedily fill each chunk.
+        chunks: List[List[str]] = []
+        current_chunk: List[str] = []
+        current_token_count = 0
+        for word in words:
+            word_tokens = self.tokenizer.tokenize(word)
+            n = len(word_tokens) if word_tokens else 1
+            if current_chunk and current_token_count + n > max_tokens_per_chunk:
+                chunks.append(current_chunk)
+                current_chunk = []
+                current_token_count = 0
+            current_chunk.append(word)
+            current_token_count += n
+        if current_chunk:
+            chunks.append(current_chunk)
+
+        if len(chunks) == 1:
+            # Fast path: no chunking needed.
+            encoding = self.tokenizer(
+                words, is_split_into_words=True, return_tensors="pt", truncation=True
+            )
+            word_ids = encoding.word_ids()
+            return encoding, word_ids
+
+        # Multi-chunk path: encode each chunk, then concatenate the tensors and
+        # word_id lists (removing per-chunk special tokens at the boundaries).
+        all_input_ids: List = []
+        all_attention_mask: List = []
+        all_token_type_ids: Optional[List] = []
+        all_word_ids: List[Optional[int]] = []
+        word_offset = 0
+        first_enc = None
+        last_enc = None
+
+        for chunk in chunks:
+            enc = self.tokenizer(
+                chunk, is_split_into_words=True, return_tensors="pt", truncation=True
+            )
+            if first_enc is None:
+                first_enc = enc
+            last_enc = enc
+
+            ids = enc["input_ids"][0]  # shape (seq_len,)
+            mask = enc["attention_mask"][0]  # shape (seq_len,)
+            wids = enc.word_ids()  # list of Optional[int], len == seq_len
+
+            # Strip leading/trailing special tokens (word_id is None).
+            start = next(i for i, w in enumerate(wids) if w is not None)
+            end = len(wids) - next(
+                i for i, w in enumerate(reversed(wids)) if w is not None
+            )
+
+            inner_ids = ids[start:end]
+            inner_mask = mask[start:end]
+            inner_wids = [
+                (w + word_offset if w is not None else None) for w in wids[start:end]
+            ]
+
+            all_input_ids.append(inner_ids)
+            all_attention_mask.append(inner_mask)
+            all_word_ids.extend(inner_wids)
+
+            has_token_type = "token_type_ids" in enc
+            if has_token_type:
+                tti = enc["token_type_ids"][0][start:end]
+                all_token_type_ids.append(tti)  # type: ignore[union-attr]
+            else:
+                all_token_type_ids = None  # type: ignore[assignment]
+
+            word_offset += len(chunk)
+
+        # Re-add a single CLS at the start and SEP at the end using the first/last
+        # chunk's encodings so that the model sees the expected special tokens.
+        cls_id = first_enc["input_ids"][0, :1]
+        sep_id = last_enc["input_ids"][0, -1:]
+        cls_mask = first_enc["attention_mask"][0, :1]
+        sep_mask = last_enc["attention_mask"][0, -1:]
+
+        cat_ids = torch.cat([cls_id] + all_input_ids + [sep_id], dim=0).unsqueeze(0)
+        cat_mask = torch.cat(
+            [cls_mask] + all_attention_mask + [sep_mask], dim=0
+        ).unsqueeze(0)
+        final_word_ids: List[Optional[int]] = [None] + all_word_ids + [None]
+
+        result = {"input_ids": cat_ids, "attention_mask": cat_mask}
+
+        if all_token_type_ids is not None:
+            cls_tti = first_enc["token_type_ids"][0, :1]
+            sep_tti = last_enc["token_type_ids"][0, -1:]
+            cat_tti = torch.cat(
+                [cls_tti] + all_token_type_ids + [sep_tti], dim=0
+            ).unsqueeze(0)
+            result["token_type_ids"] = cat_tti
+
+        # Build a BatchEncoding-like object that also supports .word_ids().
+        # We need a BatchEncoding that returns our patched word_ids.
+        # The simplest way is to construct one and monkey-patch word_ids().
+        batch_enc = BatchEncoding(result)
+        _final_word_ids = final_word_ids  # capture for closure
+
+        def _word_ids(batch_index: int = 0) -> List[Optional[int]]:  # noqa: ARG001
+            return _final_word_ids
+
+        batch_enc.word_ids = _word_ids  # type: ignore[method-assign]
+
+        return batch_enc, final_word_ids
 
 
 class TransformersTokenClassifier(TokenClassifier):
@@ -51,13 +159,18 @@ class TransformersTokenClassifier(TokenClassifier):
         self.logit_mask = mask.to(self.device)
 
     def __call__(self, tokens: Any) -> List[str]:
+        # TODO: here there is a problem when input 'tokens' sequence is longer
+        # than what the model can handle. Should be fixed by batching and stitching
+        # based on the maximum length that the model can handle.
         with torch.no_grad():
             token_batch = tokens.to(self.device)
             outputs = self.model(**token_batch)
-            biased_logits = outputs.logits.clone()
-            biased_logits[0, :, self.o_id] += self.o_bias
-            biased_logits += self.logit_mask
-            predictions = torch.argmax(biased_logits, dim=-1)[0].tolist()
+
+        # this part should remain the same
+        biased_logits = outputs.logits.clone()
+        biased_logits[0, :, self.o_id] += self.o_bias
+        biased_logits += self.logit_mask
+        predictions = torch.argmax(biased_logits, dim=-1)[0].tolist()
         labels = [self.id2label[prediction] for prediction in predictions]
         return labels
 

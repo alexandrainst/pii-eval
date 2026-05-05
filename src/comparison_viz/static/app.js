@@ -100,23 +100,8 @@ function fmt(n) {
 }
 
 function renderMetrics(metrics) {
-  if (!metrics) {
-    metricsBox.innerHTML = "";
-    return;
-  }
-  const s = metrics.span;
-  const t = metrics.token;
-  metricsBox.innerHTML = `
-    <span class="group">
-      <b>Span exact</b>
-      P=${fmt(s.precision)} R=${fmt(s.recall)} F1=${fmt(s.f1)}
-      <small>(TP=${s.tp} FP=${s.fp} FN=${s.fn})</small>
-    </span>
-    <span class="group">
-      <b>Token (ISO)</b>
-      P=${fmt(t.precision)} R=${fmt(t.recall)} F1=${fmt(t.f1)}
-      <small>(TP=${t.tp} FP=${t.fp} FN=${t.fn})</small>
-    </span>`;
+  // Metrics intentionally hidden for now (kept in API for future use).
+  metricsBox.innerHTML = "";
 }
 
 async function fetchJSON(url) {

@@ -91,7 +91,7 @@ html, body {
 
 .panes {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 1rem;
   padding: 1rem;
   align-items: start;
@@ -103,6 +103,8 @@ html, body {
   border-radius: 8px;
   padding: 1rem;
   min-height: 60vh;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .pane h2 {
@@ -119,6 +121,9 @@ html, body {
   font-size: 0.9rem;
   line-height: 1.55;
   word-wrap: break-word;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  min-width: 0;
 }
 
 .span {

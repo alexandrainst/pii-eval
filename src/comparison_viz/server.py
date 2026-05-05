@@ -10,11 +10,15 @@ from fastapi.staticfiles import StaticFiles
 
 from .data_loader import DataLoader
 from .span_utils import (
+    DATASET_LABEL_MAP,
+    MODEL_LABEL_MAP,
+    NO_MAP_KEY,
     bio_to_spans,
     compute_metrics,
-    map_labels_for_dataset,
-    map_labels_for_model,
     reconstruct_token_spans,
+    resolve_default_dataset_map_key,
+    resolve_default_model_map_key,
+    resolve_label_map,
     spans_to_dicts,
 )
 
@@ -33,6 +37,17 @@ def create_app(data_dir: Path) -> FastAPI:
     @app.get("/api/models")
     def models():
         return loader.list_models()
+
+    @app.get("/api/label-maps")
+    def label_maps(dataset: str | None = None, model: str | None = None):
+        """Expose available label maps + helper-resolved defaults for the given names."""
+        return {
+            "no_map_key": NO_MAP_KEY,
+            "dataset_maps": {k: v for k, v in DATASET_LABEL_MAP.items()},
+            "model_maps": {k: v for k, v in MODEL_LABEL_MAP.items()},
+            "auto_dataset_key": resolve_default_dataset_map_key(dataset),
+            "auto_model_key": resolve_default_model_map_key(model),
+        }
 
     @app.get("/api/entries")
     def entries(dataset: str = Query(...), model: str | None = Query(None)):
@@ -60,6 +75,7 @@ def create_app(data_dir: Path) -> FastAPI:
                     "has_prediction": eid in pred_ids,
                 }
             )
+        result.sort(key=lambda r: r["id"])
         return result
 
     @app.get("/api/entry")
@@ -67,6 +83,20 @@ def create_app(data_dir: Path) -> FastAPI:
         dataset: str = Query(...),
         id: str = Query(...),
         model: str | None = Query(None),
+        gt_map: str | None = Query(
+            None,
+            description=(
+                "Regex key from DATASET_LABEL_MAP, '__none__' for identity, "
+                "or omitted for auto-resolution."
+            ),
+        ),
+        pred_map: str | None = Query(
+            None,
+            description=(
+                "Regex key from MODEL_LABEL_MAP, '__none__' for identity, "
+                "or omitted for auto-resolution."
+            ),
+        ),
     ):
         gt_entry = loader.get_entry(dataset, id)
         if gt_entry is None:
@@ -88,15 +118,30 @@ def create_app(data_dir: Path) -> FastAPI:
         if token_spans is None:
             token_spans = reconstruct_token_spans(text, tokens)
 
-        ds_map = map_labels_for_dataset(dataset)
-        gt_spans = bio_to_spans(gt_bio, tokens, token_spans, text, ds_map)
+        ds_map, ds_map_key = resolve_label_map("dataset", dataset, gt_map)
+        # Drop spans whose raw label isn't in the chosen mapping, but only when an
+        # actual mapping is in effect (not when the user picked "(none)" or auto
+        # didn't resolve to anything).
+        gt_drop_unmapped = bool(ds_map) and ds_map_key not in (None, NO_MAP_KEY)
+        gt_spans = bio_to_spans(
+            gt_bio, tokens, token_spans, text, ds_map, drop_unmapped=gt_drop_unmapped
+        )
 
         pred_payload = None
         metrics = None
+        mdl_map_key: str | None = None
         if pred_entry is not None:
             pred_bio = pred_entry.get("bio_tags", [])
-            mdl_map = map_labels_for_model(model) if model else {}
-            pred_spans = bio_to_spans(pred_bio, tokens, token_spans, text, mdl_map)
+            mdl_map, mdl_map_key = resolve_label_map("model", model, pred_map)
+            pred_drop_unmapped = bool(mdl_map) and mdl_map_key not in (None, NO_MAP_KEY)
+            pred_spans = bio_to_spans(
+                pred_bio,
+                tokens,
+                token_spans,
+                text,
+                mdl_map,
+                drop_unmapped=pred_drop_unmapped,
+            )
             pred_payload = {
                 "bio_tags": pred_bio,
                 "spans": spans_to_dicts(pred_spans),
@@ -117,6 +162,10 @@ def create_app(data_dir: Path) -> FastAPI:
                 },
                 "prediction": pred_payload,
                 "metrics": metrics,
+                "label_maps_used": {
+                    "dataset": ds_map_key,
+                    "model": mdl_map_key,
+                },
             }
         )
 

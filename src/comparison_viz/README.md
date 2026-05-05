@@ -27,6 +27,13 @@ Then open http://127.0.0.1:8000 in a browser.
 
 - Dataset / model / entry dropdowns
 - `«` / `»` buttons or the `←` / `→` arrow keys to step through entries
+- **GT label map** and **Pred label map** dropdowns:
+  - `auto: <key>` (default) — uses `get_dataset_label_map` / `get_model_label_map` from
+    `dfm_anonymization.constants`, which match the dataset/model name against the regex keys
+    in `DATASET_LABEL_MAP` / `MODEL_LABEL_MAP`. The resolved key is shown in the option label
+    (and in the status footer).
+  - `(none — identity)` — disable mapping; raw labels are used as-is on both sides.
+  - any explicit regex key from the constants — force that mapping regardless of name.
 - Hover any highlighted span for details (ISO label, raw label, token range, char range)
 
 ## Layout
@@ -48,5 +55,8 @@ src/comparison_viz/
 
 - `GET /api/datasets` -> `["contracts", "cvs", ...]`
 - `GET /api/models` -> `["eu-pii-safeguard", ...]`
+- `GET /api/label-maps?dataset=<d>&model=<m>` -> the full `DATASET_LABEL_MAP` and
+  `MODEL_LABEL_MAP` plus the helper-resolved auto keys for the given names.
 - `GET /api/entries?dataset=cvs&model=eu-pii-safeguard`
-- `GET /api/entry?dataset=cvs&id=<entry_id>&model=eu-pii-safeguard`
+- `GET /api/entry?dataset=cvs&id=<entry_id>&model=eu-pii-safeguard&gt_map=<key|__none__>&pred_map=<key|__none__>`
+  - Omit `gt_map` / `pred_map` for auto-resolution via the helper functions.

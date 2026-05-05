@@ -3,6 +3,8 @@
 const datasetSel = document.getElementById("dataset-select");
 const modelSel = document.getElementById("model-select");
 const entrySel = document.getElementById("entry-select");
+const gtMapSel = document.getElementById("gt-map-select");
+const predMapSel = document.getElementById("pred-map-select");
 const prevBtn = document.getElementById("prev-btn");
 const nextBtn = document.getElementById("next-btn");
 const gtBox = document.getElementById("gt-text");
@@ -12,11 +14,20 @@ const metricsBox = document.getElementById("metrics");
 const legendBox = document.getElementById("legend");
 const statusBox = document.getElementById("status");
 
+// Sentinel values used in the map dropdowns.
+const AUTO_KEY = "__auto__";
+let NO_MAP_KEY = "__none__"; // overwritten from /api/label-maps
+
 const state = {
   dataset: null,
   model: null,
   entries: [],
   entryId: null,
+  // Mapping overrides; AUTO_KEY means "let the backend auto-resolve".
+  gtMap: AUTO_KEY,
+  predMap: AUTO_KEY,
+  // Cache of available maps (last fetched).
+  labelMaps: null,
 };
 
 // Deterministic color from string (HSL).
@@ -56,11 +67,13 @@ function renderTextWithSpans(text, spans) {
       `${s.iso_label}` +
       (s.raw_label && s.raw_label !== s.iso_label ? ` (raw: ${s.raw_label})` : "") +
       ` — tokens [${s.token_start}, ${s.token_end}) — chars [${s.char_start}, ${s.char_end})`;
+    // Badge shows the canonical (mapped) label.
+    const badge = s.iso_label || s.raw_label || "?";
     html +=
       `<span class="span" title="${escapeHtml(tip)}" ` +
       `style="background:${c.bg};border-bottom-color:${c.border}">` +
       escapeHtml(text.slice(s.char_start, s.char_end)) +
-      `<span class="lbl">${escapeHtml(s.raw_label)}</span>` +
+      `<span class="lbl">${escapeHtml(badge)}</span>` +
       `</span>`;
     cursor = s.char_end;
   }
@@ -129,6 +142,41 @@ async function loadDatasetsAndModels() {
   if (state.model) modelSel.value = state.model;
 }
 
+function populateMapSelect(selectEl, maps, autoKey, currentValue) {
+  // Build options: (auto: <key>), (none), then all keys.
+  const autoLabel = autoKey ? `auto: ${autoKey}` : "auto: (no mapping)";
+  let html = `<option value="${AUTO_KEY}">${escapeHtml(autoLabel)}</option>`;
+  html += `<option value="${NO_MAP_KEY}">(none — identity)</option>`;
+  const keys = Object.keys(maps).sort();
+  for (const k of keys) {
+    const n = Object.keys(maps[k]).length;
+    html += `<option value="${escapeHtml(k)}">${escapeHtml(k)} (${n} labels)</option>`;
+  }
+  selectEl.innerHTML = html;
+  // Restore selection if still valid, else fall back to auto.
+  const valid = new Set([AUTO_KEY, NO_MAP_KEY, ...keys]);
+  selectEl.value = valid.has(currentValue) ? currentValue : AUTO_KEY;
+}
+
+async function refreshLabelMaps() {
+  const url = new URL("/api/label-maps", window.location.origin);
+  if (state.dataset) url.searchParams.set("dataset", state.dataset);
+  if (state.model) url.searchParams.set("model", state.model);
+  const lm = await fetchJSON(url);
+  state.labelMaps = lm;
+  NO_MAP_KEY = lm.no_map_key || NO_MAP_KEY;
+  populateMapSelect(gtMapSel, lm.dataset_maps, lm.auto_dataset_key, state.gtMap);
+  populateMapSelect(
+    predMapSel,
+    lm.model_maps,
+    lm.auto_model_key,
+    state.predMap
+  );
+  // Sync state with the (possibly reset) selects.
+  state.gtMap = gtMapSel.value;
+  state.predMap = predMapSel.value;
+}
+
 async function loadEntries() {
   if (!state.dataset) return;
   const url = new URL("/api/entries", window.location.origin);
@@ -159,6 +207,8 @@ async function loadEntry() {
     url.searchParams.set("dataset", state.dataset);
     url.searchParams.set("id", state.entryId);
     if (state.model) url.searchParams.set("model", state.model);
+    if (state.gtMap !== AUTO_KEY) url.searchParams.set("gt_map", state.gtMap);
+    if (state.predMap !== AUTO_KEY) url.searchParams.set("pred_map", state.predMap);
     const data = await fetchJSON(url);
 
     gtBox.innerHTML = renderTextWithSpans(data.text, data.ground_truth.spans);
@@ -182,7 +232,9 @@ async function loadEntry() {
     renderLegend([...labels].sort());
 
     statusBox.textContent =
-      `Entry: ${data.id} · tokens: ${data.tokens.length} · chars: ${data.text.length}`;
+      `Entry: ${data.id} · tokens: ${data.tokens.length} · chars: ${data.text.length}` +
+      ` · gt map: ${data.label_maps_used?.dataset ?? "(none)"}` +
+      (state.model ? ` · pred map: ${data.label_maps_used?.model ?? "(none)"}` : "");
   } catch (err) {
     statusBox.textContent = `Error: ${err.message}`;
     gtBox.textContent = "";
@@ -201,16 +253,26 @@ function navigate(delta) {
 
 datasetSel.addEventListener("change", async () => {
   state.dataset = datasetSel.value;
+  await refreshLabelMaps();
   await loadEntries();
   await loadEntry();
 });
 modelSel.addEventListener("change", async () => {
   state.model = modelSel.value;
+  await refreshLabelMaps();
   await loadEntries();
   await loadEntry();
 });
 entrySel.addEventListener("change", () => {
   state.entryId = entrySel.value;
+  loadEntry();
+});
+gtMapSel.addEventListener("change", () => {
+  state.gtMap = gtMapSel.value;
+  loadEntry();
+});
+predMapSel.addEventListener("change", () => {
+  state.predMap = predMapSel.value;
   loadEntry();
 });
 prevBtn.addEventListener("click", () => navigate(-1));
@@ -224,6 +286,7 @@ document.addEventListener("keydown", (e) => {
 (async function init() {
   try {
     await loadDatasetsAndModels();
+    await refreshLabelMaps();
     await loadEntries();
     await loadEntry();
   } catch (err) {

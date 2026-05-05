@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BIO Comparison Visualizer</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="controls">
+        <label>Dataset
+          <select id="dataset-select"></select>
+        </label>
+        <label>Model
+          <select id="model-select"></select>
+        </label>
+        <label>Entry
+          <select id="entry-select"></select>
+        </label>
+        <button id="prev-btn" title="Previous entry">&laquo;</button>
+        <button id="next-btn" title="Next entry">&raquo;</button>
+      </div>
+      <div id="metrics" class="metrics"></div>
+    </header>
+
+    <section id="legend" class="legend"></section>
+
+    <main class="panes">
+      <section class="pane">
+        <h2>Ground truth</h2>
+        <div id="gt-text" class="textbox"></div>
+      </section>
+      <section class="pane">
+        <h2 id="pred-title">Prediction</h2>
+        <div id="pred-text" class="textbox"></div>
+      </section>
+    </main>
+
+    <footer id="status" class="status"></footer>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>

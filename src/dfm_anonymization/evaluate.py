@@ -268,6 +268,7 @@ def evaluate_all(
                     "time_per_entry": time_per_entry,
                 }
             )
+
     performance_df = pd.DataFrame(performances)
     df = (
         pd.DataFrame(results)
@@ -285,110 +286,30 @@ def evaluate_all(
         single_df.to_csv(out_dir / "single.csv")
         performance_df.to_csv(out_dir / "performance.csv")
 
-    # best_models = add_metric_columns(
-    #     label_df.groupby("model")[CONFUSION_COLUMNS].sum()
-    # ).sort_values("f5", ascending=False)
-    # dataset_scores = add_metric_columns(label_df.groupby("dataset")[CONFUSION_COLUMNS].sum())
-    # models_and_labels = add_metric_columns(
-    #     label_df.groupby(["model", "label"])[CONFUSION_COLUMNS].sum().reset_index()
-    # )
-    # best_model_by_label = models_and_labels.loc[
-    #     models_and_labels.groupby("label").idxmax()["f5"]
-    # ].set_index(["label", "model"])
-    # labels_and_models = models_and_labels.set_index(["label", "model"]).sort_values(
-    #     ["label", "f5"], ascending=[True, False]
-    # )
-    # models_and_labels = models_and_labels.set_index(["model", "label"]).sort_values(
-    #     ["model", "f5"], ascending=[True, False]
-    # )
-    # label_df = label_df.set_index(["model", "dataset", "label"]).sort_values(
-    #     ["model", "dataset", "f5"], ascending=[True, True, False]
-    # )
-
     single_metrics = add_metric_columns(single_df)
-
     best_models_single = add_metric_columns(
         single_df.groupby(level="model").sum()
     ).sort_values("f5", ascending=False)
-    best_models_by_dataset_single = add_metric_columns(
-        single_df.groupby(level=["model", "dataset"]).sum()
-    ).sort_values(["dataset", "f5"], ascending=[True, False])
-
-    best_feasible_models_by_dataset = best_models_by_dataset_single.loc[
-        best_models_by_dataset_single["recall"] >= 0.95
-    ].sort_values("precision", ascending=False)
-
     best_feasible_models = best_models_single.loc[
         best_models_single["recall"] >= 0.95
     ].sort_values("precision", ascending=False)
-
     feasible_models = set(best_feasible_models.index)
-
     worst_by_model_and_dataset_single = single_metrics.loc[
         single_metrics.groupby(level=["model", "dataset"]).idxmin()["recall"]
     ]
-
-    worst_by_model_single = single_metrics.loc[
-        single_metrics.groupby(level=["model"]).idxmin()["recall"]
-    ]
-
     worst_by_feasible_model_and_dataset_single = worst_by_model_and_dataset_single.loc[
         worst_by_model_and_dataset_single.index.get_level_values("model").isin(
             feasible_models
         )
     ]
-
-    worst_by_feasible_model_single = worst_by_model_single.loc[
-        worst_by_model_single.index.get_level_values("model").isin(feasible_models)
-    ]
-
-    single_df_feasible = add_metric_columns(
-        single_df.loc[single_df.index.get_level_values("model").isin(feasible_models)]
-    )
-
     for_pres_dir = Path("docs/for_pres")
     best_feasible_models[["precision", "recall"]].to_markdown(
         for_pres_dir / "best_feasible_models.md"
     )
-    worst_by_feasible_model_and_dataset_single[["precision", "recall"]].to_markdown(
-        for_pres_dir / "worst_by_feasible_model_and_dataset.md"
-    )
-
+    worst_by_feasible_model_and_dataset_single[
+        ["precision", "recall"]
+    ].reset_index().to_markdown(for_pres_dir / "worst_by_feasible_model_and_dataset.md")
     pass
-
-    # models_and_datasets = add_metric_columns(single_df.
-    #     .groupby(["model", "dataset"])[CONFUSION_COLUMNS]
-    #     .sum()
-    # ).sort_values(["dataset", "precision"], ascending=[True, False])
-    # # models_and_datasets = models_and_datasets[models_and_datasets["recall"] >= 0.95]
-
-    # models_only = add_metric_columns(
-    #     pd.DataFrame(to_dict_recursive(results_one_label))
-    #     .groupby(["model"])[CONFUSION_COLUMNS + ["worst"]]
-    #     .sum()
-    # ).sort_values(["precision"], ascending=False)
-    # models_only = models_only[models_only["recall"] >= 0.95]
-
-    # with pd.option_context(
-    #     "display.max_rows",
-    #     None,
-    #     "display.max_columns",
-    #     None,
-    #     "display.float_format",
-    #     lambda x: "%.3f" % x,
-    # ):
-    #     # print(df, end="\n\n")
-    #     # print(dataset_scores, end="\n\n")
-    #     # print(models_and_labels, end="\n\n")
-    #     # print(labels_and_models, end="\n\n")
-    #     # if len(best_models) > 1:
-    #     #     print(best_model_by_label, end="\n\n")
-    #     # print(best_models, end="\n\n")
-    #     print(performance_df.sort_values("time_per_entry", ascending=False), end="\n\n")
-
-    #     print("Treating all labels as one:")
-    #     print(models_and_datasets, end="\n\n")
-    #     print(models_only)
 
 
 if __name__ == "__main__":

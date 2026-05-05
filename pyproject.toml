@@ -19,6 +19,8 @@ dependencies = [
     "pip>=26.0.1",
     "rich>=14.3.3",
     "opf @ git+https://github.com/openai/privacy-filter.git",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
 ]
 
 [project.scripts]
@@ -29,7 +31,7 @@ requires = ["hatchling>=1.25.0"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/dfm_anonymization"]
+packages = ["src/dfm_anonymization", "src/comparison_viz"]
 
 [tool.hatch.metadata]
 allow-direct-references = true

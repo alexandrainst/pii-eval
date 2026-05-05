@@ -505,6 +505,7 @@ dependencies = [
     { name = "bidict" },
     { name = "codetiming" },
     { name = "datasets" },
+    { name = "fastapi" },
     { name = "gliner" },
     { name = "nltk" },
     { name = "opf" },
@@ -515,6 +516,7 @@ dependencies = [
     { name = "pytest" },
     { name = "rich" },
     { name = "spacy" },
+    { name = "uvicorn", extra = ["standard"] },
     { name = "vllm" },
 ]
 
@@ -523,6 +525,7 @@ requires-dist = [
     { name = "bidict", specifier = ">=0.23.1" },
     { name = "codetiming", specifier = ">=1.4.0" },
     { name = "datasets", specifier = ">=4.8.4" },
+    { name = "fastapi", specifier = ">=0.115" },
     { name = "gliner", specifier = ">=0.2.25" },
     { name = "nltk", specifier = ">=3.9.3" },
     { name = "opf", git = "https://github.com/openai/privacy-filter.git" },
@@ -533,6 +536,7 @@ requires-dist = [
     { name = "pytest", specifier = ">=9.0.2" },
     { name = "rich", specifier = ">=14.3.3" },
     { name = "spacy", specifier = ">=3.8.11" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
     { name = "vllm", specifier = ">=0.16.0" },
 ]
 

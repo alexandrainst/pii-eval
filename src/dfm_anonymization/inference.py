@@ -4,7 +4,7 @@ from pathlib import Path
 
 from codetiming import Timer
 from dotenv import load_dotenv
-from rich.progress import Progress, track
+from rich.progress import MofNCompleteColumn, Progress, track
 
 from dfm_anonymization.constants import (
     ALL_ISO_LABELS,
@@ -41,13 +41,13 @@ def inference(
             description=f"Entry: {entry.id[:10]:<10}",
             transient=True,
         )
-        try:
+        if True:  # try:
             prediction = model(entry)
-        except Exception as exc:
-            entry_id = entry.id if entry.id is not None else "<unknown>"
-            raise RuntimeError(
-                f"Inference failed for model '{model.name}' on entry '{entry_id}'."
-            ) from exc
+        # except Exception as exc:
+        #     entry_id = entry.id if entry.id is not None else "<unknown>"
+        #     raise RuntimeError(
+        #         f"Inference failed for model '{model.name}' on entry '{entry_id}'."
+        #     ) from exc
         new_entries.append(
             PiiDataEntry(
                 id=entry.id,
@@ -83,17 +83,13 @@ def generate_predictions(
     load_dotenv()
 
     models: list[PiiModel] = [
-        NerModel.from_hf(
-            tag="tabularisai/eu-pii-safeguard", out_bias=-65.0
-        )  # , out_bias=5.0 - 5.0 * x)
-        # for x in range(10)
+        NerModel.from_hf(tag="tabularisai/eu-pii-safeguard", out_bias=x)
+        for x in [0, -5, -10, -11, -11.5, -12, -12.5, -13, -15]
+    ] + [
+        GlinerModel("nvidia/gliner-pii", LABEL_DESCRIPTIONS_DA, threshold=x)
+        for x in [0.1, 0.01, 0.001, 0.0005, 0.0002, 0.0001]
     ]
-    # + [
-    #     GlinerModel(
-    #         "nvidia/gliner-pii", LABEL_DESCRIPTIONS_DA, threshold=0.01 - 0.001 * x
-    #     )
-    #     for x in range(10)
-    # ]
+
     datasets = list(Path("data/ground_truth").glob("*.json"))
     # datasets = [Path("data/ground_truth/openpii-1m.json")]
     # datasets = [Path("data/ground_truth/dimmi.json")]
@@ -103,7 +99,7 @@ def generate_predictions(
         f"datasets: {', '.join([d.stem for d in datasets])}"
     )
 
-    progress = Progress()
+    progress = Progress(*Progress.get_default_columns(), MofNCompleteColumn())
     progress.start()
     model_task = progress.add_task("", total=len(models))
     while models:

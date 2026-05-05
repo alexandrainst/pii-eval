@@ -159,15 +159,53 @@ class TransformersTokenClassifier(TokenClassifier):
         self.logit_mask = mask.to(self.device)
 
     def __call__(self, tokens: Any) -> List[str]:
-        # TODO: here there is a problem when input 'tokens' sequence is longer
-        # than what the model can handle. Should be fixed by batching and stitching
-        # based on the maximum length that the model can handle.
-        with torch.no_grad():
-            token_batch = tokens.to(self.device)
-            outputs = self.model(**token_batch)
+        # Determine the true maximum sequence length the model can handle.
+        # RoBERTa-family models (including XLM-RoBERTa) reserve position IDs
+        # 0 and 1 (padding_idx=1), so actual tokens use positions 2..N, meaning
+        # only max_position_embeddings - 2 tokens can be processed at once.
+        # We read padding_idx from the embeddings to handle this correctly
+        # instead of hard-coding model families.
+        try:
+            pos_emb = self.model.base_model.embeddings.position_embeddings
+            padding_idx = pos_emb.padding_idx
+            if not isinstance(padding_idx, int):
+                padding_idx = 0
+            position_offset = padding_idx + 1  # first usable position id
+        except AttributeError:
+            position_offset = 0
+        max_length = (
+            getattr(self.model.config, "max_position_embeddings", 512) - position_offset
+        )
 
-        # this part should remain the same
-        biased_logits = outputs.logits.clone()
+        token_batch = tokens.to(self.device)
+        seq_len = token_batch["input_ids"].shape[1]
+
+        if seq_len <= max_length:
+            # Fast path: sequence fits in the model's context window.
+            with torch.no_grad():
+                outputs = self.model(**token_batch)
+            all_logits = outputs.logits  # (1, seq_len, num_labels)
+        else:
+            # Slow path: the concatenated encoding produced by
+            # TransformersTokenizer is a single flat sequence
+            # [CLS token1 token2 ... tokenN SEP].  Split it into
+            # non-overlapping chunks of max_length and concatenate the
+            # resulting logits — no tokens are shared between chunks so
+            # no stitching overlap is needed.
+            chunk_logits_list: List[torch.Tensor] = []
+            start = 0
+            while start < seq_len:
+                end = min(start + max_length, seq_len)
+                chunk = {k: v[:, start:end] for k, v in token_batch.items()}
+                with torch.no_grad():
+                    chunk_out = self.model(**chunk)
+                chunk_logits_list.append(chunk_out.logits)
+                start = end
+
+            all_logits = torch.cat(chunk_logits_list, dim=1)  # (1, seq_len, num_labels)
+
+        # this part remains the same
+        biased_logits = all_logits.clone()
         biased_logits[0, :, self.o_id] += self.o_bias
         biased_logits += self.logit_mask
         predictions = torch.argmax(biased_logits, dim=-1)[0].tolist()

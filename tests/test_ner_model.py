@@ -1,4 +1,4 @@
-"""Tests for TransformersTokenizer, focusing on long-input chunking."""
+"""Tests for TransformersTokenizer and TransformersTokenClassifier, focusing on long-input chunking."""
 
 from typing import List, Optional
 from unittest.mock import MagicMock
@@ -6,7 +6,10 @@ from unittest.mock import MagicMock
 import torch
 import pytest
 
-from dfm_anonymization.models.ner_model import TransformersTokenizer
+from dfm_anonymization.models.ner_model import (
+    TransformersTokenClassifier,
+    TransformersTokenizer,
+)
 
 
 def _make_mock_tokenizer(vocab_size: int = 100, model_max_length: int = 10):
@@ -85,3 +88,67 @@ class TestTransformersTokenizerChunking:
         words = [f"w{i}" for i in range(10)]
         encoding, word_ids = tok(words)
         assert encoding["input_ids"].shape[1] == len(word_ids)
+
+
+def _make_mock_classifier(num_labels: int = 4, max_position_embeddings: int = 10):
+    """Return a minimal mock of a HuggingFace token classification model.
+
+    The model always predicts label 0 for every token.  max_position_embeddings
+    controls the context window enforced by TransformersTokenClassifier.
+    """
+    id2label = {i: (f"B-ENT{i}" if i > 0 else "O") for i in range(num_labels)}
+
+    config = MagicMock()
+    config.id2label = id2label
+    config.max_position_embeddings = max_position_embeddings
+
+    model = MagicMock()
+    model.config = config
+
+    def forward(**inputs):
+        seq_len = inputs["input_ids"].shape[1]
+        device = inputs["input_ids"].device
+        logits = torch.zeros(1, seq_len, num_labels, device=device)
+        out = MagicMock()
+        out.logits = logits
+        return out
+
+    model.side_effect = forward
+    # .to() and .eval() must be no-ops that return the mock itself
+    model.to.return_value = model
+    model.eval.return_value = model
+
+    return model
+
+
+class TestTransformersTokenClassifierChunking:
+    def test_short_input_returns_label_per_token(self):
+        """Sequences within max_position_embeddings get one label per token."""
+        model = _make_mock_classifier(max_position_embeddings=20)
+        classifier = TransformersTokenClassifier(model)
+        device = classifier.device
+        seq_len = 8
+        input_ids = torch.zeros(1, seq_len, dtype=torch.long, device=device)
+        token_dict = {"input_ids": input_ids}
+
+        tokens = MagicMock()
+        tokens.to.return_value = token_dict
+
+        labels = classifier(tokens)
+        assert len(labels) == seq_len
+
+    def test_long_input_returns_label_per_token(self):
+        """Sequences exceeding max_position_embeddings still get one label per token."""
+        max_pos = 6
+        model = _make_mock_classifier(max_position_embeddings=max_pos)
+        classifier = TransformersTokenClassifier(model)
+        device = classifier.device
+        seq_len = 20  # much longer than max_pos
+        input_ids = torch.zeros(1, seq_len, dtype=torch.long, device=device)
+        token_dict = {"input_ids": input_ids}
+
+        tokens = MagicMock()
+        tokens.to.return_value = token_dict
+
+        labels = classifier(tokens)
+        assert len(labels) == seq_len

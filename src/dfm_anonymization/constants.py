@@ -21,6 +21,7 @@ from bidict import bidict
 # GENDER (eu-pii-safeguard) *
 # HEALTH_CONDITION (eu-pii-safeguard) (*)
 # JOB_TITLE (eu-pii-safeguard) (*)
+# OTHER_PII "other personal identifiable information"
 # POLITICAL_OPINION (eu-pii-safeguard) (*)
 # PREFIX (eu-pii-safeguard) (*)
 # RELIGION (eu-pii-safeguard) (*)
@@ -33,7 +34,6 @@ ISO_LABEL_BANK_ACCOUNT = "BANK_ACCOUNT"
 ISO_LABEL_DRIVERS_LICENSE = "DRIVERS_LICENSE"
 ISO_LABEL_EMAIL_ADDRESS = "EMAIL_ADDRESS"
 ISO_LABEL_IP_ADDRESS = "IP_ADDRESS"
-ISO_LABEL_OTHER_PII = "OTHER_PII"
 ISO_LABEL_PASSPORT = "PASSPORT"
 ISO_LABEL_PCI = "PCI"
 ISO_LABEL_PERSON_NAME = "PERSON_NAME"
@@ -50,7 +50,6 @@ ALL_ISO_LABELS = {
     ISO_LABEL_DRIVERS_LICENSE,
     ISO_LABEL_EMAIL_ADDRESS,
     ISO_LABEL_IP_ADDRESS,
-    ISO_LABEL_OTHER_PII,
     ISO_LABEL_PASSPORT,
     ISO_LABEL_PCI,
     ISO_LABEL_PERSON_NAME,
@@ -71,7 +70,6 @@ LABEL_DESCRIPTIONS_EN = bidict(
             "- e.g. hjohnson@hotmail.com, but not contact@cbs.com"
         ),
         ISO_LABEL_IP_ADDRESS: "IP address",
-        ISO_LABEL_OTHER_PII: "other personal identifiable information",
         ISO_LABEL_PASSPORT: "passport number",
         ISO_LABEL_PCI: "payment card information",
         ISO_LABEL_PERSON_NAME: (
@@ -101,7 +99,6 @@ LABEL_DESCRIPTIONS_DA = bidict(
             "- f.eks hbergman@gmail.com, men ikke kontakt@dr.dk"
         ),
         ISO_LABEL_IP_ADDRESS: "IP-adresser",
-        ISO_LABEL_OTHER_PII: "andet information som kan være person-identificerende",
         ISO_LABEL_PASSPORT: "pasnummer",
         ISO_LABEL_PCI: "betalingskortoplysninger, CVV",
         ISO_LABEL_PERSON_NAME: (
@@ -175,9 +172,9 @@ MODEL_LABEL_MAP: dict[str, dict[str, str]] = {
         "private_email": ISO_LABEL_EMAIL_ADDRESS,
         "private_person": ISO_LABEL_PERSON_NAME,
         "private_phone": ISO_LABEL_PHONE_NUMBER,
-        "private_url": ISO_LABEL_OTHER_PII,
-        "private_date": ISO_LABEL_OTHER_PII,
-        "secret": ISO_LABEL_OTHER_PII,
+        # "private_url": ISO_LABEL_OTHER_PII,
+        # "private_date": ISO_LABEL_OTHER_PII,
+        # "secret": ISO_LABEL_OTHER_PII,
     },
     r"eu-pii-safeguard*": {
         "ACCOUNT_NUMBER": ISO_LABEL_BANK_ACCOUNT,
@@ -190,8 +187,8 @@ MODEL_LABEL_MAP: dict[str, dict[str, str]] = {
         "COUNTRY": ISO_LABEL_PRECISE_LOCATION,
         # "CURRENCY",
         "CREDIT_CARD_NUMBER": ISO_LABEL_PCI,
-        "DEVICE_ID": ISO_LABEL_OTHER_PII,
-        "DOB": ISO_LABEL_OTHER_PII,
+        # "DEVICE_ID": ISO_LABEL_OTHER_PII,
+        # "DOB": ISO_LABEL_OTHER_PII,
         "DRIVER_LICENSE": ISO_LABEL_DRIVERS_LICENSE,
         "EMAIL": ISO_LABEL_EMAIL_ADDRESS,
         # "ETHNICITY",
@@ -205,11 +202,11 @@ MODEL_LABEL_MAP: dict[str, dict[str, str]] = {
         "LASTNAME": ISO_LABEL_PERSON_NAME,
         "LATITUDE": ISO_LABEL_PRECISE_LOCATION,
         "LONGITUDE": ISO_LABEL_PRECISE_LOCATION,
-        "MAC_ADDRESS": ISO_LABEL_OTHER_PII,
+        # "MAC_ADDRESS": ISO_LABEL_OTHER_PII,
         "MIDDLENAME": ISO_LABEL_PERSON_NAME,
         "NATIONAL_ID": ISO_LABEL_SSN,
         "PASSPORT_NUMBER": ISO_LABEL_PASSPORT,
-        "PASSWORD": ISO_LABEL_OTHER_PII,
+        # "PASSWORD": ISO_LABEL_OTHER_PII,
         "PHONE_NUMBER": ISO_LABEL_PHONE_NUMBER,
         # "POLITICAL_OPINION",
         "POSTAL_CODE": ISO_LABEL_PRECISE_LOCATION,
@@ -219,7 +216,7 @@ MODEL_LABEL_MAP: dict[str, dict[str, str]] = {
         # "SEXUAL_ORIENTATION",
         "STATE": ISO_LABEL_PRECISE_LOCATION,
         "STREET": ISO_LABEL_PRECISE_LOCATION,
-        "TAX_ID": ISO_LABEL_OTHER_PII,
+        # "TAX_ID": ISO_LABEL_OTHER_PII,
         # "URL",
         "USERNAME": ISO_LABEL_USERNAME,
     },
@@ -277,7 +274,7 @@ DATASET_LABEL_MAP: dict[str, dict[str, str]] = {
         "DRIVERS_LICENSE": ISO_LABEL_DRIVERS_LICENSE,
         "EMAIL_ADDRESS": ISO_LABEL_EMAIL_ADDRESS,
         "IP_ADDRESS": ISO_LABEL_IP_ADDRESS,
-        "OTHER_PII": ISO_LABEL_OTHER_PII,
+        # "OTHER_PII": ISO_LABEL_OTHER_PII,
         "PASSPORT": ISO_LABEL_PASSPORT,
         "PCI": ISO_LABEL_PCI,
         "PERSON_NAME": ISO_LABEL_PERSON_NAME,
@@ -297,7 +294,7 @@ DATASET_LABEL_MAP: dict[str, dict[str, str]] = {
         "EMAIL": ISO_LABEL_EMAIL_ADDRESS,
         # "GENDER",
         "GIVENNAME": ISO_LABEL_PERSON_NAME,
-        "IDCARDNUM": ISO_LABEL_OTHER_PII,
+        # "IDCARDNUM": ISO_LABEL_OTHER_PII,
         "PASSPORTNUM": ISO_LABEL_PASSPORT,
         # "SEX",
         "SOCIALNUM": ISO_LABEL_SSN,

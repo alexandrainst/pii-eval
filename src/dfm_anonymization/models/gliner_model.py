@@ -34,7 +34,7 @@ class GlinerModel(PiiModel):
         labels: Set[str] | bidict[str, str] = LABEL_DESCRIPTIONS_DA,
         threshold: float = 0.5,
     ):
-        super().__init__(name=tag.split("/")[-1] + f"_th_{threshold:.3f}")
+        super().__init__(name=tag.split("/")[-1] + f"_th_{threshold:.4f}")
         self.tag = tag
         self.model: Any | None = None
         self.labels = labels

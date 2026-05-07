@@ -269,7 +269,9 @@ def evaluate_all(
                 }
             )
 
-    performance_df = pd.DataFrame(performances)
+    performance_df = (
+        pd.DataFrame(performances).set_index(["model", "dataset"]).sort_index()
+    )
     df = (
         pd.DataFrame(results)
         .set_index(["model", "dataset", "entry", "label"])
@@ -286,29 +288,41 @@ def evaluate_all(
         single_df.to_csv(out_dir / "single.csv")
         performance_df.to_csv(out_dir / "performance.csv")
 
+
+    models_by_label = add_metric_columns(
+        label_df.groupby(level=["model", "label"]).sum()
+    ).sort_values(["label", "recall"], ascending=[True, False])
+
     single_metrics = add_metric_columns(single_df)
     best_models_single = add_metric_columns(
         single_df.groupby(level="model").sum()
     ).sort_values("f5", ascending=False)
     best_feasible_models = best_models_single.loc[
-        best_models_single["recall"] >= 0.95
+        best_models_single["recall"] >= 0.8
     ].sort_values("precision", ascending=False)
     feasible_models = set(best_feasible_models.index)
-    worst_by_model_and_dataset_single = single_metrics.loc[
-        single_metrics.groupby(level=["model", "dataset"]).idxmin()["recall"]
+    feasible_models_by_dataset = add_metric_columns(
+        single_metrics.groupby(level=["model", "dataset"]).sum()
+    )
+    single_enough_p = single_metrics.loc[
+        single_metrics["tp"] + single_metrics["fn"] > 5
+    ]
+    worst_by_model_and_dataset_single = single_enough_p.loc[
+        single_enough_p.groupby(level=["model", "dataset"]).idxmin()["recall"]
     ]
     worst_by_feasible_model_and_dataset_single = worst_by_model_and_dataset_single.loc[
         worst_by_model_and_dataset_single.index.get_level_values("model").isin(
             feasible_models
         )
     ]
-    for_pres_dir = Path("docs/for_pres")
-    best_feasible_models[["precision", "recall"]].to_markdown(
-        for_pres_dir / "best_feasible_models.md"
-    )
-    worst_by_feasible_model_and_dataset_single[
-        ["precision", "recall"]
-    ].reset_index().to_markdown(for_pres_dir / "worst_by_feasible_model_and_dataset.md")
+
+    models_and_datasets_single = add_metric_columns(
+        single_df.groupby(level=["model", "dataset"]).sum()
+    ).sort_values(["model", "f5"], ascending=[True, False])
+
+    print(best_models_single)
+    print(worst_by_feasible_model_and_dataset_single)
+
     pass
 
 

@@ -78,6 +78,7 @@ class PiiDataEntry(object):
     def example_pii() -> "PiiDataEntry":
         return PiiDataEntry.from_dict(
             {
+                "id": "example",
                 "text": "Rapport fra IT: en maskine med MAC-adresse loggede fra IP 10.0.0.42 og var knyttet til kontoret på Blegdamsvej 24, 2100 København Ø. Den ansvarlige medarbejder var registreret som Frederik Sørensen med e-mail frederik.sorensen@firma.dk og intern konto fsorensen.",
                 "tokens": [
                     "Rapport",

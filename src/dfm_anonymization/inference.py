@@ -13,6 +13,7 @@ from dfm_anonymization.constants import (
 )
 from dfm_anonymization.dataset import PiiDataEntry, PiiDataset
 from dfm_anonymization.interfaces import PiiModel
+from dfm_anonymization.models.gen_model import GenModel
 from dfm_anonymization.models.gliner_model import GlinerModel
 from dfm_anonymization.models.ner_model import NerModel
 from dfm_anonymization.models.opf_model import OpfNerModel
@@ -38,16 +39,16 @@ def inference(
         progress.update(
             entries_task,
             advance=1,
-            description=f"Entry: {entry.id[:10]:<10}",
+            description=f"Entry: {str(entry.id)[:10]:<10}",
             transient=True,
         )
-        if True:  # try:
+        try:
             prediction = model(entry)
-        # except Exception as exc:
-        #     entry_id = entry.id if entry.id is not None else "<unknown>"
-        #     raise RuntimeError(
-        #         f"Inference failed for model '{model.name}' on entry '{entry_id}'."
-        #     ) from exc
+        except Exception as exc:
+            entry_id = entry.id if entry.id is not None else "<unknown>"
+            raise RuntimeError(
+                f"Inference failed for model '{model.name}' on entry '{entry_id}'."
+            ) from exc
         new_entries.append(
             PiiDataEntry(
                 id=entry.id,
@@ -83,16 +84,15 @@ def generate_predictions(
     load_dotenv()
 
     models: list[PiiModel] = [
-        NerModel.from_hf(tag="tabularisai/eu-pii-safeguard", out_bias=x)
-        for x in [0, -5, -10, -11, -11.5, -12, -12.5, -13, -15]
-    ] + [
-        GlinerModel("nvidia/gliner-pii", LABEL_DESCRIPTIONS_DA, threshold=x)
-        for x in [0.1, 0.01, 0.001, 0.0005, 0.0002, 0.0001]
+        OpenAIClientModel(
+            model_tag="qwen3.5-397b",
+            base_url="https://inference.alexandra.dk/v1",
+            api_key=os.getenv("ALEX_API_KEY"),
+            name="qwen3.5-397b",
+        ),
     ]
 
     datasets = list(Path("data/ground_truth").glob("*.json"))
-    # datasets = [Path("data/ground_truth/openpii-1m.json")]
-    # datasets = [Path("data/ground_truth/dimmi.json")]
 
     print(
         f"generating predictions\nmodels: {', '.join([m.name for m in models])}\n"
@@ -146,12 +146,8 @@ def generate_predictions(
                 predictions.to_file(output_file_path)
         progress.remove_task(dataset_task)
     progress.remove_task(model_task)
-    # print()
-    # progress.stop()
+    progress.stop()
 
 
 if __name__ == "__main__":
-    generate_predictions(
-        override=False,
-        # max_entries_per_config=500,
-    )
+    generate_predictions(override=False)

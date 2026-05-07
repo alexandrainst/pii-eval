@@ -22,8 +22,11 @@ class OpenAIClientModel(PiiModel):
         base_url: str = "http://localhost:8000",
         api_key: str = "not_needed",
         label_descriptions: Set[str] | bidict[str, str] = LABEL_DESCRIPTIONS_DA,
+        name: str | None = None,
     ):
-        super().__init__(name=model_tag.split("/")[-1])
+        if name is None:
+            name = model_tag.split("/")[-1]
+        super().__init__(name=name)
         self.model_tag = model_tag
         self.base_url = base_url
         self.api_key = api_key
@@ -33,10 +36,6 @@ class OpenAIClientModel(PiiModel):
             "You are a helpful assistant that performs NER (named entity recognition) "
             "specifically for PII (person identifiable information) in contexts "
             "that can be in languages different from english (multilingual). "
-            "Answer so that the entire output always deserializes to the following "
-            f"model JSON schema:\n{self.model_json_schema}\n"
-            "Never output newlines, multiple spaces or explanatory text. "
-            f"Here's an example output:\n{NERResponse.example}\n"
         )
         self.client: OpenAI | None = None
 
@@ -53,11 +52,17 @@ class OpenAIClientModel(PiiModel):
         system_prompt = self.preamble + (
             "List of labels to use:\n"
             f"{list(relevant_descriptions.keys())}"
-            "pick one for each PII-sensitive substring/entity. "
+            "pick exactly one label for each PII-sensitive substring/entity. "
             "Below are descriptions of each label in the relevant language:\n"
             f"{json.dumps(relevant_descriptions)}\n"
-            "Use only the descriptions to understand the labels - "
+            "Use the descriptions only to understand the labels - "
             "for the actual output labelling use on the (upper-case) labels. "
+            "Label anything and everything with the "
+            "slightest chance of being PII-sensitive. "
+            "Rather label too many substrings (than too few) "
+            "- aiming for high recall and low precision. "
+            "Always label even doubtful substrings "
+            "(just give them low confidence score)."
         )
         user_prompt = (
             "Label all (possibly none) PII-entities in the following text:\n"
@@ -71,6 +76,7 @@ class OpenAIClientModel(PiiModel):
                 {"role": "user", "content": user_prompt},
             ],
             response_format=NERResponse,
+            extra_body={"chat_template_kwargs": {"enable_thinking": False}},
         )
         content = response.choices[0].message.content
         try:
@@ -95,22 +101,49 @@ class NEREntityFormat(BaseModel):
         return '{"text": "Danmarksvej nr. 4, 2400 Kbh NV", "label": "PRECISE_LOCATION"}'
 
 
+def find_alnum(haystack: str, needle: str, cursor: int = 0) -> int:
+    haystack = haystack[cursor:]
+    # Strip non-alnum from needle
+    n = "".join(c for c in needle if c.isalnum())
+    if not n:
+        return -1
+    # Build cleaned haystack + map: cleaned index -> original index
+    cleaned = []
+    idx_map = []
+    for i, c in enumerate(haystack):
+        if c.isalnum():
+            cleaned.append(c)
+            idx_map.append(i)
+    pos = "".join(cleaned).find(n)
+    return idx_map[pos] + cursor if pos != -1 else -1
+
+
 class NERResponse(BaseModel):
     entities: list[NEREntityFormat]
 
-    @property
+    @staticmethod
     def example() -> str:
         return f'{{"entities": [{NEREntityFormat.example}, ...]}}'
 
-    def to_bio(self, text: str, token_spans: list[tuple[int, int]]) -> list[str]:
+    def to_bio(
+        self, text: str, token_spans: list[tuple[int, int]], min_confidence: float = 0.0
+    ) -> list[str]:
         spans = []
         cursor = 0
         for entity in self.entities:
-            start = text.find(entity.text, cursor)
+            start = find_alnum(text, entity.text, cursor)
             if start >= 0:
                 cursor = start
                 end = start + len(entity.text)
-                spans.append(Span(start=start, end=end, label=entity.label))
+                if entity.confidence >= min_confidence:
+                    spans.append(
+                        Span(
+                            start=start,
+                            end=end,
+                            label=entity.label,
+                            confidence=entity.confidence,
+                        )
+                    )
             else:
                 logging.warning(
                     f"Failed to find model output substring "

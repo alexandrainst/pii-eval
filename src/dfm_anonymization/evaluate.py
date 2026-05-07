@@ -269,7 +269,9 @@ def evaluate_all(
                 }
             )
 
-    performance_df = pd.DataFrame(performances)
+    performance_df = (
+        pd.DataFrame(performances).set_index(["model", "dataset"]).sort_index()
+    )
     df = (
         pd.DataFrame(results)
         .set_index(["model", "dataset", "entry", "label"])
@@ -294,22 +296,43 @@ def evaluate_all(
         best_models_single["recall"] >= 0.95
     ].sort_values("precision", ascending=False)
     feasible_models = set(best_feasible_models.index)
-    worst_by_model_and_dataset_single = single_metrics.loc[
-        single_metrics.groupby(level=["model", "dataset"]).idxmin()["recall"]
+    feasible_models_by_dataset = add_metric_columns(
+        single_metrics.groupby(level=["model", "dataset"]).sum()
+    )
+    single_enough_p = single_metrics.loc[
+        single_metrics["tp"] + single_metrics["fn"] > 5
+    ]
+    worst_by_model_and_dataset_single = single_enough_p.loc[
+        single_enough_p.groupby(level=["model", "dataset"]).idxmin()["recall"]
     ]
     worst_by_feasible_model_and_dataset_single = worst_by_model_and_dataset_single.loc[
         worst_by_model_and_dataset_single.index.get_level_values("model").isin(
             feasible_models
         )
     ]
-    for_pres_dir = Path("docs/for_pres")
+    for_pres_dir = Path("presentation/results")
+    feasible_models_by_dataset[["precision", "recall"]].reset_index().to_markdown(
+        for_pres_dir / "feasible_models_by_dataset.md"
+    )
     best_feasible_models[["precision", "recall"]].to_markdown(
         for_pres_dir / "best_feasible_models.md"
     )
     worst_by_feasible_model_and_dataset_single[
         ["precision", "recall"]
     ].reset_index().to_markdown(for_pres_dir / "worst_by_feasible_model_and_dataset.md")
-    pass
+
+    performance_df.reset_index().to_markdown(
+        for_pres_dir / "performance_by_model_and_dataset.md"
+    )
+    performance_df.groupby(level="model").mean().to_markdown(
+        for_pres_dir / "performance_by_model.md"
+    )
+
+    models_and_datasets_single = add_metric_columns(
+        single_df.groupby(level=["model", "dataset"]).sum()
+    ).sort_values("f5", ascending=False)
+
+      pass
 
 
 if __name__ == "__main__":

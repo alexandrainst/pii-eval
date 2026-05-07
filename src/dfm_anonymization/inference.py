@@ -84,15 +84,13 @@ def generate_predictions(
 
     models: list[PiiModel] = [
         NerModel.from_hf(tag="tabularisai/eu-pii-safeguard", out_bias=x)
-        for x in [0, -5, -10, -11, -11.5, -12, -12.5, -13, -15]
+        for x in [-1, -2, -3, -4, -6, -7, -8, -9]
     ] + [
         GlinerModel("nvidia/gliner-pii", LABEL_DESCRIPTIONS_DA, threshold=x)
-        for x in [0.1, 0.01, 0.001, 0.0005, 0.0002, 0.0001]
+        for x in [0.5, 0.2, 0.05, 0.02, 0.005, 0.002]
     ]
 
     datasets = list(Path("data/ground_truth").glob("*.json"))
-    # datasets = [Path("data/ground_truth/openpii-1m.json")]
-    # datasets = [Path("data/ground_truth/dimmi.json")]
 
     print(
         f"generating predictions\nmodels: {', '.join([m.name for m in models])}\n"

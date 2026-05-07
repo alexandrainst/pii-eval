@@ -7,7 +7,7 @@ from typing import Callable, Iterable
 from ..constants import *
 from ..dataset import PiiDataEntry
 from ..interfaces import PiiModel
-from ..util.util import Span, filter_bio, spans_to_bio
+from ..util.util import LabelSpan, filter_bio, spans_to_bio
 
 
 RegexValidator = Callable[[str], bool]
@@ -677,7 +677,7 @@ REGEX_RULES: tuple[RegexRule, ...] = (
 )
 
 
-def _iter_rule_spans(text: str, rule: RegexRule) -> Iterable[Span]:
+def _iter_rule_spans(text: str, rule: RegexRule) -> Iterable[LabelSpan]:
     for match in rule.pattern.finditer(text):
         start, end = match.span(rule.group) if rule.group is not None else match.span()
         candidate = text[start:end].strip(" ,;:\n\t")
@@ -686,15 +686,15 @@ def _iter_rule_spans(text: str, rule: RegexRule) -> Iterable[Span]:
         if rule.validator is not None and not rule.validator(candidate):
             continue
         candidate_start = text.find(candidate, start, end)
-        yield Span(
+        yield LabelSpan(
             start=candidate_start if candidate_start >= 0 else start,
             end=(candidate_start + len(candidate)) if candidate_start >= 0 else end,
             label=rule.label,
         )
 
 
-def _select_non_overlapping_spans(spans: list[tuple[int, Span]]) -> list[Span]:
-    selected: list[Span] = []
+def _select_non_overlapping_spans(spans: list[tuple[int, LabelSpan]]) -> list[LabelSpan]:
+    selected: list[LabelSpan] = []
     seen: set[tuple[int, int, str]] = set()
     for _, span in sorted(
         spans, key=lambda item: (item[1].start, item[0], -(item[1].end - item[1].start))
@@ -726,7 +726,7 @@ class RegexModel(PiiModel):
         if label_whitelist is not None:
             active_labels = REGEX_COMPATIBLE_LABELS & label_whitelist
 
-        prioritized_spans: list[tuple[int, Span]] = []
+        prioritized_spans: list[tuple[int, LabelSpan]] = []
         for rule in REGEX_RULES:
             if rule.label not in active_labels:
                 continue

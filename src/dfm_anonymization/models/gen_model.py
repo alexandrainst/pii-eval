@@ -12,7 +12,7 @@ from vllm.sampling_params import StructuredOutputsParams
 from dfm_anonymization.constants import LABEL_DESCRIPTIONS_DA
 from dfm_anonymization.dataset import PiiDataEntry
 from dfm_anonymization.interfaces import PiiModel
-from dfm_anonymization.util.util import Span, spans_to_bio
+from dfm_anonymization.util.util import LabelSpan, spans_to_bio
 
 
 class GenModel(PiiModel):
@@ -86,7 +86,7 @@ class GenModel(PiiModel):
             if start >= 0:
                 cursor = start
                 end = start + len(entity.substring)
-                spans.append(Span(start=start, end=end, label=entity.label))
+                spans.append(LabelSpan(start=start, end=end, label=entity.label))
             else:
                 logging.warning(
                     f"Failed to find model output substring "

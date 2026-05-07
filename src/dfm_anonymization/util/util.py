@@ -9,6 +9,8 @@ import yaml
 from pydantic import BaseModel
 from spacy.cli import download
 
+from dfm_anonymization.util.spans import LabelSpan
+
 
 class BlockStrDumper(yaml.SafeDumper):
     """YAML dumper that emits multiline strings in block style."""

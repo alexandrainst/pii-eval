@@ -10,12 +10,12 @@ from pydantic import BaseModel, Field
 from tqdm import tqdm
 
 from dfm_anonymization.constants import LABEL_DESCRIPTIONS_DA
-from dfm_anonymization.util.util import BlockStrDumper, Span
+from dfm_anonymization.util.util import BlockStrDumper, LabelSpan
 
 
 class GenItem(BaseModel):
     text: str = Field(...)
-    spans: list[Span] = Field(...)
+    spans: list[LabelSpan] = Field(...)
 
 
 class GenOutput(BaseModel):

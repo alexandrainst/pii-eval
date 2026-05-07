@@ -8,8 +8,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from .data_loader import DataLoader
-from .span_utils import (
+from dfm_anonymization.util.spans import (
     DATASET_LABEL_MAP,
     MODEL_LABEL_MAP,
     NO_MAP_KEY,
@@ -21,6 +20,8 @@ from .span_utils import (
     resolve_label_map,
     spans_to_dicts,
 )
+
+from .data_loader import DataLoader
 
 
 def create_app(data_dir: Path) -> FastAPI:

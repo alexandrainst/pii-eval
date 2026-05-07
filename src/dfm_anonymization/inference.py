@@ -1,36 +1,21 @@
-import os
 from datetime import datetime
 from pathlib import Path
 
 from codetiming import Timer
 from dotenv import load_dotenv
-from rich.progress import MofNCompleteColumn, Progress, track
+from rich.progress import MofNCompleteColumn, Progress
 
-from dfm_anonymization.constants import (
-    ALL_ISO_LABELS,
-    LABEL_DESCRIPTIONS_DA,
-    MODEL_LABEL_MAP,
-)
+from dfm_anonymization.constants import LABEL_DESCRIPTIONS_DA
 from dfm_anonymization.dataset import PiiDataEntry, PiiDataset
 from dfm_anonymization.interfaces import PiiModel
-from dfm_anonymization.models.gen_model import GenModel
-from dfm_anonymization.models.gliner_model import GlinerModel
-from dfm_anonymization.models.ner_model import NerModel
-from dfm_anonymization.models.opf_model import OpfNerModel
-from dfm_anonymization.models.openai_client_model import OpenAIClientModel
-from dfm_anonymization.models.presidio_model import PresidioModel
-from dfm_anonymization.models.regex_model import RegexModel
-from dfm_anonymization.models.ensemble_model import EnsembleModel
-from dfm_anonymization.util.util import IdenMap
-# from dfm_anonymization.models.scrambletron import ScrambletronModel
+from dfm_anonymization.models.all_models import *
 
 
 def inference(
     model: PiiModel,
     dataset: PiiDataset,
     samples: int | None = None,
-    progress: Progress | None = None,  # pbar_pos: int = 0
-    # task_id: TaskID | None = None,
+    progress: Progress | None = None,
 ) -> PiiDataset:
     it = dataset.entries if samples is None else dataset.get_samples(samples)
     new_entries = []
@@ -106,16 +91,15 @@ def generate_predictions(
 
     progress = Progress(*Progress.get_default_columns(), MofNCompleteColumn())
     progress.start()
-    model_task = progress.add_task("", total=len(models))
+    model_task = progress.add_task("", total=len(models), transient=True)
     while models:
         model = models.pop(0)
         progress.update(
             model_task,
             advance=1,
             description=f"Model: {model.name[:10]:<10}",
-            transient=True,
         )
-        dataset_task = progress.add_task("", total=len(datasets))
+        dataset_task = progress.add_task("", total=len(datasets), transient=True)
         for in_path in datasets:
             dataset = PiiDataset.from_file(in_path)
             dataset_name = dataset.metadata.get("dataset_name", in_path.stem)
@@ -123,7 +107,6 @@ def generate_predictions(
                 dataset_task,
                 advance=1,
                 description=f"Dataset: {dataset_name[:10]:<10}",
-                transient=True,
             )
             output_file_path = Path(
                 f"data/predictions/{model.name}/{dataset_name}.json"

@@ -16,10 +16,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from dfm_anonymization.util.util import WordTokenizer, spans_to_bio
-from dfm_anonymization.util.util import Span
+from dfm_anonymization.util.util import LabelSpan
 
 
-def pii_to_spans(pii_json: str) -> list[Span]:
+def pii_to_spans(pii_json: str) -> list[LabelSpan]:
     """Parse the JSON-encoded PII column into a list of Span objects.
 
     The CSV stores PII as a JSON array of objects with keys 'category',
@@ -29,7 +29,7 @@ def pii_to_spans(pii_json: str) -> list[Span]:
     spans = []
     for item in raw:
         spans.append(
-            Span(
+            LabelSpan(
                 start=int(item["start"]),
                 end=int(item["end"]),
                 label=str(item["category"]),

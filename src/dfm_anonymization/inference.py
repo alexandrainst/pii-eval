@@ -90,6 +90,11 @@ def generate_predictions(
             api_key=os.getenv("ALEX_API_KEY"),
             name="qwen3.5-397b",
         ),
+        NerModel.from_hf(tag="tabularisai/eu-pii-safeguard", out_bias=x)
+        for x in [-1, -2, -3, -4, -6, -7, -8, -9]
+    ] + [
+        GlinerModel("nvidia/gliner-pii", LABEL_DESCRIPTIONS_DA, threshold=x)
+        for x in [0.5, 0.2, 0.05, 0.02, 0.005, 0.002]
     ]
 
     datasets = list(Path("data/ground_truth").glob("*.json"))

@@ -1,5 +1,6 @@
+# from __future__ import annotations
 from abc import ABC, abstractmethod
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from functools import cached_property
 import json
 from pathlib import Path
@@ -8,14 +9,17 @@ from typing import Any, Callable, Iterator, Literal
 from datasets import Dataset, concatenate_datasets
 import datasets
 
+from dfm_anonymization.util.spans import spans_to_bio
 from pii_eval.util import (
     LabelSpan,
     TextSpan,
     autoinit,
+    bio_to_spans,
     to_dict_recursive,
 )
 
 
+@dataclass
 class PiiEntry(ABC):
     @property
     @abstractmethod
@@ -80,6 +84,16 @@ class PiiEntryConcrete(PiiEntry):
     def extra(self) -> dict[str, Any]:
         return self.extra_
 
+    @staticmethod
+    def from_dict(data: dict) -> PiiEntry:
+        return PiiEntryConcrete(
+            uid_=data.get("uid") or data.get("id"),
+            text_=data["text"],
+            spans_=data.get("spans") or bio_to_spans(data.get("bio")),
+            bio_=data.get("bio") or spans_to_bio(data.get("spans")),
+            extra_=data.get("extra", {}),
+        )
+
 
 @dataclass
 class PiiEntryLazy(PiiEntry):
@@ -110,10 +124,10 @@ class PiiEntryLazy(PiiEntry):
         return self.extra_f()
 
 
-@autoinit
+@dataclass
 class PiiDataset(ABC):
     name: str
-    metadata: dict[str, Any] = {}
+    metadata: dict[str, Any]  #  = field(default_factory=dict)
 
     @abstractmethod
     def __getitem__(self, key) -> PiiEntry: ...
@@ -152,7 +166,7 @@ class PiiDataset(ABC):
 
 @dataclass
 class FromEntries(PiiDataset):
-    entries: list[PiiEntry]
+    entries: list[PiiEntry]  #  = field(default=list)
 
     def __getitem__(self, key) -> PiiEntry:
         return self.entries[key]
@@ -164,8 +178,21 @@ class FromEntries(PiiDataset):
         return len(self.entries)
 
     @staticmethod
-    def load_json(path: Path) -> "FromEntries":
-        raise NotImplementedError  # TODO
+    def from_dict(data: dict, name: str) -> "FromEntries":
+        return FromEntries(
+            name=name,
+            metadata=data.get("metadata", {}),
+            entries=[
+                x if type(x) == PiiEntry else PiiEntryConcrete.from_dict(x)
+                for x in data["entries"]
+            ],
+        )
+
+    @staticmethod
+    def load_json(path: Path, name: str | None = None) -> "FromEntries":
+        with open(path, mode="r") as f:
+            data: dict = json.load(f)
+        return FromEntries.from_dict(data, name=name if name else path.stem)
 
 
 @dataclass
@@ -182,9 +209,6 @@ class FromDatasets(PiiDataset):
 
     def __len__(self) -> int:
         return len(self.dataset)
-
-    def dump(self, path: Path):
-        raise NotImplementedError
 
     @staticmethod
     def from_hf_tag(

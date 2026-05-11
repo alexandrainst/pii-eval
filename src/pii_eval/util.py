@@ -62,25 +62,29 @@ def autoinit(cls):
 
 def spans_to_bio(
     text: str,
-    spans: list[Span],
+    spans: list[LabelSpan],
     tokenize: Callable[[str], list[TextSpan]] = WordTokenizer(),
 ) -> list[LabelSpan]:
     started_spans: set[int] = set()
     result = []
-    for word in tokenize(text):
+    for token in tokenize(text):
         label = "O"
         for i, span in enumerate(spans):
-            if word.start >= span.start and word.end <= span.end:
-                span_label = getattr(span, "label", "ENT")
+            if token.start >= span.start and token.end <= span.end:
                 prefix = "I" if i in started_spans else "B"
                 started_spans.add(i)
-                label = f"{prefix}-{span_label}"
+                label = f"{prefix}-{span.label}"
                 break
         result.append(
-            LabelSpan(start=word.start, end=word.end, text=word.text, label=label)
+            LabelSpan(start=token.start, end=token.end, text=token.text, label=label)
         )
 
     return result
+
+
+def bio_to_spans(text: str, bio: list[LabelSpan]) -> list[LabelSpan]:
+
+    raise NotImplementedError
 
 
 def to_dict_recursive(

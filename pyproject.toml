@@ -16,7 +16,7 @@ dependencies = [
     "codetiming>=1.4.0",
     "pytest>=9.0.2",
     "datasets>=4.8.4",
-    "pip>=26.0.1",
+    "pip>=26.1",
     "rich>=14.3.3",
     "opf @ git+https://github.com/openai/privacy-filter.git",
     "fastapi>=0.115",

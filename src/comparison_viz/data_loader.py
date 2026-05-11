@@ -14,7 +14,7 @@ class DataLoader:
     def __init__(self, data_dir: Path):
         self.data_dir = Path(data_dir)
         self.gt_dir = self.data_dir / "ground_truth"
-        self.pred_dir = self.data_dir / "predictions"
+        self.pred_dir = self.data_dir / "predictions_dimmi"
 
     # --- discovery ----------------------------------------------------------
     def list_datasets(self) -> list[str]:

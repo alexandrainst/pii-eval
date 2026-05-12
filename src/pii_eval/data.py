@@ -1,20 +1,19 @@
 # from __future__ import annotations
-from abc import ABC, abstractmethod
-from dataclasses import asdict, dataclass, field
-from functools import cached_property
 import json
+from abc import ABC, abstractmethod
+from dataclasses import asdict, dataclass
+from functools import cached_property
 from pathlib import Path
 from typing import Any, Callable, Iterator, Literal
 
-from datasets import Dataset, concatenate_datasets
 import datasets
+from datasets import Dataset, concatenate_datasets
 
-from dfm_anonymization.util.spans import spans_to_bio
 from pii_eval.util import (
     LabelSpan,
     TextSpan,
-    autoinit,
     bio_to_spans,
+    spans_to_bio,
     to_dict_recursive,
 )
 
@@ -86,11 +85,29 @@ class PiiEntryConcrete(PiiEntry):
 
     @staticmethod
     def from_dict(data: dict) -> PiiEntry:
+        text = data["text"]
+        spans = data.get("spans")
+        bio = data.get("bio")
+        tokens = data.get("tokens")
+        bio_tags = data.get("bio_tags")
+        if (
+            spans is None
+            and bio is None
+            and tokens is not None
+            and bio_tags is not None
+        ):
+            bio = LabelSpan.from_text_and_token(
+                text=text, tokens=tokens, labels=bio_tags
+            )
+        if not spans:
+            spans = bio_to_spans(text=text, bio=bio)
+        if not bio:
+            bio = spans_to_bio(text=text, spans=spans)
         return PiiEntryConcrete(
             uid_=data.get("uid") or data.get("id"),
-            text_=data["text"],
-            spans_=data.get("spans") or bio_to_spans(data.get("bio")),
-            bio_=data.get("bio") or spans_to_bio(data.get("spans")),
+            text_=text,
+            spans_=spans,
+            bio_=bio,
             extra_=data.get("extra", {}),
         )
 
@@ -138,9 +155,6 @@ class PiiDataset(ABC):
     @abstractmethod
     def __len__(self) -> int: ...
 
-    @abstractmethod
-    def dump(self, path: Path): ...
-
     @cached_property
     def uid_to_idx(self):
         return {x.uid: i for i, x in enumerate(self)}
@@ -156,12 +170,11 @@ class PiiDataset(ABC):
         }
 
     def to_json(self) -> str:
-        return json.dumps(self.to_dict())
+        return json.dumps(self.to_dict(), ensure_ascii=False, indent=2)
 
     def save_json(self, path: Path) -> str:
-        # path.parent.mkdir(parents=True, exist_ok=True) # TODO: not necessary with json.dump?
-        with path.open("w") as f:
-            json.dump(self.to_dict(), f, ensure_ascii=False, indent=2)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(self.to_json())
 
 
 @dataclass

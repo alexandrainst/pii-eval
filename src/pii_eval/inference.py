@@ -23,7 +23,7 @@ def inference(
         progress.update(
             entries_task,
             advance=1,
-            description=f"Entry: {entry.id[:10]:<10}",
+            description=f"Entry: {str(entry.uid)[:10]:<10}",
             transient=True,
         )
         try:

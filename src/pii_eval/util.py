@@ -30,6 +30,21 @@ class TextSpan(Span):
 class LabelSpan(TextSpan):
     label: str
 
+    @staticmethod
+    def from_text_and_token(
+        text: str, tokens: list[str], labels: list[str]
+    ) -> list["LabelSpan"]:
+        spans = []
+        last_end = 0
+        for token, label in zip(tokens, labels):
+            start = text.find(token, last_end)
+            end = start + len(token)
+            last_end = end
+            spans.append(
+                LabelSpan(start=start, end=end, text=text[start:end], label=label)
+            )
+        return spans
+
 
 class WordTokenizer(metaclass=Singleton):
     def __init__(self):
@@ -83,8 +98,62 @@ def spans_to_bio(
 
 
 def bio_to_spans(text: str, bio: list[LabelSpan]) -> list[LabelSpan]:
+    spans = []
+    current_span_start = None
+    current_span_end = None
+    current_label = None
 
-    raise NotImplementedError
+    for token in bio:
+        if token.label.startswith("B-"):
+            # Start a new span
+            if current_span_start is not None:
+                span_text = text[current_span_start:current_span_end]
+                spans.append(
+                    LabelSpan(
+                        start=current_span_start,
+                        end=current_span_end,
+                        text=span_text,
+                        label=current_label,
+                    )
+                )
+            label = token.label[2:]
+            current_label = label
+            current_span_start = token.start
+            current_span_end = token.end
+        elif token.label.startswith("I-"):
+            # Continue current span
+            label = token.label[2:]
+            if current_span_start is not None and current_label == label:
+                current_span_end = token.end
+        elif token.label == "O":
+            # Outside any span
+            if current_span_start is not None:
+                span_text = text[current_span_start:current_span_end]
+                spans.append(
+                    LabelSpan(
+                        start=current_span_start,
+                        end=current_span_end,
+                        text=span_text,
+                        label=current_label,
+                    )
+                )
+                current_span_start = None
+                current_span_end = None
+                current_label = None
+
+    # Close any remaining span
+    if current_span_start is not None:
+        span_text = text[current_span_start:current_span_end]
+        spans.append(
+            LabelSpan(
+                start=current_span_start,
+                end=current_span_end,
+                text=span_text,
+                label=current_label,
+            )
+        )
+
+    return spans
 
 
 def to_dict_recursive(

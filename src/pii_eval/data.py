@@ -88,14 +88,13 @@ class PiiEntryConcrete(PiiEntry):
         text = data["text"]
         spans = data.get("spans")
         bio = data.get("bio")
+        if bio:
+            bio = [LabelSpan(**x) for x in bio]
+        if spans:
+            spans = [LabelSpan(**x) for x in spans]
         tokens = data.get("tokens")
         bio_tags = data.get("bio_tags")
-        if (
-            spans is None
-            and bio is None
-            and tokens is not None
-            and bio_tags is not None
-        ):
+        if not spans and not bio and tokens and bio_tags:
             bio = LabelSpan.from_text_and_token(
                 text=text, tokens=tokens, labels=bio_tags
             )
@@ -159,8 +158,14 @@ class PiiDataset(ABC):
     def uid_to_idx(self):
         return {x.uid: i for i, x in enumerate(self)}
 
-    def get_uid(self, uid: int | str) -> PiiEntry:
-        return self[self.uid_to_idx(uid)]
+    def get(self, key, default=None) -> PiiEntry | None:
+        try:
+            return self[key]
+        except:
+            return default
+
+    def get_uid(self, uid: int | str, default=None) -> PiiEntry:
+        return self.get(self.uid_to_idx.get(uid), default=default)
 
     def to_dict(self) -> dict[str, Any]:
         return {

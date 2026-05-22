@@ -9,13 +9,8 @@ from typing import Any, Callable, Iterator, Literal
 import datasets
 from datasets import Dataset, concatenate_datasets
 
-from pii_eval.util import (
-    LabelSpan,
-    TextSpan,
-    bio_to_spans,
-    spans_to_bio,
-    to_dict_recursive,
-)
+from pii_eval.span import LabelSpan, bio_to_spans, spans_to_bio
+from pii_eval.util import to_dict_recursive
 
 
 @dataclass
@@ -30,7 +25,7 @@ class PiiEntry(ABC):
 
     @property
     @abstractmethod
-    def spans(self) -> list[TextSpan]: ...
+    def spans(self) -> list[LabelSpan]: ...
 
     @property
     @abstractmethod
@@ -59,7 +54,7 @@ class PiiEntry(ABC):
 class PiiEntryConcrete(PiiEntry):
     uid_: int | str
     text_: str
-    spans_: list[TextSpan]
+    spans_: list[LabelSpan]
     bio_: list[LabelSpan]
     extra_: dict[str, Any]
 
@@ -72,7 +67,7 @@ class PiiEntryConcrete(PiiEntry):
         return self.text_
 
     @property
-    def spans(self) -> list[TextSpan]:
+    def spans(self) -> list[LabelSpan]:
         return self.spans_
 
     @property
@@ -115,7 +110,7 @@ class PiiEntryConcrete(PiiEntry):
 class PiiEntryLazy(PiiEntry):
     uid_f: Callable[[], int | str]
     text_f: Callable[[], str]
-    spans_f: Callable[[], list[TextSpan]]
+    spans_f: Callable[[], list[LabelSpan]]
     bio_f: Callable[[], list[LabelSpan]]
     extra_f: Callable[[], dict[str, Any]] = lambda: {}
 

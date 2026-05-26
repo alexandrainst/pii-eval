@@ -22,8 +22,11 @@ class OpenAIClientModel(PiiModel):
         base_url: str = "http://localhost:8000",
         api_key: str = "not_needed",
         label_descriptions: Set[str] | bidict[str, str] = LABEL_DESCRIPTIONS_DA,
+        name: str | None = None,
     ):
-        super().__init__(name=model_tag.split("/")[-1])
+        if name is None:
+            name = model_tag.split("/")[-1]
+        super().__init__(name=name)
         self.model_tag = model_tag
         self.base_url = base_url
         self.api_key = api_key
@@ -53,11 +56,17 @@ class OpenAIClientModel(PiiModel):
         system_prompt = self.preamble + (
             "List of labels to use:\n"
             f"{list(relevant_descriptions.keys())}"
-            "pick one for each PII-sensitive substring/entity. "
+            "pick exactly one label for each PII-sensitive substring/entity. "
             "Below are descriptions of each label in the relevant language:\n"
             f"{json.dumps(relevant_descriptions)}\n"
-            "Use only the descriptions to understand the labels - "
+            "Use the descriptions only to understand the labels - "
             "for the actual output labelling use on the (upper-case) labels. "
+            "Label anything and everything with the "
+            "slightest chance of being PII-sensitive. "
+            "Rather label too many substrings (than too few) "
+            "- aiming for high recall and low precision. "
+            "Always label even doubtful substrings "
+            "(just give them low confidence score)."
         )
         user_prompt = (
             "Label all (possibly none) PII-entities in the following text:\n"
@@ -102,7 +111,9 @@ class NERResponse(BaseModel):
     def example() -> str:
         return f'{{"entities": [{NEREntityFormat.example}, ...]}}'
 
-    def to_bio(self, text: str, token_spans: list[tuple[int, int]]) -> list[str]:
+    def to_bio(
+        self, text: str, token_spans: list[tuple[int, int]], min_confidence: float = 0.0
+    ) -> list[str]:
         spans = []
         cursor = 0
         for entity in self.entities:
@@ -110,7 +121,15 @@ class NERResponse(BaseModel):
             if start >= 0:
                 cursor = start
                 end = start + len(entity.text)
-                spans.append(Span(start=start, end=end, label=entity.label))
+                if entity.confidence >= min_confidence:
+                    spans.append(
+                        Span(
+                            start=start,
+                            end=end,
+                            label=entity.label,
+                            confidence=entity.confidence,
+                        )
+                    )
             else:
                 logging.warning(
                     f"Failed to find model output substring "

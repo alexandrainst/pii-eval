@@ -13,6 +13,7 @@ from dfm_anonymization.constants import (
 )
 from dfm_anonymization.dataset import PiiDataEntry, PiiDataset
 from dfm_anonymization.interfaces import PiiModel
+from dfm_anonymization.models.gen_model import GenModel
 from dfm_anonymization.models.gliner_model import GlinerModel
 from dfm_anonymization.models.ner_model import NerModel
 from dfm_anonymization.models.opf_model import OpfNerModel
@@ -38,16 +39,16 @@ def inference(
         progress.update(
             entries_task,
             advance=1,
-            description=f"Entry: {entry.id[:10]:<10}",
+            description=f"Entry: {str(entry.id)[:10]:<10}",
             transient=True,
         )
-        if True:  # try:
+        try:
             prediction = model(entry)
-        # except Exception as exc:
-        #     entry_id = entry.id if entry.id is not None else "<unknown>"
-        #     raise RuntimeError(
-        #         f"Inference failed for model '{model.name}' on entry '{entry_id}'."
-        #     ) from exc
+        except Exception as exc:
+            entry_id = entry.id if entry.id is not None else "<unknown>"
+            raise RuntimeError(
+                f"Inference failed for model '{model.name}' on entry '{entry_id}'."
+            ) from exc
         new_entries.append(
             PiiDataEntry(
                 id=entry.id,
@@ -82,15 +83,29 @@ def generate_predictions(
 ):
     load_dotenv()
 
+    # models: list[PiiModel] = [
+    #     NerModel.from_hf(tag="tabularisai/eu-pii-safeguard", out_bias=x)
+    #     for x in [-1, -2, -3, -4, -6, -7, -8, -9]
+    # ] + [
+    #     GlinerModel("nvidia/gliner-pii", LABEL_DESCRIPTIONS_DA, threshold=x)
+    #     for x in [0.5, 0.2, 0.05, 0.02, 0.005, 0.002]
+    # ]
+
     models: list[PiiModel] = [
-        NerModel.from_hf(tag="tabularisai/eu-pii-safeguard", out_bias=x)
-        for x in [-1, -2, -3, -4, -6, -7, -8, -9]
-    ] + [
-        GlinerModel("nvidia/gliner-pii", LABEL_DESCRIPTIONS_DA, threshold=x)
-        for x in [0.5, 0.2, 0.05, 0.02, 0.005, 0.002]
+        OpenAIClientModel(
+            model_tag="qwen3.5-397b",
+            base_url="https://inference.alexandra.dk/v1",
+            api_key=os.getenv("ALEX_API_KEY"),
+            name="qwen3.5-397b-alt-prompt-2",
+        ),
+        # OpenAIClientModel(
+        #     model_tag="qwen-235b",
+        #     base_url="https://inference.projects.alexandrainst.dk/v1",
+        #     api_key=os.getenv("ALEXANDRA_INFERENCE_API_KEY"),
+        # ),
     ]
 
-    datasets = list(Path("data/ground_truth").glob("*.json"))
+    datasets = list(Path("data/ground_truth/dimmi").glob("*.json"))
 
     print(
         f"generating predictions\nmodels: {', '.join([m.name for m in models])}\n"
@@ -119,7 +134,7 @@ def generate_predictions(
                 transient=True,
             )
             output_file_path = Path(
-                f"data/predictions/{model.name}/{dataset_name}.json"
+                f"data/predictions_dimmi/{model.name}/{dataset_name}.json"
             )
             if not override and output_file_path.exists():
                 print(f"skipped {dataset_name} (was cached)")
@@ -151,5 +166,5 @@ def generate_predictions(
 if __name__ == "__main__":
     generate_predictions(
         override=False,
-        # max_entries_per_config=500,
+        # max_entries_per_config=1000,
     )

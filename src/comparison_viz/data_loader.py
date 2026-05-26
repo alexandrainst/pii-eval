@@ -13,7 +13,7 @@ SKIP_DIRS = {"disabled"}
 class DataLoader:
     def __init__(self, data_dir: Path):
         self.data_dir = Path(data_dir)
-        self.gt_dir = self.data_dir / "ground_truth"
+        self.gt_dir = self.data_dir / "ground_truth/dimmi"
         self.pred_dir = self.data_dir / "predictions_dimmi"
 
     # --- discovery ----------------------------------------------------------

@@ -82,6 +82,7 @@ class Span(BaseModel):
     start: int
     end: int
     label: str
+    confidence: float | None = None
 
 
 def _normalize_span(span: Any) -> Span:
@@ -100,7 +101,7 @@ def _normalize_span(span: Any) -> Span:
     )
 
 
-def spans_to_bio(token_spans: list[tuple[int, int]], spans: list[Any]) -> list[str]:
+def spans_to_bio(token_spans: list[tuple[int, int]], spans: list[Span]) -> list[str]:
     tags = ["O"] * len(token_spans)
     normalized_spans = [_normalize_span(span) for span in spans]
     for span in sorted(normalized_spans, key=lambda s: (int(s.start), int(s.end))):

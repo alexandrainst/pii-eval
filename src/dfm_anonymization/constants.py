@@ -94,24 +94,16 @@ LABEL_DESCRIPTIONS_DA = bidict(
     {
         ISO_LABEL_BANK_ACCOUNT: "bankkontonummer",
         ISO_LABEL_DRIVERS_LICENSE: "kørekortnummer",
-        ISO_LABEL_EMAIL_ADDRESS: (
-            "private email-adresser (men ikke offentlige/officielle email-adresser) "
-            "- f.eks hbergman@gmail.com, men ikke kontakt@dr.dk"
-        ),
-        ISO_LABEL_IP_ADDRESS: "IP-adresser",
+        ISO_LABEL_EMAIL_ADDRESS: "email-adresse",
+        ISO_LABEL_IP_ADDRESS: "IP-adresse",
         ISO_LABEL_PASSPORT: "pasnummer",
-        ISO_LABEL_PCI: "betalingskortoplysninger, CVV",
-        ISO_LABEL_PERSON_NAME: (
-            "navn på en person (når dette navn gør det muligt at identificere "
-            "personen) - f.eks. navn + efternavn - med den undtagelse at offentlige "
-            "personer ikke betragtes under denne kategori "
-            "(f.eks. folk som har en side på wikipedia)"
-        ),
+        ISO_LABEL_PCI: "betalingskortoplysninger, kortnummer, udløb, CVV",
+        ISO_LABEL_PERSON_NAME: "personnavn",
         ISO_LABEL_PHONE_NUMBER: "telefonnummer (alle landekoder)",
-        ISO_LABEL_PRECISE_LOCATION: "præcis lokation - gadenavn med husnummer eller koordinater",
-        ISO_LABEL_SALARY: "løn - præcist beløb tjent (månedligt / årligt / etc.) af en medarbejder",
+        ISO_LABEL_PRECISE_LOCATION: "lokation - gadenavn, husnummer, postnummer, koordinater, etc.",
+        ISO_LABEL_SALARY: "løn - fx. løntrin, timeløn eller månedslån beløb, etc.",
         ISO_LABEL_SSN: "CPR-nummer",
-        ISO_LABEL_USERNAME: "brugernavne (fx. på online platforme)",
+        ISO_LABEL_USERNAME: "brugernavn (fx. på online platforme)",
         ISO_LABEL_VEHICLE_ID: "registreringsnummer / nummerplade",
     }
 )

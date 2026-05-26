@@ -243,7 +243,7 @@ def evaluate_all(
     for predictions_path in track(prediction_paths):
         dataset_name = predictions_path.stem
         model_name = predictions_path.parent.name
-        ground_truth_path = Path(f"data/ground_truth/{dataset_name}.json")
+        ground_truth_path = Path(f"data/ground_truth/dimmi/{dataset_name}.json")
         predictions = PiiDataset.from_file(predictions_path)
         if not ground_truth_path.exists():
             continue
@@ -330,10 +330,10 @@ def evaluate_all(
 
     models_and_datasets_single = add_metric_columns(
         single_df.groupby(level=["model", "dataset"]).sum()
-    ).sort_values("f5", ascending=False)
+    ).sort_values(["model", "f5"], ascending=[True, False])
 
-      pass
+    pass
 
 
 if __name__ == "__main__":
-    evaluate_all(base_directory="data/predictions", write_cache=True)
+    evaluate_all(base_directory="data/predictions_dimmi", write_cache=True)

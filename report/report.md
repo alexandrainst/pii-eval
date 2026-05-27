@@ -34,11 +34,11 @@ The raw data consist of the following properties:
 #### Aggregate statistics
 
 | dataset                                              | documents | format | `text` chars (min / median / max) | total PII spans | avg spans / doc |
-| ---                                                  | ---:      | ---          | ---:                              | ---:            | ---:            |
-| [dimmi-contracts](../data/raw/dimmi-contracts/)      | 53        | PDF          | 1 262 / 2 491 / 6 991             | 678             | 12.8            |
-| [dimmi-cvs](../data/raw/dimmi-cvs/)                  | 60        | PDF          | 290 / 777 / 1 166                 | 424             | 7.1             |
-| [dimmi-diplomas](../data/raw/dimmi-diplomas/)        | 20        | PDF          | 3 092 / 9 969 / 22 179            | 238             | 11.9            |
-| [dimmi-passport](../data/raw/dimmi-passport/)        | 24        | JPG          | 229 / 672 / 1 079                 | 135             | 5.6             |
+| ---                                                  | ---:      | ---    | ---:                              | ---:            | ---:            |
+| [dimmi-contracts](../data/raw/dimmi-contracts/)      | 53        | PDF    | 1 262 / 2 491 / 6 991             | 678             | 12.8            |
+| [dimmi-cvs](../data/raw/dimmi-cvs/)                  | 60        | PDF    | 290 / 777 / 1 166                 | 424             | 7.1             |
+| [dimmi-diplomas](../data/raw/dimmi-diplomas/)        | 20        | PDF    | 3 092 / 9 969 / 22 179            | 238             | 11.9            |
+| [dimmi-passport](../data/raw/dimmi-passport/)        | 24        | JPG    | 229 / 672 / 1 079                 | 135             | 5.6             |
 
 ### Evaluation of OCR
 

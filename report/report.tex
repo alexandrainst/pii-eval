@@ -16,6 +16,10 @@
 \usepackage{hyperref}
 \usepackage{enumitem}
 \usepackage{titlesec}
+\usepackage{float}
+\usepackage{needspace}
+\usepackage{longtable}
+\usepackage{makecell}
 
 \hypersetup{
   colorlinks=true,
@@ -50,11 +54,59 @@
 \begin{document}
 \maketitle
 
+\section{Introduction}
+
+This is an investigation into the performance of current state-of-the-art open-weight models for OCR (optical character recognition) and PII redaction (removal of personally identifiable information from text), specifically for the \emph{dimmi} dataset.
+
+\section{Conclusion}
+
+Based on the evaluation results, and perhaps unsurprisingly, the large multi-modal language model Qwen3.5-397B outperforms the smaller open models on every metric except speed. We therefore recommend using this model for both tasks when quality is the primary concern. However, if speed and price are taken into account, there is something to gain by using e.g.\ Tesseract for OCR on large volumes of data. For redaction, we would argue that the $\sim$20\% precision (at $>95\%$ recall) achieved by the smaller open models is simply not good enough, and that a larger model such as Qwen3.5-397B is necessary --- 20\% precision is likely to harm data quality too severely.
+
+\Needspace{6\baselineskip}
+\section{The \emph{dimmi} Dataset}
+
+The dimmi dataset consists of (mock) contracts, CVs, diplomas, and passports. The raw data consist of the following properties:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{llp{0.55\linewidth}}
+\toprule
+\textbf{Column} & \textbf{Type} & \textbf{Meaning} \\
+\midrule
+\texttt{document\_id} & string      & stable identifier \\
+\texttt{filename}     & string      & relative path \\
+\texttt{text}         & string      & reference transcription used as ground truth by the OCR evaluator \\
+\texttt{pii}          & JSON string & list of \{category, start, end, text\} PII spans, with start/end as Python-style character offsets into the \texttt{text} column --- ground truth for the PII redaction evaluation \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\Needspace{6\baselineskip}
+\subsection{Aggregate statistics}
+
+\begin{table}[H]
+\centering
+\small
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{lrlrrr}
+\toprule
+\textbf{Dataset} & \textbf{Docs} & \textbf{Format} & \makecell[c]{\textbf{\texttt{text} chars}\\\textbf{(min / median / max)}} & \makecell[c]{\textbf{Total}\\\textbf{PII spans}} & \makecell[c]{\textbf{Avg}\\\textbf{spans/doc}} \\
+\midrule
+dimmi-contracts & 53 & PDF & 1\,262 / 2\,491 / 6\,991  & 678 & 12.8 \\
+dimmi-cvs       & 60 & PDF & 290 / 777 / 1\,166        & 424 & 7.1  \\
+dimmi-diplomas  & 20 & PDF & 3\,092 / 9\,969 / 22\,179 & 238 & 11.9 \\
+dimmi-passport  & 24 & JPG & 229 / 672 / 1\,079        & 135 & 5.6  \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\Needspace{6\baselineskip}
 \section{OCR}
 
+\Needspace{8\baselineskip}
 \subsection{Overall performance}
 
-\begin{table}[h!]
+\begin{table}[H]
 \centering
 \begin{tabular}{lccc}
 \toprule
@@ -85,10 +137,9 @@ All documents (PDFs) and images were converted to images using the Python librar
   \end{itemize}
 \end{itemize}
 
-\subsection{Detailed results}
-
 \begin{landscape}
-\begin{table}[h!]
+\subsection{Detailed results}
+\begin{table}[H]
 \centering
 \scriptsize
 \setlength{\tabcolsep}{4pt}
@@ -119,9 +170,10 @@ Qwen3.5-397B & dimmi-passport  & 24 & 0.206 & 0.506 & 173.25 & 0.495 & 379593   
 
 \section{Redaction}
 
+\Needspace{8\baselineskip}
 \subsection{Best feasible models ($\geq 95\%$ recall)}
 
-\begin{table}[h!]
+\begin{table}[H]
 \centering
 \begin{tabular}{lccc}
 \toprule
@@ -202,11 +254,84 @@ user_prompt: Label all (possibly none) PII entities in the following
 text: <input text>. In the order they appear.
 \end{lstlisting}
 
+\Needspace{8\baselineskip}
+\subsection{Performance per label}
+
+Note: any labels which do not appear in the dataset have been omitted.
+
+{\centering
+\scriptsize
+\setlength{\LTcapwidth}{\linewidth}
+\begin{longtable}{llrrrrrr}
+\toprule
+\textbf{Model} & \textbf{Label} & \textbf{TP} & \textbf{FP} & \textbf{FN} & \textbf{TN} & \textbf{Precision} & \textbf{Recall} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Model} & \textbf{Label} & \textbf{TP} & \textbf{FP} & \textbf{FN} & \textbf{TN} & \textbf{Precision} & \textbf{Recall} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Qwen3.5-397B                      & BANK\_ACCOUNT     &    6 &    40 &   0 & 85113 & 0.130 & 1.000 \\
+Qwen-235B                         & BANK\_ACCOUNT     &    5 &     8 &   1 & 85145 & 0.385 & 0.833 \\
+eu-pii-safeguard (biased $-11.5$) & BANK\_ACCOUNT     &    3 &   179 &   3 & 84974 & 0.016 & 0.500 \\
+gliner-pii ($\text{th}=0.0002$)   & BANK\_ACCOUNT     &    3 &    33 &   3 & 85120 & 0.083 & 0.500 \\
+\midrule
+Qwen-235B                         & DRIVERS\_LICENSE  &    2 &     4 &   1 & 85152 & 0.333 & 0.667 \\
+Qwen3.5-397B                      & DRIVERS\_LICENSE  &    1 &     5 &   2 & 85151 & 0.167 & 0.333 \\
+eu-pii-safeguard (biased $-11.5$) & DRIVERS\_LICENSE  &    0 &     8 &   3 & 85148 & 0.000 & 0.000 \\
+gliner-pii ($\text{th}=0.0002$)   & DRIVERS\_LICENSE  &    0 &    81 &   3 & 85075 & 0.000 & 0.000 \\
+\midrule
+eu-pii-safeguard (biased $-11.5$) & EMAIL\_ADDRESS    &  137 &   622 &  10 & 84390 & 0.181 & 0.932 \\
+Qwen3.5-397B                      & EMAIL\_ADDRESS    &  135 &     4 &  12 & 85008 & 0.971 & 0.918 \\
+Qwen-235B                         & EMAIL\_ADDRESS    &  129 &     4 &  18 & 85008 & 0.970 & 0.878 \\
+gliner-pii ($\text{th}=0.0002$)   & EMAIL\_ADDRESS    &   27 &   199 & 120 & 84813 & 0.119 & 0.184 \\
+\midrule
+Qwen3.5-397B                      & PASSPORT          &   28 &    18 &   1 & 85112 & 0.609 & 0.966 \\
+eu-pii-safeguard (biased $-11.5$) & PASSPORT          &   18 &    54 &  11 & 85076 & 0.250 & 0.621 \\
+Qwen-235B                         & PASSPORT          &   16 &    28 &  13 & 85102 & 0.364 & 0.552 \\
+gliner-pii ($\text{th}=0.0002$)   & PASSPORT          &   13 &   263 &  16 & 84867 & 0.047 & 0.448 \\
+\midrule
+Qwen3.5-397B                      & PERSON\_NAME      &  971 &   152 &  61 & 83975 & 0.865 & 0.941 \\
+gliner-pii ($\text{th}=0.0002$)   & PERSON\_NAME      &  967 & 14409 &  65 & 69718 & 0.063 & 0.937 \\
+eu-pii-safeguard (biased $-11.5$) & PERSON\_NAME      &  957 &  3778 &  75 & 80349 & 0.202 & 0.927 \\
+Qwen-235B                         & PERSON\_NAME      &  552 &    60 & 480 & 84067 & 0.902 & 0.535 \\
+\midrule
+Qwen3.5-397B                      & PHONE\_NUMBER     &  785 &   116 &   2 & 84256 & 0.871 & 0.997 \\
+eu-pii-safeguard (biased $-11.5$) & PHONE\_NUMBER     &  772 &   198 &  15 & 84174 & 0.796 & 0.981 \\
+gliner-pii ($\text{th}=0.0002$)   & PHONE\_NUMBER     &  772 &   234 &  15 & 84138 & 0.767 & 0.981 \\
+Qwen-235B                         & PHONE\_NUMBER     &  667 &     8 & 120 & 84364 & 0.988 & 0.848 \\
+\midrule
+eu-pii-safeguard (biased $-11.5$) & PRECISE\_LOCATION & 1116 &  7743 &  40 & 76260 & 0.126 & 0.965 \\
+Qwen3.5-397B                      & PRECISE\_LOCATION & 1060 &   660 &  96 & 83343 & 0.616 & 0.917 \\
+gliner-pii ($\text{th}=0.0002$)   & PRECISE\_LOCATION & 1038 &  6887 & 118 & 77116 & 0.131 & 0.898 \\
+Qwen-235B                         & PRECISE\_LOCATION &  666 &    87 & 490 & 83916 & 0.884 & 0.576 \\
+\midrule
+Qwen3.5-397B                      & SALARY            &  198 &   268 &  28 & 84665 & 0.425 & 0.876 \\
+gliner-pii ($\text{th}=0.0002$)   & SALARY            &  189 &  6115 &  37 & 78818 & 0.030 & 0.836 \\
+Qwen-235B                         & SALARY            &  150 &   105 &  76 & 84828 & 0.588 & 0.664 \\
+eu-pii-safeguard (biased $-11.5$) & SALARY            &  148 &   310 &  78 & 84623 & 0.323 & 0.655 \\
+\midrule
+Qwen3.5-397B                      & SSN               &  127 &    44 &   9 & 84979 & 0.743 & 0.934 \\
+eu-pii-safeguard (biased $-11.5$) & SSN               &  120 &    98 &  16 & 84925 & 0.550 & 0.882 \\
+Qwen-235B                         & SSN               &  116 &    71 &  20 & 84952 & 0.620 & 0.853 \\
+gliner-pii ($\text{th}=0.0002$)   & SSN               &  106 &   158 &  30 & 84865 & 0.402 & 0.779 \\
+\midrule
+Qwen3.5-397B                      & USERNAME          &   21 &    15 &   9 & 85114 & 0.583 & 0.700 \\
+Qwen-235B                         & USERNAME          &   17 &     0 &  13 & 85129 & 1.000 & 0.567 \\
+eu-pii-safeguard (biased $-11.5$) & USERNAME          &    0 &     5 &  30 & 85124 & 0.000 & 0.000 \\
+gliner-pii ($\text{th}=0.0002$)   & USERNAME          &    0 &    32 &  30 & 85097 & 0.000 & 0.000 \\
+\end{longtable}
+\par}
+
+\Needspace{8\baselineskip}
 \subsection{Worst documents}
 
-\begin{table}[h!]
+\begin{table}[H]
 \centering
 \small
+\setlength{\tabcolsep}{4pt}
 \begin{tabular}{llcc}
 \toprule
 \textbf{Model} & \textbf{Dataset / Document} & \textbf{Precision} & \textbf{Recall} \\

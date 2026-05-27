@@ -288,12 +288,20 @@ def evaluate_all(
         single_df.to_csv(out_dir / "single.csv")
         performance_df.to_csv(out_dir / "performance.csv")
 
+    for_pres_dir = Path("presentation/results")
+
+    models_by_label = add_metric_columns(
+        label_df.groupby(level=["model", "label"]).sum()
+    ).sort_values(["label", "recall"], ascending=[True, False])
+
+    models_by_label.reset_index().to_markdown(for_pres_dir / "models_by_label.md")
+
     single_metrics = add_metric_columns(single_df)
     best_models_single = add_metric_columns(
         single_df.groupby(level="model").sum()
     ).sort_values("f5", ascending=False)
     best_feasible_models = best_models_single.loc[
-        best_models_single["recall"] >= 0.95
+        best_models_single["recall"] >= 0.8
     ].sort_values("precision", ascending=False)
     feasible_models = set(best_feasible_models.index)
     feasible_models_by_dataset = add_metric_columns(
@@ -310,7 +318,6 @@ def evaluate_all(
             feasible_models
         )
     ]
-    for_pres_dir = Path("presentation/results")
     feasible_models_by_dataset[["precision", "recall"]].reset_index().to_markdown(
         for_pres_dir / "feasible_models_by_dataset.md"
     )
@@ -324,13 +331,13 @@ def evaluate_all(
     performance_df.reset_index().to_markdown(
         for_pres_dir / "performance_by_model_and_dataset.md"
     )
-    performance_df.groupby(level="model").mean().to_markdown(
-        for_pres_dir / "performance_by_model.md"
-    )
 
     models_and_datasets_single = add_metric_columns(
         single_df.groupby(level=["model", "dataset"]).sum()
     ).sort_values(["model", "f5"], ascending=[True, False])
+
+    print(best_models_single)
+    print(worst_by_feasible_model_and_dataset_single)
 
     pass
 

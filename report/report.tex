@@ -1,0 +1,235 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{tabularx}
+\usepackage{pdflscape}
+\usepackage{caption}
+\usepackage[expansion=false]{microtype}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{titlesec}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  urlcolor=blue!60!black,
+  citecolor=black
+}
+
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  frame=single,
+  backgroundcolor=\color{gray!5},
+  rulecolor=\color{gray!40},
+  framesep=4pt,
+  showstringspaces=false,
+  columns=fullflexible,
+  keepspaces=true
+}
+
+\titleformat{\section}{\Large\bfseries}{\thesection}{0.75em}{}
+\titleformat{\subsection}{\large\bfseries}{\thesubsection}{0.6em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries}{\thesubsubsection}{0.5em}{}
+
+\setlength{\parskip}{0.5em}
+\setlength{\parindent}{0pt}
+
+\title{\textbf{OCR and Redaction Results on the Dimmi Datasets}}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{OCR}
+
+\subsection{Overall performance}
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{Model} & \textbf{Mean CER} & \textbf{Mean WER} & \textbf{Mean ms/word} \\
+\midrule
+Qwen3.5-397B     & \textbf{0.12} & \textbf{0.34} & 104.8 \\
+PaddleOCR-VL-1.5 & 0.34          & 0.43          & 76.6 \\
+Tesseract        & 0.34          & 0.66          & \textbf{16.6} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Running locally hosted models on CPU rather than GPU increases computation time by roughly a factor of 20. For long documents, this translates to approximately 20 minutes with PaddleOCR versus around 4 minutes with Tesseract. Qwen3.5-397B is executed on remote hardware, so its effective runtime is independent of the local CPU/GPU choice.
+
+\subsection{Method}
+
+All documents (PDFs) and images were converted to images using the Python libraries \texttt{fitz} and \texttt{PIL.Image} at \texttt{dpi=150}.
+
+\subsubsection{Model-specific details}
+
+\begin{itemize}[leftmargin=*, itemsep=2pt]
+  \item \textbf{PaddleOCR-VL-1.5} was run via the \texttt{paddleocr.PaddleOCRVL.predict} pipeline, joining each \texttt{block\_content} with newlines.
+  \item \textbf{Tesseract} was run via the \texttt{pytesseract} library using \texttt{image\_to\_string}.
+  \item \textbf{Generative models} were run with the following prompts:
+  \begin{itemize}[leftmargin=*, itemsep=2pt]
+    \item \emph{System prompt:} ``You are an expert in extracting text from documents and images. You always arrange the extracted output text in a sensible fashion, reflecting the structure of the text as it was found in the source, but not sacrificing a logical final output structure. You always only output the actual text found in the sources --- never your own replies to the prompt, markdown formatting, or other additions.''
+    \item \emph{User prompt:} ``Please extract all text from the following content: \textless images(base64)\textgreater.''
+  \end{itemize}
+\end{itemize}
+
+\subsection{Detailed results}
+
+\begin{landscape}
+\begin{table}[h!]
+\centering
+\scriptsize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{llrrrrrlrl}
+\toprule
+\textbf{Model} & \textbf{Dataset} & \textbf{N} & \textbf{CER} & \textbf{WER} & \textbf{ms/w} & \textbf{Worst CER} & \textbf{Worst CER doc} & \textbf{Worst WER} & \textbf{Worst WER doc} \\
+\midrule
+PaddleOCR-VL-1.5 & MassimoDS       &  5 & 0.118 & 0.287 &  82.92 & 0.278 & massimo\_passport            & 0.75 & massimo\_passport \\
+PaddleOCR-VL-1.5 & dimmi-contracts & 53 & 0.213 & 0.256 &  34.63 & 0.655 & 42\_jobpatruljen\_1\_bartender & 0.57 & 24\_kost\_style\_ernaeringsassistent \\
+PaddleOCR-VL-1.5 & dimmi-cvs       & 60 & 0.252 & 0.309 &  95.54 & 1.049 & cv\_44\_Museumskurator        & 1.00 & cv\_46\_Lydteknikker \\
+PaddleOCR-VL-1.5 & dimmi-diplomas  & 20 & 0.435 & 0.514 &  36.56 & 2.259 & diploma\_07\_perspective\_warp & 2.85 & diploma\_07\_perspective\_warp \\
+PaddleOCR-VL-1.5 & dimmi-passport  & 24 & 0.696 & 0.792 & 133.34 & 4.540 & 15126                        & 1.00 & 15126 \\
+\midrule
+Tesseract & MassimoDS       &  5 & 0.155 & 0.418 &  7.15 & 0.436 & massimo\_passport               & 1.03 & massimo\_passport \\
+Tesseract & dimmi-contracts & 53 & 0.151 & 0.501 &  7.55 & 0.550 & 23\_kost\_style\_kokkenleder      & 0.95 & 10\_bygge\_murer \\
+Tesseract & dimmi-cvs       & 60 & 0.209 & 0.755 & 11.58 & 0.934 & cv\_33\_UX\_Designer             & 1.81 & cv\_45\_Sommelier \\
+Tesseract & dimmi-diplomas  & 20 & 0.446 & 0.664 & 52.29 & 1.300 & phd\_diploma\_07\_perspective\_warp & 1.71 & phd\_diploma\_07\_perspective\_warp \\
+Tesseract & dimmi-passport  & 24 & 0.719 & 0.962 &  4.67 & 1.000 & 385213                          & 1.19 & 383623 \\
+\midrule
+Qwen3.5-397B & MassimoDS       &  5 & 0.143 & 0.287 &  71.24 & 0.375 & massimo\_curriculum\_vitae & 0.61 & massimo\_passport \\
+Qwen3.5-397B & dimmi-contracts & 53 & 0.079 & 0.266 &  52.67 & 0.419 & 10\_bygge\_murer           & 0.52 & 11\_bygge\_elektriker \\
+Qwen3.5-397B & dimmi-cvs       & 60 & 0.082 & 0.330 & 121.84 & 0.464 & cv\_37\_Pilot              & 1.05 & cv\_43\_Marinbiolog \\
+Qwen3.5-397B & dimmi-passport  & 24 & 0.206 & 0.506 & 173.25 & 0.495 & 379593                    & 0.92 & 71640 \\
+\bottomrule
+\end{tabular}
+\end{table}
+\end{landscape}
+
+\section{Redaction}
+
+\subsection{Best feasible models ($\geq 95\%$ recall)}
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{Model} & \textbf{Precision} & \textbf{Recall} & \textbf{Seconds/doc} \\
+\midrule
+Qwen3.5-397B                       & \textbf{0.726} & 0.953 & 37.370 \\
+eu-pii-safeguard (biased $-11.5$)  & 0.208          & 0.953 & 0.063 \\
+gliner-pii ($\text{th}=0.0002$)    & 0.106          & 0.950 & 0.214 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+As above, CPU adds roughly $20\times$ runtime for locally hosted models; Qwen3.5-397B is unaffected.
+
+\subsection{Method}
+
+All models were asked to classify tokens, or to identify substrings within the texts, and assign each to one of the following categories (Danish descriptions in parentheses):
+
+\begin{itemize}[leftmargin=*, itemsep=1pt]
+  \item \texttt{BANK\_ACCOUNT} --- bankkontonummer
+  \item \texttt{DRIVERS\_LICENSE} --- kørekortnummer
+  \item \texttt{EMAIL\_ADDRESS} --- email-adresse
+  \item \texttt{IP\_ADDRESS} --- IP-adresse
+  \item \texttt{PASSPORT} --- pasnummer
+  \item \texttt{PCI} --- betalingskortoplysninger, kortnummer, udløb, CVV
+  \item \texttt{PERSON\_NAME} --- personnavn
+  \item \texttt{PHONE\_NUMBER} --- telefonnummer (alle landekoder)
+  \item \texttt{PRECISE\_LOCATION} --- lokation: gadenavn, husnummer, postnummer, koordinater, etc.
+  \item \texttt{SALARY} --- løn: f.eks.\ løntrin, timeløn eller månedsløn-beløb
+  \item \texttt{SSN} --- CPR-nummer
+  \item \texttt{USERNAME} --- brugernavn (f.eks.\ på online platforme)
+  \item \texttt{VEHICLE\_ID} --- registreringsnummer / nummerplade
+\end{itemize}
+
+Predicted tokens and substrings were then mapped onto a unified word-tokenisation produced by the \texttt{spacy} library using the Danish model \emph{da\_core\_news\_sm}:
+\begin{lstlisting}[language=Python]
+nlp = spacy.load("da_core_news_sm")
+doc = nlp(text)
+\end{lstlisting}
+Subsequently, all fine-grained labels were merged into a single \texttt{PII} class, and precision/recall were computed from the true/false positive and negative counts of the \texttt{PII} versus \texttt{O} labels.
+
+\subsection{Biasing and thresholds}
+
+\begin{itemize}[leftmargin=*, itemsep=4pt]
+  \item \textbf{eu-pii-safeguard} (HuggingFace: \texttt{tabularisai/eu-pii-safeguard}) was biased using logit \texttt{O}-biasing with a value of $-11.5$. That is, $11.5$ was subtracted from the logit corresponding to the \texttt{O} label prior to applying \texttt{argmax}. In effect, every other label (all of which correspond to some form of PII) becomes more likely to be predicted, yielding higher recall at the cost of precision.
+
+  \item \textbf{gliner-pii} (HuggingFace: \texttt{nvidia/gliner-PII}) is used via the \texttt{gliner} library\footnote{\url{https://urchade.github.io/GLiNER/}}, which provides a built-in threshold parameter for trading off precision and recall. Lower values yield higher recall and lower precision. The default value is $0.5$; the lowest threshold producing recall above $95\%$ on these datasets was found to be $0.0002$, and was used for the results reported above.
+
+  \item \textbf{Qwen3.5-397B} was run with the following prompts:
+\end{itemize}
+
+\begin{lstlisting}
+system_prompt: You are a helpful assistant that performs NER (named
+entity recognition) specifically for PII (personally identifiable
+information) in contexts that may be in languages other than English
+(multilingual). Answer so that the entire output always deserialises
+to the following JSON schema:
+{'$defs': {'NEREntityFormat': {'properties': {'text': {'description':
+'Exact text of the entity', 'title': 'Text', 'type': 'string'},
+'label': {'description': 'Label of the entity', 'title': 'Label',
+'type': 'string'}, 'confidence': {'description': 'Confidence score
+between 0 and 1', 'title': 'Confidence', 'type': 'number'}},
+'required': ['text', 'label', 'confidence'], 'title':
+'NEREntityFormat', 'type': 'object'}}, 'properties': {'entities':
+{'items': {'$ref': '#/$defs/NEREntityFormat'}, 'title': 'Entities',
+'type': 'array'}}, 'required': ['entities'], 'title': 'NERResponse',
+'type': 'object'}
+Never output newlines, multiple spaces, or explanatory text.
+List of labels to use:
+['BANK_ACCOUNT', 'DRIVERS_LICENSE', 'EMAIL_ADDRESS', 'IP_ADDRESS',
+'PASSPORT', 'PCI', 'PERSON_NAME', 'PHONE_NUMBER', 'PRECISE_LOCATION',
+'SALARY', 'SSN', 'USERNAME', 'VEHICLE_ID']
+Pick exactly one label for each PII-sensitive substring/entity.
+Below are descriptions of each label in the relevant language:
+<JSON string containing Danish descriptions>.
+
+user_prompt: Label all (possibly none) PII entities in the following
+text: <input text>. In the order they appear.
+\end{lstlisting}
+
+\subsection{Worst documents}
+
+\begin{table}[h!]
+\centering
+\small
+\begin{tabular}{llcc}
+\toprule
+\textbf{Model} & \textbf{Dataset / Document} & \textbf{Precision} & \textbf{Recall} \\
+\midrule
+\multirow{4}{*}{eu-pii-safeguard (biased $-11.5$)}
+  & contracts / 11\_bygge\_elektriker            & 0.509 & 0.848 \\
+  & cvs / cv\_47\_Byplanlægger                   & 0.360 & 0.818 \\
+  & diplomas / diploma\_05\_low\_contrast\_faded & 0.032 & 0.800 \\
+  & passports / 384732                           & 0.133 & 0.666 \\
+\midrule
+\multirow{4}{*}{gliner-pii ($\text{th}=0.0002$)}
+  & contracts / 11\_bygge\_elektriker            & 0.178 & 0.848 \\
+  & cvs / cv\_47\_Byplanlægger                   & 0.409 & 0.818 \\
+  & diplomas / diploma\_05\_low\_contrast\_faded & 0.015 & 0.800 \\
+  & passports / 384732                           & 0.093 & 0.666 \\
+\midrule
+\multirow{4}{*}{Qwen3.5-397B}
+  & contracts / 37\_ku\_1\_postdoc               & 0.897 & 0.578 \\
+  & cvs / cv\_36\_Dyrlæge                        & 0.900 & 0.900 \\
+  & diplomas / diploma\_07\_perspective\_warp    & 0.684 & 0.722 \\
+  & passports / 384732                           & 0.375 & 0.500 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\end{document}

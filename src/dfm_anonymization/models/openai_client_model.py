@@ -36,10 +36,10 @@ class OpenAIClientModel(PiiModel):
             "You are a helpful assistant that performs NER (named entity recognition) "
             "specifically for PII (person identifiable information) in contexts "
             "that can be in languages different from english (multilingual). "
-            "Answer so that the entire output always deserializes to the following "
-            f"model JSON schema:\n{self.model_json_schema}\n"
-            "Never output newlines, multiple spaces or explanatory text. "
-            f"Here's an example output:\n{NERResponse.example}\n"
+            # "Answer so that the entire output always deserializes to the following "
+            # f"model JSON schema:\n{self.model_json_schema}\n"
+            # "Never output newlines, multiple spaces or explanatory text. "
+            # f"Here's an example output:\n{NERResponse.example()}\n"
         )
         self.client: OpenAI | None = None
 
@@ -80,6 +80,7 @@ class OpenAIClientModel(PiiModel):
                 {"role": "user", "content": user_prompt},
             ],
             response_format=NERResponse,
+            extra_body={"chat_template_kwargs": {"enable_thinking": False}},
         )
         content = response.choices[0].message.content
         try:
@@ -104,10 +105,27 @@ class NEREntityFormat(BaseModel):
         return '{"text": "Danmarksvej nr. 4, 2400 Kbh NV", "label": "PRECISE_LOCATION"}'
 
 
+def find_alnum(haystack: str, needle: str, cursor: int = 0) -> int:
+    haystack = haystack[cursor:]
+    # Strip non-alnum from needle
+    n = "".join(c for c in needle if c.isalnum())
+    if not n:
+        return -1
+    # Build cleaned haystack + map: cleaned index -> original index
+    cleaned = []
+    idx_map = []
+    for i, c in enumerate(haystack):
+        if c.isalnum():
+            cleaned.append(c)
+            idx_map.append(i)
+    pos = "".join(cleaned).find(n)
+    return idx_map[pos] + cursor if pos != -1 else -1
+
+
 class NERResponse(BaseModel):
     entities: list[NEREntityFormat]
 
-    @property
+    @staticmethod
     def example() -> str:
         return f'{{"entities": [{NEREntityFormat.example}, ...]}}'
 
@@ -117,7 +135,7 @@ class NERResponse(BaseModel):
         spans = []
         cursor = 0
         for entity in self.entities:
-            start = text.find(entity.text, cursor)
+            start = find_alnum(text, entity.text, cursor)
             if start >= 0:
                 cursor = start
                 end = start + len(entity.text)

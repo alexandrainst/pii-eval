@@ -96,7 +96,7 @@ def generate_predictions(
             model_tag="qwen3.5-397b",
             base_url="https://inference.alexandra.dk/v1",
             api_key=os.getenv("ALEX_API_KEY"),
-            name="qwen3.5-397b-alt-prompt-2",
+            name="qwen3.5-397b-alt-prompt-3-nothink",
         ),
         # OpenAIClientModel(
         #     model_tag="qwen-235b",
@@ -159,12 +159,12 @@ def generate_predictions(
                 predictions.to_file(output_file_path)
         progress.remove_task(dataset_task)
     progress.remove_task(model_task)
-    # print()
+    print()
     # progress.stop()
 
 
 if __name__ == "__main__":
     generate_predictions(
         override=False,
-        # max_entries_per_config=1000,
+        # max_entries_per_config=5,
     )

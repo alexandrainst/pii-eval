@@ -10,7 +10,7 @@ from pii_eval.constants import (
     DATASET_LABEL_MAP,
     get_model_label_map,
 )
-from pii_eval.data import FromEntries, PiiDataset, PiiEntry
+from pii_eval.data import PiiDataset
 from pii_eval.span import align_bios
 
 CONFUSION_COLUMNS = ["tp", "fp", "fn", "tn"]
@@ -97,20 +97,6 @@ def add_metric_columns(df: pd.DataFrame) -> pd.DataFrame:
     return result
 
 
-def _index_entries_by_uid(dataset: PiiDataset, dataset_role: str) -> list[PiiEntry]:
-    indexed_entries = {}
-
-    for index, entry in enumerate(dataset):
-        entry_id = entry.uid
-        if entry_id in indexed_entries:
-            raise ValueError(
-                f"Duplicate entry id {entry_id!r} found in {dataset_role}."
-            )
-        indexed_entries[entry_id] = entry
-
-    return indexed_entries
-
-
 def _get_iso_label(tag: str, label_map: dict[str, str]) -> str | None:
     if not tag or tag == "O" or "-" not in tag:
         return None
@@ -121,8 +107,8 @@ def _get_iso_label(tag: str, label_map: dict[str, str]) -> str | None:
 def evaluate(
     ground_truth: PiiDataset, predictions: PiiDataset
 ) -> tuple[ConfusionResult, dict[str, ConfusionResult], dict[str, ConfusionResult]]:
-    dataset_name = ground_truth.metadata.get("dataset_name") or "some dataset"
-    model_name = predictions.metadata.get("model_name") or "some model"
+    dataset_name = ground_truth.meta.get("dataset_name") or "some dataset"
+    model_name = predictions.meta.get("model_name") or "some model"
     dataset_label_map = (
         DATASET_LABEL_MAP[dataset_name]
         if dataset_name in DATASET_LABEL_MAP
@@ -173,10 +159,10 @@ def evaluate_all(
         dataset_name = predictions_path.stem
         model_name = predictions_path.parent.name
         ground_truth_path = Path(f"data/ground_truth/{dataset_name}.json")
-        predictions = FromEntries.load_json(predictions_path)
+        predictions = PiiDataset.load_json(predictions_path)
         if not ground_truth_path.exists():
             continue
-        ground_truth = FromEntries.load_json(ground_truth_path)
+        ground_truth = PiiDataset.load_json(ground_truth_path)
         confusions = evaluate(ground_truth=ground_truth, predictions=predictions)
         results += [
             {
@@ -188,7 +174,7 @@ def evaluate_all(
             }
             for (label, entry_id), confusion in confusions.items()
         ]
-        time_per_entry = predictions.metadata.get("computation_time_per_entry")
+        time_per_entry = predictions.meta.get("computation_time_per_entry")
         if time_per_entry:
             performances.append(
                 {
@@ -223,8 +209,6 @@ def evaluate_all(
     models_and_datasets_single = add_metric_columns(
         single_df.groupby(level=["model", "dataset"]).sum()
     ).sort_values("f5", ascending=False)
-
-
 
     pass
 

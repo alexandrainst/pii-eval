@@ -5,8 +5,8 @@ from datetime import datetime
 from typing import Callable, Iterable
 
 from pii_eval.constants import *
-from pii_eval.data import PiiEntry, PiiEntryConcrete, PiiModel
-from pii_eval.util import LabelSpan, spans_to_bio
+from pii_eval.data import PiiEntry, PiiModel
+from pii_eval.span import LabelSpan, spans_to_bio
 
 RegexValidator = Callable[[str], bool]
 
@@ -737,13 +737,11 @@ class RegexModel(PiiModel):
         predicted_spans = _select_non_overlapping_spans(prioritized_spans)
 
         predicted_bio = spans_to_bio(
-            text=entry.text,
-            spans=predicted_spans,
+            text=entry.text, spans=predicted_spans, include_o_labels=False
         )
-        return PiiEntryConcrete(
-            uid_=entry.uid,
-            text_=entry.text,
-            spans_=predicted_spans,
-            bio_=predicted_bio,
-            extra_=entry.extra,
+        return PiiEntry(
+            uid=entry.uid,
+            text=entry.text,
+            bio=predicted_bio,
+            meta=entry.meta,
         )

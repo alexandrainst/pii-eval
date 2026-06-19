@@ -5,8 +5,7 @@ from codetiming import Timer
 from dotenv import load_dotenv
 from rich.progress import MofNCompleteColumn, Progress
 
-from pii_eval.constants import LABEL_DESCRIPTIONS_DA
-from pii_eval.data import FromEntries, PiiDataset, PiiModel
+from pii_eval.data import PiiDataset, PiiModel
 from pii_eval.models.regex_model import RegexModel
 
 
@@ -29,20 +28,20 @@ def inference(
         try:
             prediction = model(entry)
         except Exception as exc:
-            entry_id = entry.id if entry.id is not None else "<unknown>"
+            entry_id = entry.uid if entry.uid is not None else "<unknown>"
             raise RuntimeError(
                 f"Inference failed for model '{model.name}' on entry '{entry_id}'."
             ) from exc
         predictions.append(prediction)
     progress.remove_task(entries_task)
     timestamp = datetime.now().isoformat()
-    return FromEntries(
+    return PiiDataset(
         name=dataset.name,
         entries=predictions,
-        metadata={
+        meta={
             "model_name": model.name,
             "timestamp": timestamp,
-            "dataset": dataset.metadata,
+            "dataset": dataset.meta,
         },
     )
 
@@ -73,8 +72,8 @@ def generate_predictions(
         )
         dataset_task = progress.add_task("", total=len(datasets), transient=True)
         for in_path in datasets:
-            dataset = FromEntries.load_json(in_path)
-            dataset_name = dataset.metadata.get("dataset_name", in_path.stem)
+            dataset = PiiDataset.load_json(in_path)
+            dataset_name = dataset.meta.get("dataset_name", in_path.stem)
             progress.update(
                 dataset_task,
                 advance=1,
@@ -96,7 +95,7 @@ def generate_predictions(
                 )
                 timer.stop()
                 elapsed_time = timer.last
-                predictions.metadata.update(
+                predictions.meta.update(
                     {
                         "computation_time_total": elapsed_time,
                         "computation_time_per_entry": elapsed_time / len(predictions),

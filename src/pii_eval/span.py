@@ -1,5 +1,5 @@
 from copy import deepcopy
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from typing import Callable
 
 import spacy
@@ -24,8 +24,8 @@ class LabelSpan(TextSpan):
     label: str
 
     @staticmethod
-    def from_text_and_token(
-        text: str, tokens: list[str], labels: list[str]
+    def from_text_and_tokens(
+        text: str, tokens: list[str], labels: list[str], include_o_labels: bool = True
     ) -> list["LabelSpan"]:
         spans = []
         last_end = 0
@@ -33,9 +33,10 @@ class LabelSpan(TextSpan):
             start = text.find(token, last_end)
             end = start + len(token)
             last_end = end
-            spans.append(
-                LabelSpan(start=start, end=end, text=text[start:end], label=label)
-            )
+            if include_o_labels or label != "O":
+                spans.append(
+                    LabelSpan(start=start, end=end, text=text[start:end], label=label)
+                )
         return spans
 
 
@@ -78,6 +79,7 @@ def spans_to_bio(
     text: str,
     spans: list[LabelSpan],
     tokenize: Callable[[str], list[TextSpan]] = WordTokenizer(),
+    include_o_labels: bool = True
 ) -> list[LabelSpan]:
     started_spans: set[int] = set()
     result = []
@@ -89,10 +91,8 @@ def spans_to_bio(
                 started_spans.add(i)
                 label = f"{prefix}-{span.label}"
                 break
-        result.append(
-            LabelSpan(**token, label=label)
-        )
-
+        if include_o_labels or label != "O":
+            result.append(LabelSpan(**asdict(token), label=label))
     return result
 
 
@@ -154,6 +154,7 @@ def bio_to_spans(text: str, bio: list[LabelSpan]) -> list[LabelSpan]:
 
     return spans
 
+
 # Example of input LabelSpan texts:
 # ['Virksomhedens', 'interne', 'profil', 'for', 'medarbejdere', 'ligger', 'på', 'https://intra.firma.local/employee/123', 'hvor', 'brugernavnet', 'er', 'mhansen', '.', 'På', 'intranettet', 'findes', 'også', 'adgangsloggene', '(', 'sidst', 'set', 'fra', 'IP', '192.168.0.1', ')', '.']
 # ['Virksomhedens interne', 'profil', 'for', 'medarbejdere', 'ligger', 'på', 'https', ':', '/', '/', 'intra', '.', 'firma', '.', 'local', '/', 'employee', '/', '123', 'hvor', 'brugernavnet', 'er', 'mhansen', '.', 'På', 'intranettet', 'findes', 'også', 'adgangsloggene', '(', 'sidst', 'set', 'fra', 'IP', '192', '.', '168', '.', '0', '.', '1', ')', '.']
@@ -161,6 +162,7 @@ def bio_to_spans(text: str, bio: list[LabelSpan]) -> list[LabelSpan]:
 # ['Virksomhedens', ' ', 'interne', 'profil', ...., 'på', 'https', ':', ...., '123', 'hvor', ...]
 
 # In cases where a label does not exist for a 'token' for either 'left' or 'right' label should be 'O'
+
 
 def align_bios(
     left: list[LabelSpan], right: list[LabelSpan]
@@ -175,9 +177,15 @@ def align_bios(
                 return span
         return None
 
-    def make_sub_span(span: LabelSpan, start: int, end: int, started: set[int]) -> LabelSpan:
+    def make_sub_span(
+        span: LabelSpan, start: int, end: int, started: set[int]
+    ) -> LabelSpan:
         text = span.text[start - span.start : end - span.start]
-        label = "I-" + span.label[2:] if span.label.startswith("B-") and id(span) in started else span.label
+        label = (
+            "I-" + span.label[2:]
+            if span.label.startswith("B-") and id(span) in started
+            else span.label
+        )
         started.add(id(span))
         return LabelSpan(start=start, end=end, text=text, label=label)
 
@@ -192,8 +200,16 @@ def align_bios(
         s, e = boundaries[i], boundaries[i + 1]
         l_span = find_span(left, s, e)
         r_span = find_span(right, s, e)
-        l = make_sub_span(l_span, s, e, left_started) if l_span is not None else make_o(s, e, r_span)
-        r = make_sub_span(r_span, s, e, right_started) if r_span is not None else make_o(s, e, l_span)
+        l = (
+            make_sub_span(l_span, s, e, left_started)
+            if l_span is not None
+            else make_o(s, e, r_span)
+        )
+        r = (
+            make_sub_span(r_span, s, e, right_started)
+            if r_span is not None
+            else make_o(s, e, l_span)
+        )
         if l.text != r.text:
             raise ValueError(f"Text mismatch at [{s}, {e}]: {l.text!r} != {r.text!r}")
         if l.text:

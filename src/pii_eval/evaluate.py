@@ -3,7 +3,7 @@ from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
-from rich.progress import track
+from rich.progress import MofNCompleteColumn, Progress, track
 
 from pii_eval.constants import (
     ALL_ISO_LABELS,
@@ -11,7 +11,7 @@ from pii_eval.constants import (
     get_model_label_map,
 )
 from pii_eval.data import PiiDataset
-from pii_eval.span import align_bios
+from pii_eval.span import WordTokenizer, align_bio
 
 CONFUSION_COLUMNS = ["tp", "fp", "fn", "tn"]
 METRIC_COLUMNS = ["precision", "f1", "f5", "recall"]
@@ -105,7 +105,9 @@ def _get_iso_label(tag: str, label_map: dict[str, str]) -> str | None:
 
 
 def evaluate(
-    ground_truth: PiiDataset, predictions: PiiDataset
+    ground_truth: PiiDataset,
+    predictions: PiiDataset,
+    progress: Progress | None = None,
 ) -> tuple[ConfusionResult, dict[str, ConfusionResult], dict[str, ConfusionResult]]:
     dataset_name = ground_truth.meta.get("dataset_name") or "some dataset"
     model_name = predictions.meta.get("model_name") or "some model"
@@ -121,15 +123,31 @@ def evaluate(
         model_label_map.values()
     )
 
+    entries_task = progress.add_task(
+        "", total=(len(common_iso_labels) + 1) * len(ground_truth)
+    )
+
     all_confusions = {}
     for label in common_iso_labels.union([ALL_LABEL]):
         for true_entry in ground_truth:
+            progress.update(
+                entries_task,
+                advance=1,
+                description=f"Entry: {str(true_entry.uid)[:10]:<10}",
+                transient=True,
+            )
             pred_entry = predictions.get_uid(true_entry.uid)
             if pred_entry is None:
                 continue
             confusion = ConfusionResult.zero()
-
-            for true_span, pred_span in align_bios(true_entry.bio, pred_entry.bio):
+            for true_span, pred_span in zip(
+                align_bio(text=true_entry.text, bio=true_entry.bio),
+                align_bio(text=true_entry.text, bio=pred_entry.bio),
+            ):
+                assert (true_span.start, true_span.end) == (
+                    pred_span.start,
+                    pred_span.end,
+                )
                 true_iso_label = _get_iso_label(true_span.label, dataset_label_map)
                 pred_iso_label = _get_iso_label(pred_span.label, model_label_map)
                 if true_iso_label and label == true_iso_label or label:
@@ -155,15 +173,27 @@ def evaluate_all(
     results = []
     performances = []
     prediction_paths = list(base_directory.glob("*/*.json"))
-    for predictions_path in track(prediction_paths):
+    progress = Progress(*Progress.get_default_columns(), MofNCompleteColumn())
+    progress.start()
+    predictions_task = progress.add_task(
+        "", total=len(prediction_paths), transient=True
+    )
+    for predictions_path in prediction_paths:
         dataset_name = predictions_path.stem
         model_name = predictions_path.parent.name
+        progress.update(
+            predictions_task,
+            advance=1,
+            description=f"Model: {model_name[:10]:<10}\nDataset: {dataset_name[:10]:<10}",
+        )
         ground_truth_path = Path(f"data/ground_truth/{dataset_name}.json")
         predictions = PiiDataset.load_json(predictions_path)
         if not ground_truth_path.exists():
             continue
         ground_truth = PiiDataset.load_json(ground_truth_path)
-        confusions = evaluate(ground_truth=ground_truth, predictions=predictions)
+        confusions = evaluate(
+            ground_truth=ground_truth, predictions=predictions, progress=progress
+        )
         results += [
             {
                 "model": model_name,

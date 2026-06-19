@@ -24,6 +24,7 @@ class PiiEntry:
     def from_dict(cls, d: dict) -> "PiiEntry":
         valid_keys = {f.name for f in fields(cls)}
         filtered_d = {k: v for k, v in d.items() if k in valid_keys}
+        filtered_d["bio"] = [LabelSpan(**x) for x in filtered_d["bio"]]
         return PiiEntry(**filtered_d)
 
     def to_dict(self) -> dict[str, Any]:
@@ -55,6 +56,9 @@ class PiiDataset:
     @cached_property
     def uid_to_idx(self):
         return {x.uid: i for i, x in enumerate(self)}
+
+    def get(self, index: int, default=None) -> PiiEntry:
+        return self.entries[index] if index < len(self) else default
 
     def get_uid(self, uid: int | str, default=None) -> PiiEntry:
         return self.get(self.uid_to_idx.get(uid), default=default)

@@ -55,6 +55,24 @@ class WordTokenizer(metaclass=Singleton):
         ]
 
 
+def align_bio(
+    text: str, bio: list[LabelSpan], tokenizer=WordTokenizer()
+) -> list[LabelSpan]:
+    tokens = tokenizer(text)
+    copy = bio.copy()
+    current = copy.pop() if copy else None
+    result = []
+    for token in tokens:
+        label = "O"
+        if current:
+            if current.start <= token.start:
+                label = current.label
+                if current.end <= token.end:
+                    current = copy.pop() if copy else None
+        result.append(LabelSpan(**asdict(token), label=label))
+    return result
+
+
 def map_bio(spans: list[LabelSpan], label_map: dict[str, str]) -> list[LabelSpan]:
     mapped: list[LabelSpan] = []
     append = mapped.append
@@ -79,7 +97,7 @@ def spans_to_bio(
     text: str,
     spans: list[LabelSpan],
     tokenize: Callable[[str], list[TextSpan]] = WordTokenizer(),
-    include_o_labels: bool = True
+    include_o_labels: bool = True,
 ) -> list[LabelSpan]:
     started_spans: set[int] = set()
     result = []
@@ -164,54 +182,51 @@ def bio_to_spans(text: str, bio: list[LabelSpan]) -> list[LabelSpan]:
 # In cases where a label does not exist for a 'token' for either 'left' or 'right' label should be 'O'
 
 
-def align_bios(
-    left: list[LabelSpan], right: list[LabelSpan]
-) -> list[tuple[LabelSpan, LabelSpan]]:
-    boundaries = sorted(
-        {pos for span in left + right for pos in (span.start, span.end)}
-    )
-
-    def find_span(spans: list[LabelSpan], start: int, end: int) -> LabelSpan | None:
-        for span in spans:
-            if span.start <= start and end <= span.end:
-                return span
-        return None
-
-    def make_sub_span(
-        span: LabelSpan, start: int, end: int, started: set[int]
-    ) -> LabelSpan:
-        text = span.text[start - span.start : end - span.start]
-        label = (
-            "I-" + span.label[2:]
-            if span.label.startswith("B-") and id(span) in started
-            else span.label
-        )
-        started.add(id(span))
-        return LabelSpan(start=start, end=end, text=text, label=label)
-
-    def make_o(start: int, end: int, other: LabelSpan | None) -> LabelSpan:
-        text = other.text[start - other.start : end - other.start] if other else ""
-        return LabelSpan(start=start, end=end, text=text, label="O")
-
-    left_started: set[int] = set()
-    right_started: set[int] = set()
-    result = []
-    for i in range(len(boundaries) - 1):
-        s, e = boundaries[i], boundaries[i + 1]
-        l_span = find_span(left, s, e)
-        r_span = find_span(right, s, e)
-        l = (
-            make_sub_span(l_span, s, e, left_started)
-            if l_span is not None
-            else make_o(s, e, r_span)
-        )
-        r = (
-            make_sub_span(r_span, s, e, right_started)
-            if r_span is not None
-            else make_o(s, e, l_span)
-        )
-        if l.text != r.text:
-            raise ValueError(f"Text mismatch at [{s}, {e}]: {l.text!r} != {r.text!r}")
-        if l.text:
-            result.append((l, r))
-    return result
+#     boundaries = sorted(
+#         {pos for span in left + right for pos in (span.start, span.end)}
+#     )
+#
+#     def find_span(spans: list[LabelSpan], start: int, end: int) -> LabelSpan | None:
+#         for span in spans:
+#             if span.start <= start and end <= span.end:
+#                 return span
+#         return None
+#
+#     def make_sub_span(
+#         span: LabelSpan, start: int, end: int, started: set[int]
+#     ) -> LabelSpan:
+#         text = span.text[start - span.start : end - span.start]
+#         label = (
+#             "I-" + span.label[2:]
+#             if span.label.startswith("B-") and id(span) in started
+#             else span.label
+#         )
+#         started.add(id(span))
+#         return LabelSpan(start=start, end=end, text=text, label=label)
+#
+#     def make_o(start: int, end: int, other: LabelSpan | None) -> LabelSpan:
+#         text = other.text[start - other.start : end - other.start] if other else ""
+#         return LabelSpan(start=start, end=end, text=text, label="O")
+#
+#     left_started: set[int] = set()
+#     right_started: set[int] = set()
+#     result = []
+#     for i in range(len(boundaries) - 1):
+#         s, e = boundaries[i], boundaries[i + 1]
+#         l_span = find_span(left, s, e)
+#         r_span = find_span(right, s, e)
+#         l = (
+#             make_sub_span(l_span, s, e, left_started)
+#             if l_span is not None
+#             else make_o(s, e, r_span)
+#         )
+#         r = (
+#             make_sub_span(r_span, s, e, right_started)
+#             if r_span is not None
+#             else make_o(s, e, l_span)
+#         )
+#         if l.text != r.text:
+#             raise ValueError(f"Text mismatch at [{s}, {e}]: {l.text!r} != {r.text!r}")
+#         if l.text:
+#             result.append((l, r))
+#     return result

@@ -3,7 +3,7 @@ from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
-from rich.progress import MofNCompleteColumn, Progress, track
+from rich.progress import MofNCompleteColumn, Progress
 
 from pii_eval.constants import (
     ALL_ISO_LABELS,
@@ -11,7 +11,6 @@ from pii_eval.constants import (
     get_model_label_map,
 )
 from pii_eval.data import PiiDataset
-from pii_eval.span import WordTokenizer, align_bio
 
 CONFUSION_COLUMNS = ["tp", "fp", "fn", "tn"]
 METRIC_COLUMNS = ["precision", "f1", "f5", "recall"]
@@ -126,7 +125,6 @@ def evaluate(
     entries_task = progress.add_task(
         "", total=(len(common_iso_labels) + 1) * len(ground_truth)
     )
-
     all_confusions = {}
     for label in common_iso_labels.union([ALL_LABEL]):
         for true_entry in ground_truth:
@@ -140,10 +138,8 @@ def evaluate(
             if pred_entry is None:
                 continue
             confusion = ConfusionResult.zero()
-            for true_span, pred_span in zip(
-                align_bio(text=true_entry.text, bio=true_entry.bio),
-                align_bio(text=true_entry.text, bio=pred_entry.bio),
-            ):
+            assert len(true_entry.bio) == len(pred_entry.bio)
+            for true_span, pred_span in zip(true_entry.bio, pred_entry.bio):
                 assert (true_span.start, true_span.end) == (
                     pred_span.start,
                     pred_span.end,
@@ -161,6 +157,7 @@ def evaluate(
                     else:
                         confusion.tn += 1
             all_confusions[label, true_entry.uid] = confusion
+    progress.remove_task(entries_task)
 
     return all_confusions
 
@@ -213,6 +210,8 @@ def evaluate_all(
                     "time_per_entry": time_per_entry,
                 }
             )
+    progress.remove_task(predictions_task)
+    progress.stop()
 
     performance_df = (
         pd.DataFrame(performances).set_index(["model", "dataset"]).sort_index()

@@ -45,22 +45,6 @@ class MetricResult(ConfusionResult):
     f5: float
     recall: float
 
-    @staticmethod
-    def from_confusion(c: ConfusionResult) -> "MetricResult":
-        precision = c.tp / c.pp() if c.pp() else 0.0
-        recall = c.tp / c.rp() if c.rp() else 0.0
-
-        f1_denominator = (2 * c.tp) + c.fp + c.fn
-        f1 = (2.0 * c.tp) / f1_denominator if f1_denominator else 0.0
-
-        beta_squared = 25.0
-        f5_denominator = ((1.0 + beta_squared) * c.tp) + (beta_squared * c.fn) + c.fp
-        f5 = ((1.0 + beta_squared) * c.tp) / f5_denominator if f5_denominator else 0.0
-
-        return MetricResult(
-            **asdict(c), precision=precision, f1=f1, f5=f5, recall=recall
-        )
-
 
 @dataclass
 class EvaluationResult(ConfusionResult):
@@ -107,9 +91,12 @@ def evaluate(
     ground_truth: PiiDataset,
     predictions: PiiDataset,
     progress: Progress | None = None,
+    maximum_entries: int | None = None,
 ) -> tuple[ConfusionResult, dict[str, ConfusionResult], dict[str, ConfusionResult]]:
-    dataset_name = ground_truth.meta.get("dataset_name") or "some dataset"
-    model_name = predictions.meta.get("model_name") or "some model"
+    if maximum_entries is None:
+        maximum_entries = len(ground_truth)
+    dataset_name = ground_truth.name
+    model_name = predictions.meta.get("model_name", "unknown_model")
     dataset_label_map = (
         DATASET_LABEL_MAP[dataset_name]
         if dataset_name in DATASET_LABEL_MAP
@@ -122,12 +109,17 @@ def evaluate(
         model_label_map.values()
     )
 
+    labels = set(model_label_map.values()).intersection(dataset_label_map.values())
+    if labels:
+        labels.add(ALL_LABEL)
+
     entries_task = progress.add_task(
         "", total=(len(common_iso_labels) + 1) * len(ground_truth)
     )
     all_confusions = {}
-    for label in common_iso_labels.union([ALL_LABEL]):
-        for true_entry in ground_truth:
+
+    for label in labels:
+        for true_entry in ground_truth[:maximum_entries]:
             progress.update(
                 entries_task,
                 advance=1,
@@ -146,7 +138,11 @@ def evaluate(
                 )
                 true_iso_label = _get_iso_label(true_span.label, dataset_label_map)
                 pred_iso_label = _get_iso_label(pred_span.label, model_label_map)
-                if true_iso_label and label == true_iso_label or label:
+                if (
+                    true_iso_label
+                    and true_iso_label in model_label_map.values()
+                    and label in [true_iso_label, ALL_LABEL]
+                ):
                     if pred_iso_label and label in [pred_iso_label, ALL_LABEL]:
                         confusion.tp += 1
                     else:
@@ -163,7 +159,9 @@ def evaluate(
 
 
 def evaluate_all(
-    base_directory: Path | str = "data/predictions", write_cache: bool = False
+    base_directory: Path | str = "data/predictions",
+    write_cache: bool = False,
+    maximum_entries: int | None = None,
 ):
     if type(base_directory) == str:
         base_directory = Path(base_directory)
@@ -189,7 +187,10 @@ def evaluate_all(
             continue
         ground_truth = PiiDataset.load_json(ground_truth_path)
         confusions = evaluate(
-            ground_truth=ground_truth, predictions=predictions, progress=progress
+            ground_truth=ground_truth,
+            predictions=predictions,
+            progress=progress,
+            maximum_entries=maximum_entries,
         )
         results += [
             {
@@ -232,15 +233,35 @@ def evaluate_all(
         single_df.to_csv(out_dir / "single.csv")
         performance_df.to_csv(out_dir / "performance.csv")
 
-    best_models_single = add_metric_columns(
-        single_df.groupby(level="model").sum()
-    ).sort_values("f5", ascending=False)
+    # NB: grouping label_df should always include the "label" level
+    # (otherwise too many true negatives are counted)
+
+    models_datasets_and_labels = add_metric_columns(
+        label_df.groupby(level=["model", "dataset", "label"]).sum()
+    ).sort_values(["model", "dataset", "f5"], ascending=[True, True, False])
+
+    models_and_labels = add_metric_columns(
+        label_df.groupby(level=["model", "label"]).sum()
+    ).sort_values(["model", "f5"], ascending=[True, False])
+
     models_and_datasets_single = add_metric_columns(
         single_df.groupby(level=["model", "dataset"]).sum()
+    ).sort_values(["model", "f5"], ascending=[True, False])
+
+    models_single = add_metric_columns(
+        single_df.groupby(level="model").sum()
     ).sort_values("f5", ascending=False)
+
+    print(models_datasets_and_labels, end="\n\n")
+    print(models_and_labels, end="\n\n")
+    print(models_and_datasets_single, end="\n\n")
+    print(models_single, end="\n\n")
 
     pass
 
 
 if __name__ == "__main__":
-    evaluate_all(base_directory="data/predictions", write_cache=True)
+    evaluate_all(
+        base_directory="data/predictions",
+        write_cache=False,  # , maximum_entries=5000
+    )

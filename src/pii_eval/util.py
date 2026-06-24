@@ -1,4 +1,5 @@
-from collections.abc import Set as AbcSet
+from collections import Counter
+from collections.abc import Iterable, Set as AbcSet
 from dataclasses import fields, is_dataclass
 from typing import Any, Mapping
 
@@ -24,6 +25,22 @@ def autoinit(cls):
 
     cls.__init__ = __init__
     return cls
+
+
+def normalize_bio_label(label: str) -> str:
+    if label == "O":
+        return "O"
+    if label.startswith(("B-", "I-")):
+        return label.split("-", 1)[1]
+    return label
+
+
+def count_labels_from_entries(entries: Iterable[Any]) -> dict[str, int]:
+    counter: Counter[str] = Counter()
+    for entry in entries:
+        for token in entry.bio:
+            counter[normalize_bio_label(token.label)] += 1
+    return dict(sorted(counter.items()))
 
 
 def to_dict_recursive(

@@ -7,6 +7,7 @@ from rich.progress import MofNCompleteColumn, Progress
 
 from pii_eval.data import PiiDataset, PiiModel
 from pii_eval.models.regex_model import RegexModel
+from pii_eval.util import count_labels_from_entries
 
 
 def inference(
@@ -41,7 +42,7 @@ def inference(
         meta={
             "model_name": model.name,
             "timestamp": timestamp,
-            "dataset": dataset.meta,
+            "labels": count_labels_from_entries(predictions),
         },
     )
 
@@ -107,4 +108,4 @@ def generate_predictions(
 
 
 if __name__ == "__main__":
-    generate_predictions(override=False)
+    generate_predictions(override=False)  # , max_entries_per_config=100)

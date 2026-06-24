@@ -8,17 +8,11 @@ from collections import Counter
 from pathlib import Path
 from typing import Iterable
 
+from pii_eval.util import normalize_bio_label
+
 
 def iter_dataset_paths(input_dir: Path) -> list[Path]:
     return sorted(path for path in input_dir.glob("*.json") if path.is_file())
-
-
-def normalize_label(label: str) -> str:
-    if "-" in label:
-        prefix, remainder = label.split("-", 1)
-        if prefix in {"B", "I"} and remainder:
-            return remainder
-    return label
 
 
 def iter_entry_labels(entry: dict) -> Iterable[str]:
@@ -29,14 +23,14 @@ def iter_entry_labels(entry: dict) -> Iterable[str]:
                 continue
             label = token.get("label")
             if isinstance(label, str) and label:
-                yield normalize_label(label)
+                yield normalize_bio_label(label)
 
     # Support legacy datasets that store labels as flat BIO tags.
     bio_tags = entry.get("bio_tags")
     if isinstance(bio_tags, list):
         for tag in bio_tags:
             if isinstance(tag, str) and tag:
-                yield normalize_label(tag)
+                yield normalize_bio_label(tag)
 
 
 def count_labels(entries: list[dict]) -> dict[str, int]:

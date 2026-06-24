@@ -1,5 +1,6 @@
 # from __future__ import annotations
 import json
+import random
 from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass, field, fields
 from functools import cached_property
@@ -39,8 +40,8 @@ class PiiEntry:
 @dataclass
 class PiiDataset:
     name: str
-    entries: list[PiiEntry]
     meta: dict[str, Any] = field(default_factory=dict)
+    entries: list[PiiEntry] = field(default_factory=list)
 
     def __getitem__(self, key) -> PiiEntry:
         return self.entries[key]
@@ -52,6 +53,9 @@ class PiiDataset:
     @abstractmethod
     def __len__(self) -> int:
         return len(self.entries)
+
+    def get_samples(self, samples: int):
+        return random.sample(self.entries, min(samples, len(self)))
 
     @cached_property
     def uid_to_idx(self):
@@ -66,8 +70,8 @@ class PiiDataset:
     def to_dict(self) -> dict[str, Any]:
         return {
             "name": self.name,
-            "entries": [x.to_dict() for x in self],
             "meta": to_dict_recursive(self.meta),
+            "entries": [x.to_dict() for x in self],
         }
 
     def to_json(self) -> str:

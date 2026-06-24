@@ -737,7 +737,7 @@ class RegexModel(PiiModel):
         predicted_spans = _select_non_overlapping_spans(prioritized_spans)
 
         predicted_bio = spans_to_bio(
-            text=entry.text, spans=predicted_spans, include_o_labels=False
+            text=entry.text, spans=predicted_spans, include_o_labels=True
         )
         return PiiEntry(
             uid=entry.uid,

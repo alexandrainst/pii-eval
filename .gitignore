@@ -94,9 +94,7 @@ multirun/
 
 # Data
 data/
-!data/raw/.gitkeep
-!data/processed/.gitkeep
-!data/final/.gitkeep
+data_new/
 
 # Models
 models/*

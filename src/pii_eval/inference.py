@@ -5,7 +5,9 @@ from codetiming import Timer
 from dotenv import load_dotenv
 from rich.progress import MofNCompleteColumn, Progress
 
+from pii_eval.constants import PII_EVAL_CACHE_PATH
 from pii_eval.data import PiiDataset, PiiModel
+from pii_eval.load import load_kiji_da, load_openpii_1m_da
 from pii_eval.models.regex_model import RegexModel
 from pii_eval.util import count_labels_from_entries
 
@@ -53,13 +55,9 @@ def generate_predictions(
     load_dotenv()
 
     models: list[PiiModel] = [RegexModel()]
+    datasets = [load_kiji_da, load_openpii_1m_da]
 
-    datasets = list(Path("data/ground_truth").glob("*.json"))
-
-    print(
-        f"generating predictions\nmodels: {', '.join([m.name for m in models])}\n"
-        f"datasets: {', '.join([d.stem for d in datasets])}"
-    )
+    print(f"generating predictions\nmodels: {', '.join([m.name for m in models])}\n")
 
     progress = Progress(*Progress.get_default_columns(), MofNCompleteColumn())
     progress.start()
@@ -72,16 +70,16 @@ def generate_predictions(
             description=f"Model: {model.name[:10]:<10}",
         )
         dataset_task = progress.add_task("", total=len(datasets), transient=True)
-        for in_path in datasets:
-            dataset = PiiDataset.load_json(in_path)
-            dataset_name = dataset.meta.get("dataset_name", in_path.stem)
+        for load_fct in datasets:
+            dataset = load_fct()
+            dataset_name = dataset.name
             progress.update(
                 dataset_task,
                 advance=1,
                 description=f"Dataset: {dataset_name[:10]:<10}",
             )
             output_file_path = Path(
-                f"data/predictions/{model.name}/{dataset_name}.json"
+                f"{PII_EVAL_CACHE_PATH}/predictions/{model.name}/{dataset_name}.pickle"
             )
             if not override and output_file_path.exists():
                 print(f"skipped {dataset_name} (was cached)")
@@ -102,7 +100,7 @@ def generate_predictions(
                         "computation_time_per_entry": elapsed_time / len(predictions),
                     }
                 )
-                predictions.save_json(output_file_path)
+                predictions.dump_pickle(output_file_path)
         progress.remove_task(dataset_task)
     progress.remove_task(model_task)
 

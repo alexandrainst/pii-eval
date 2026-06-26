@@ -8,6 +8,7 @@ from rich.progress import MofNCompleteColumn, Progress
 from pii_eval.constants import (
     ALL_ISO_LABELS,
     DATASET_LABEL_MAP,
+    PII_EVAL_CACHE_PATH,
     get_model_label_map,
 )
 from pii_eval.data import PiiDataset
@@ -159,15 +160,14 @@ def evaluate(
 
 
 def evaluate_all(
-    base_directory: Path | str = "data/predictions",
+    base_directory: Path | str = f"{PII_EVAL_CACHE_PATH}/predictions/",
     write_cache: bool = False,
     maximum_entries: int | None = None,
 ):
-    if type(base_directory) == str:
-        base_directory = Path(base_directory)
+    base_directory = Path(base_directory)
     results = []
     performances = []
-    prediction_paths = list(base_directory.glob("*/*.json"))
+    prediction_paths = list(base_directory.glob("*/*.pickle"))
     progress = Progress(*Progress.get_default_columns(), MofNCompleteColumn())
     progress.start()
     predictions_task = progress.add_task(
@@ -181,11 +181,13 @@ def evaluate_all(
             advance=1,
             description=f"Model: {model_name[:10]:<10}\nDataset: {dataset_name[:10]:<10}",
         )
-        ground_truth_path = Path(f"data/ground_truth/{dataset_name}.json")
-        predictions = PiiDataset.load_json(predictions_path)
+        ground_truth_path = Path(
+            f"{PII_EVAL_CACHE_PATH}/datasets/{dataset_name}.pickle"
+        )
+        predictions = PiiDataset.load_pickle(predictions_path)
         if not ground_truth_path.exists():
             continue
-        ground_truth = PiiDataset.load_json(ground_truth_path)
+        ground_truth = PiiDataset.load_pickle(ground_truth_path)
         confusions = evaluate(
             ground_truth=ground_truth,
             predictions=predictions,
@@ -227,11 +229,11 @@ def evaluate_all(
 
     if write_cache:
         timestamp = datetime.now().isoformat()
-        out_dir = Path(f"data/results/{timestamp}")
+        out_dir = Path(f"{PII_EVAL_CACHE_PATH}/results/{timestamp}")
         out_dir.mkdir(exist_ok=True, parents=True)
-        label_df.to_csv(out_dir / "label.csv")
-        single_df.to_csv(out_dir / "single.csv")
-        performance_df.to_csv(out_dir / "performance.csv")
+        label_df.to_pickle(out_dir / f"label_df.pickle")
+        single_df.to_pickle(out_dir / f"single_df.pickle")
+        performance_df.to_pickle(out_dir / "performance_df.pickle")
 
     # NB: grouping label_df should always include the "label" level
     # (otherwise too many true negatives are counted)
@@ -261,7 +263,4 @@ def evaluate_all(
 
 
 if __name__ == "__main__":
-    evaluate_all(
-        base_directory="data/predictions",
-        write_cache=False,  # , maximum_entries=5000
-    )
+    evaluate_all(write_cache=True)

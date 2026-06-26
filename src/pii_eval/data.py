@@ -63,7 +63,7 @@ class PiiDataset:
         return {x.uid: i for i, x in enumerate(self)}
 
     def get(self, index: int, default=None) -> PiiEntry:
-        return self.entries[index] if index < len(self) else default
+        return self.entries[index] if index and index < len(self) else default
 
     def get_uid(self, uid: int | str, default=None) -> PiiEntry:
         return self.get(self.uid_to_idx.get(uid), default=default)

@@ -7,7 +7,7 @@ from rich.progress import MofNCompleteColumn, Progress
 
 from pii_eval.constants import PII_EVAL_CACHE_PATH
 from pii_eval.data import PiiDataset, PiiModel
-from pii_eval.load import load_kiji_da, load_openpii_1m_da
+from pii_eval.load import all_datasets
 from pii_eval.models.regex_model import RegexModel
 from pii_eval.util import count_labels_from_entries
 
@@ -55,7 +55,7 @@ def generate_predictions(
     load_dotenv()
 
     models: list[PiiModel] = [RegexModel()]
-    datasets = [load_kiji_da, load_openpii_1m_da]
+    datasets = all_datasets
 
     print(f"generating predictions\nmodels: {', '.join([m.name for m in models])}\n")
 
@@ -106,4 +106,4 @@ def generate_predictions(
 
 
 if __name__ == "__main__":
-    generate_predictions(override=False)  # , max_entries_per_config=100)
+    generate_predictions(override=True, max_entries_per_config=2000)

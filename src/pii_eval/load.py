@@ -10,6 +10,30 @@ from pii_eval.data import (
 from pii_eval.span import LabelSpan, spans_to_bio
 
 
+def load_dane() -> PiiDataset:
+    hf_tag = "alexandrainst/dane"
+    name = "dane"
+    raise NotImplementedError
+
+
+def load_dansk_ner() -> PiiDataset:
+    hf_tag = "chcaa/dansk-ner"
+    name = "dansk-ner"
+    raise NotImplementedError
+
+
+def load_dimmi() -> PiiDataset:
+    hf_tag = "jharder/dimmi"
+    name = "dimmi"
+    raise NotImplementedError
+
+
+def load_pii_synth_alpha() -> PiiDataset:
+    hf_tag = "jharder/pii-synth-alpha"
+    name = "pii-synth-alpha"
+    raise NotImplementedError
+
+
 def load_kiji_da() -> PiiDataset:
     hf_tag = "DataikuNLP/kiji-pii-training-data"
     name = "kiji-pii-da"
@@ -85,6 +109,14 @@ def load_openpii_1m_da() -> PiiDataset:
 
 
 if __name__ == "__main__":
-    kiji = load_kiji_da()
-    openpii = load_openpii_1m_da()
+    datasets = []
+    for x in [
+        load_dane,
+        load_dansk_ner,
+        load_dimmi,
+        load_kiji_da,
+        load_openpii_1m_da,
+    ]:
+        datasets.append(x())
+
     pass

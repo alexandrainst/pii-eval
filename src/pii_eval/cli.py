@@ -2,5 +2,5 @@ from pii_eval.inference import generate_predictions
 from pii_eval.evaluate import evaluate_all
 
 if __name__ == "__main__":
-    generate_predictions(override=True)
+    generate_predictions(override=True, max_entries_per_config=5000)
     evaluate_all()

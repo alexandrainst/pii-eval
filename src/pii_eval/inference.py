@@ -10,6 +10,7 @@ from pii_eval.data import PiiDataset, PiiModel
 from pii_eval.load import all_datasets
 from pii_eval.models.regex_model import RegexModel
 from pii_eval.models.vibe_alpha import VibeAlpha
+from pii_eval.models.pn_lookup import PNLookup
 from pii_eval.util import count_labels_from_entries
 
 
@@ -55,7 +56,7 @@ def generate_predictions(
 ):
     load_dotenv()
 
-    models: list[PiiModel] = [VibeAlpha()]
+    models: list[PiiModel] = [PNLookup()]
     datasets = all_datasets
 
     print(f"generating predictions\nmodels: {', '.join([m.name for m in models])}\n")

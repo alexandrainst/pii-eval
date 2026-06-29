@@ -254,13 +254,18 @@ def evaluate_all(
         single_df.groupby(level="model").sum()
     ).sort_values("f5", ascending=False)
 
+    models_mean_performance = (
+        performance_df.groupby(level="model").mean().sort_values("time_per_entry")
+    )
+
     print(models_datasets_and_labels, end="\n\n")
     print(models_and_labels, end="\n\n")
     print(models_and_datasets_single, end="\n\n")
     print(models_single, end="\n\n")
+    print(models_mean_performance, end="\n\n")
 
     pass
 
 
 if __name__ == "__main__":
-    evaluate_all(write_cache=True)
+    evaluate_all(write_cache=False)

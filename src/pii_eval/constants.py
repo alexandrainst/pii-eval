@@ -67,7 +67,7 @@ ALL_ISO_LABELS = {
     ISO_LABEL_VEHICLE_ID,
 }
 
-REGEX_COMPATIBLE_LABELS = {
+NON_ML_FEASIBLE_LABELS = {
     ISO_LABEL_BANK_ACCOUNT,
     ISO_LABEL_DATE,
     ISO_LABEL_DRIVERS_LICENSE,
@@ -276,7 +276,8 @@ MODEL_LABEL_MAP: dict[str, dict[str, str]] = {
         "DK_SSN": ISO_LABEL_SSN,
         "CREDIT_CARD": ISO_LABEL_PCI,
     },
-    "regex": {k: k for k in REGEX_COMPATIBLE_LABELS},
+    "regex": {k: k for k in NON_ML_FEASIBLE_LABELS},
+    "vibe-alpha": {k: k for k in NON_ML_FEASIBLE_LABELS},
     "privacy-filter": {
         "account_number": ISO_LABEL_BANK_ACCOUNT,
         "private_address": ISO_LABEL_PRECISE_LOCATION,

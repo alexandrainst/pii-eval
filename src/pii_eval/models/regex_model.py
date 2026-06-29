@@ -725,7 +725,7 @@ class RegexModel(PiiModel):
         super().__init__(name)
 
     def __call__(self, entry: PiiEntry) -> PiiEntry:
-        active_labels = REGEX_COMPATIBLE_LABELS
+        active_labels = NON_ML_FEASIBLE_LABELS
 
         prioritized_spans: list[tuple[int, LabelSpan]] = []
         for rule in REGEX_RULES:

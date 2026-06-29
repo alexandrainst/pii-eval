@@ -258,7 +258,6 @@ def evaluate_all(
         performance_df.groupby(level="model").mean().sort_values("time_per_entry")
     )
 
-    print(models_datasets_and_labels, end="\n\n")
     print(models_and_labels, end="\n\n")
     print(models_and_datasets_single, end="\n\n")
     print(models_single, end="\n\n")

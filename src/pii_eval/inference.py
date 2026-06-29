@@ -107,4 +107,4 @@ def generate_predictions(
 
 
 if __name__ == "__main__":
-    generate_predictions(override=True, max_entries_per_config=2000)
+    generate_predictions(override=True)  # , max_entries_per_config=10000)

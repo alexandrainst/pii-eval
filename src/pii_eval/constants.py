@@ -276,7 +276,20 @@ MODEL_LABEL_MAP: dict[str, dict[str, str]] = {
         "DK_SSN": ISO_LABEL_SSN,
         "CREDIT_CARD": ISO_LABEL_PCI,
     },
-    "regex": {k: k for k in NON_ML_FEASIBLE_LABELS},
+    "regex": {
+        k: k
+        for k in [
+            ISO_LABEL_IP_ADDRESS,
+            ISO_LABEL_PHONE_NUMBER,
+            ISO_LABEL_EMAIL_ADDRESS,
+            ISO_LABEL_PCI,
+            ISO_LABEL_BANK_ACCOUNT,
+            ISO_LABEL_PASSPORT,
+            ISO_LABEL_SSN,
+            ISO_LABEL_VEHICLE_ID,
+            ISO_LABEL_DRIVERS_LICENSE,
+        ]
+    },
     "vibe-alpha": {k: k for k in NON_ML_FEASIBLE_LABELS},
     "privacy-filter": {
         "account_number": ISO_LABEL_BANK_ACCOUNT,

@@ -2211,7 +2211,6 @@ Ellegaard
 Ellegaard-Hansen
 Ellehammer
 Ellensen
-Eller
 Ellerup
 Elleskov
 Elley
@@ -4147,7 +4146,6 @@ Iversdatter
 Iversen
 Ivie
 Iwersen
-J
 Jaako
 Jacaway
 Jacklin
@@ -7813,7 +7811,8 @@ Sejersen
 Sejerø
 Sejsdatter
 Sekkelund
-Selatis eller Sedolin
+Selatis
+Sedolin
 Selbekk
 Selby
 de Selby

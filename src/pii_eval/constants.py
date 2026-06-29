@@ -260,6 +260,7 @@ MODEL_LABEL_MAP: dict[str, dict[str, str]] = {
         "LOC": ISO_LABEL_PRECISE_LOCATION,
         "PER": ISO_LABEL_PERSON_NAME,
     },
+    "pn-lookup": {ISO_LABEL_PERSON_NAME: ISO_LABEL_PERSON_NAME},
     "presidio": {
         "PERSON": ISO_LABEL_PERSON_NAME,
         "LOCATION": ISO_LABEL_PRECISE_LOCATION,

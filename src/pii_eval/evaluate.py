@@ -168,6 +168,10 @@ def evaluate_all(
     results = []
     performances = []
     prediction_paths = list(base_directory.glob("*/*.pickle"))
+    print(
+        f"Calculating evaluation metrics ({[p.stem for p in prediction_paths]})",
+        end="\n\n",
+    )
     progress = Progress(*Progress.get_default_columns(), MofNCompleteColumn())
     progress.start()
     predictions_task = progress.add_task(

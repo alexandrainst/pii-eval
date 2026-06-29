@@ -71,6 +71,14 @@ def _is_valid_numeric_date(value: str) -> bool:
     return False
 
 
+def _is_plausible_year(value: str) -> bool:
+    stripped = value.strip()
+    if not re.fullmatch(r"(1[6-9]\d{2}|20\d{2})", stripped):
+        return False
+    year = int(stripped)
+    return 1600 <= year <= 2099
+
+
 def _is_valid_tax_number(value: str) -> bool:
     compact = _compact(value).upper()
     normalized = compact.removeprefix("DK").removeprefix("DS").removesuffix("DK")
@@ -743,6 +751,32 @@ VIBE_ALPHA_RULES: tuple[RegexRule, ...] = (
         priority=57,
     ),
     RegexRule(
+        label=ISO_LABEL_PHONE_NUMBER,
+        pattern=_compile(
+            r"""
+            (?P<value>
+                \b(?:
+                    \d{3,5}\.\d{5,7}
+                    |\d{6,7}\.\d{3}\.\d{4}
+                    |\d{5,7}\.\d{2}-\d{3}
+                )\b
+            )
+            """
+        ),
+        priority=60,
+    ),
+    RegexRule(
+        label=ISO_LABEL_PHONE_NUMBER,
+        pattern=_compile(
+            r"""
+            (?P<value>
+                \b\d{4}\.\d{2}(?:[-.]\d{3})?\s+\d{4}\b
+            )
+            """
+        ),
+        priority=60,
+    ),
+    RegexRule(
         label=ISO_LABEL_SSN,
         pattern=_compile(
             r"""
@@ -1013,6 +1047,27 @@ VIBE_ALPHA_RULES: tuple[RegexRule, ...] = (
             """
         ),
         priority=137,
+    ),
+    RegexRule(
+        label=ISO_LABEL_DATE,
+        pattern=_compile(
+            r"""
+            \b(?P<value>(?:19\d{2}|20\d{2}))\b
+            (?=[^\n\r]{0,36}\b(?:år|dato|født|born|fødsel|siden|i)\b)
+            """
+        ),
+        validator=_is_plausible_year,
+        priority=138,
+    ),
+    RegexRule(
+        label=ISO_LABEL_DATE,
+        pattern=_compile(
+            r"""
+            \b(?P<value>(?:1[6-9]\d{2}|20\d{2}))\b
+            """
+        ),
+        validator=_is_plausible_year,
+        priority=139,
     ),
     RegexRule(
         label=ISO_LABEL_DRIVERS_LICENSE,

@@ -161,13 +161,14 @@ def evaluate(
 
 def evaluate_all(
     base_directory: Path | str = f"{PII_EVAL_CACHE_PATH}/predictions/",
-    write_cache: bool = False,
+    pattern: str = "*/*.pickle",
+    write_cache: bool = True,
     maximum_entries: int | None = None,
 ):
     base_directory = Path(base_directory)
     results = []
     performances = []
-    prediction_paths = list(base_directory.glob("*/*.pickle"))
+    prediction_paths = list(base_directory.glob(pattern=pattern))
     print(
         f"Calculating evaluation metrics ({[p.stem for p in prediction_paths]})",
         end="\n\n",
@@ -242,10 +243,6 @@ def evaluate_all(
     # NB: grouping label_df should always include the "label" level
     # (otherwise too many true negatives are counted)
 
-    models_datasets_and_labels = add_metric_columns(
-        label_df.groupby(level=["model", "dataset", "label"]).sum()
-    ).sort_values(["model", "dataset", "f5"], ascending=[True, True, False])
-
     models_and_labels = add_metric_columns(
         label_df.groupby(level=["model", "label"]).sum()
     ).sort_values(["model", "f5"], ascending=[True, False])
@@ -267,8 +264,6 @@ def evaluate_all(
     print(models_single, end="\n\n")
     print(models_mean_performance, end="\n\n")
 
-    pass
-
 
 if __name__ == "__main__":
-    evaluate_all(write_cache=False)
+    evaluate_all()

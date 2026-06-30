@@ -526,51 +526,6 @@ wheels = [
 ]
 
 [[package]]
-name = "dfm-anonymization"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "bidict" },
-    { name = "codetiming" },
-    { name = "datasets" },
-    { name = "fastapi" },
-    { name = "gliner" },
-    { name = "nltk" },
-    { name = "opf" },
-    { name = "pip" },
-    { name = "presidio" },
-    { name = "presidio-anonymizer" },
-    { name = "presidio-evaluator" },
-    { name = "pytest" },
-    { name = "rich" },
-    { name = "spacy" },
-    { name = "spacy-curated-transformers" },
-    { name = "uvicorn", extra = ["standard"] },
-    { name = "vllm" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "bidict", specifier = ">=0.23.1" },
-    { name = "codetiming", specifier = ">=1.4.0" },
-    { name = "datasets", specifier = ">=4.8.4" },
-    { name = "fastapi", specifier = ">=0.115" },
-    { name = "gliner", specifier = ">=0.2.25" },
-    { name = "nltk", specifier = ">=3.9.3" },
-    { name = "opf", git = "https://github.com/openai/privacy-filter.git" },
-    { name = "pip", specifier = ">=26.0.1" },
-    { name = "presidio", specifier = ">=0.1.0" },
-    { name = "presidio-anonymizer", specifier = ">=2.2.360" },
-    { name = "presidio-evaluator", specifier = ">=0.2.5" },
-    { name = "pytest", specifier = ">=9.0.2" },
-    { name = "rich", specifier = ">=14.3.3" },
-    { name = "spacy", specifier = ">=3.8.11" },
-    { name = "spacy-curated-transformers", specifier = ">=0.3.1" },
-    { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
-    { name = "vllm", specifier = ">=0.16.0" },
-]
-
-[[package]]
 name = "dill"
 version = "0.4.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1837,6 +1792,53 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/2f/13/c1310103d1a8c61486bd507aafd864252927e8ea2c3133459ddabd23ec34/phonenumbers-9.0.25.tar.gz", hash = "sha256:a5f236fa384c6a77378d7836c8e486ade5f984ad2e8e6cc0dbe5124315cdc81b", size = 2298295, upload-time = "2026-02-26T10:24:47.372Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/29/03/c6e12d36b307cdf8d886f1471de2dc95d807b331465fa828ec7fb4830594/phonenumbers-9.0.25-py2.py3-none-any.whl", hash = "sha256:b1fd6c20d588f5bcd40af3899d727a9f536364211ec6eac554fcd75ca58992a3", size = 2584287, upload-time = "2026-02-26T10:24:44.58Z" },
+]
+
+[[package]]
+name = "pii-eval"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "bidict" },
+    { name = "codetiming" },
+    { name = "datasets" },
+    { name = "fastapi" },
+    { name = "gliner" },
+    { name = "nltk" },
+    { name = "opf" },
+    { name = "pip" },
+    { name = "presidio" },
+    { name = "presidio-anonymizer" },
+    { name = "presidio-evaluator" },
+    { name = "pytest" },
+    { name = "python-dotenv" },
+    { name = "rich" },
+    { name = "spacy" },
+    { name = "spacy-curated-transformers" },
+    { name = "uvicorn", extra = ["standard"] },
+    { name = "vllm" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "bidict", specifier = ">=0.23.1" },
+    { name = "codetiming", specifier = ">=1.4.0" },
+    { name = "datasets", specifier = ">=4.8.4" },
+    { name = "fastapi", specifier = ">=0.115" },
+    { name = "gliner", specifier = ">=0.2.25" },
+    { name = "nltk", specifier = ">=3.9.3" },
+    { name = "opf", git = "https://github.com/openai/privacy-filter.git" },
+    { name = "pip", specifier = ">=26.0.1" },
+    { name = "presidio", specifier = ">=0.1.0" },
+    { name = "presidio-anonymizer", specifier = ">=2.2.360" },
+    { name = "presidio-evaluator", specifier = ">=0.2.5" },
+    { name = "pytest", specifier = ">=9.0.2" },
+    { name = "python-dotenv", specifier = ">=1.0.1" },
+    { name = "rich", specifier = ">=14.3.3" },
+    { name = "spacy", specifier = ">=3.8.11" },
+    { name = "spacy-curated-transformers", specifier = ">=0.3.1" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
+    { name = "vllm", specifier = ">=0.16.0" },
 ]
 
 [[package]]

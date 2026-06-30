@@ -1,1 +1,1 @@
-"""Test suite for the dfm_anonymization package."""
+"""Test suite for the pii_eval package."""

@@ -564,7 +564,7 @@ REGEX_RULES: tuple[RegexRule, ...] = (
         priority=98,
     ),
     RegexRule(
-        label=ISO_LABEL_PRECISE_LOCATION,
+        label=ISO_LABEL_LOCATION,
         pattern=_compile(
             r"""
             (?P<value>
@@ -575,7 +575,7 @@ REGEX_RULES: tuple[RegexRule, ...] = (
         priority=100,
     ),
     RegexRule(
-        label=ISO_LABEL_PRECISE_LOCATION,
+        label=ISO_LABEL_LOCATION,
         pattern=_compile(
             r"""
             (?P<value>
@@ -586,7 +586,7 @@ REGEX_RULES: tuple[RegexRule, ...] = (
         priority=101,
     ),
     RegexRule(
-        label=ISO_LABEL_PRECISE_LOCATION,
+        label=ISO_LABEL_LOCATION,
         pattern=_compile(
             r"""
             (?P<value>
@@ -601,7 +601,7 @@ REGEX_RULES: tuple[RegexRule, ...] = (
         priority=105,
     ),
     RegexRule(
-        label=ISO_LABEL_PRECISE_LOCATION,
+        label=ISO_LABEL_LOCATION,
         pattern=_compile(
             r"""
             (?P<value>
@@ -616,7 +616,7 @@ REGEX_RULES: tuple[RegexRule, ...] = (
         priority=108,
     ),
     RegexRule(
-        label=ISO_LABEL_PRECISE_LOCATION,
+        label=ISO_LABEL_LOCATION,
         pattern=_compile(
             r"""
             (?P<value>
@@ -635,7 +635,7 @@ REGEX_RULES: tuple[RegexRule, ...] = (
         priority=110,
     ),
     RegexRule(
-        label=ISO_LABEL_PRECISE_LOCATION,
+        label=ISO_LABEL_LOCATION,
         pattern=_compile(
             r"""
             (?P<value>
@@ -647,7 +647,7 @@ REGEX_RULES: tuple[RegexRule, ...] = (
         priority=111,
     ),
     RegexRule(
-        label=ISO_LABEL_PRECISE_LOCATION,
+        label=ISO_LABEL_LOCATION,
         pattern=_compile(
             r"""
             (?P<value>
@@ -658,7 +658,7 @@ REGEX_RULES: tuple[RegexRule, ...] = (
         priority=112,
     ),
     RegexRule(
-        label=ISO_LABEL_PRECISE_LOCATION,
+        label=ISO_LABEL_LOCATION,
         pattern=_compile(
             r"""
             (?P<value>

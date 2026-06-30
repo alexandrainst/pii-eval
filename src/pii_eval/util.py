@@ -13,6 +13,23 @@ class Singleton(type):
         return cls._instances[cls]
 
 
+def find_alnum(haystack: str, needle: str, cursor: int = 0) -> int:
+    haystack = haystack[cursor:]
+    # Strip non-alnum from needle
+    n = "".join(c for c in needle if c.isalnum())
+    if not n:
+        return -1
+    # Build cleaned haystack + map: cleaned index -> original index
+    cleaned = []
+    idx_map = []
+    for i, c in enumerate(haystack):
+        if c.isalnum():
+            cleaned.append(c)
+            idx_map.append(i)
+    pos = "".join(cleaned).find(n)
+    return idx_map[pos] + cursor if pos != -1 else -1
+
+
 def autoinit(cls):
     fields = list(cls.__annotations__.items())
 

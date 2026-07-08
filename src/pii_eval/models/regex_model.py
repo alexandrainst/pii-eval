@@ -1878,27 +1878,31 @@ def _select_non_overlapping_spans(
 class Regex(PiiModel):
     def __init__(
         self,
-        name: str = "vibe-alpha",
+        name: str = "regex-model",
     ):
         super().__init__(name)
 
     def __call__(self, entry: PiiEntry) -> PiiEntry:
+        return PiiEntry(
+            uid=entry.uid,
+            text=entry.text,
+            bio=self.predict_bio(entry.text, entry.bio),
+            meta=entry.meta,
+        )
+
+    def predict_bio(self, text, bio) -> list[LabelSpan]:
+        return _align_to_entry_tokens(bio, self.predict_spans(text))
+
+    def predict_spans(self, text: str) -> list[LabelSpan]:
         active_labels = NON_ML_FEASIBLE_LABELS
 
         prioritized_spans: list[tuple[int, LabelSpan]] = []
         for rule in (*LEAN_REGEX_RULES, *VIBE_ALPHA_RULES):
             if rule.label not in active_labels:
                 continue
-            for span in _iter_rule_spans(entry.text, rule):
+            for span in _iter_rule_spans(text, rule):
                 prioritized_spans.append((rule.priority, span))
 
         predicted_spans = _select_non_overlapping_spans(prioritized_spans)
-        predicted_spans = _apply_context_relabeling(entry.text, predicted_spans)
-
-        predicted_bio = _align_to_entry_tokens(entry.bio, predicted_spans)
-        return PiiEntry(
-            uid=entry.uid,
-            text=entry.text,
-            bio=predicted_bio,
-            meta=entry.meta,
-        )
+        predicted_spans = _apply_context_relabeling(text, predicted_spans)
+        return predicted_spans

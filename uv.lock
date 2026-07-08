@@ -488,6 +488,14 @@ wheels = [
 ]
 
 [[package]]
+name = "da-core-news-sm"
+version = "3.8.0"
+source = { url = "https://github.com/explosion/spacy-models/releases/download/da_core_news_sm-3.8.0/da_core_news_sm-3.8.0-py3-none-any.whl" }
+wheels = [
+    { url = "https://github.com/explosion/spacy-models/releases/download/da_core_news_sm-3.8.0/da_core_news_sm-3.8.0-py3-none-any.whl", hash = "sha256:8caeb4dc26f56de8abcf70399b202a0b2223d38664b1a59f1cb8db0000808bc9" },
+]
+
+[[package]]
 name = "datasets"
 version = "4.8.4"
 source = { registry = "https://pypi.org/simple" }
@@ -1801,6 +1809,7 @@ source = { editable = "." }
 dependencies = [
     { name = "bidict" },
     { name = "codetiming" },
+    { name = "da-core-news-sm" },
     { name = "datasets" },
     { name = "fastapi" },
     { name = "gliner" },
@@ -1824,6 +1833,7 @@ dependencies = [
 requires-dist = [
     { name = "bidict", specifier = ">=0.23.1" },
     { name = "codetiming", specifier = ">=1.4.0" },
+    { name = "da-core-news-sm", url = "https://github.com/explosion/spacy-models/releases/download/da_core_news_sm-3.8.0/da_core_news_sm-3.8.0-py3-none-any.whl" },
     { name = "datasets", specifier = ">=4.8.4" },
     { name = "fastapi", specifier = ">=0.115" },
     { name = "gliner", specifier = ">=0.2.25" },

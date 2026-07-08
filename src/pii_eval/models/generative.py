@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 
 from pii_eval.constants import LABEL_DESCRIPTIONS_DA
 from pii_eval.data import PiiEntry, PiiModel
-from pii_eval.span import LabelSpan, WordTokenizer
+from pii_eval.span import LabelSpan, WordTokenizer, bio_to_spans
 
 load_dotenv()
 
@@ -122,6 +122,14 @@ class Generative(PiiModel):
         self.client: OpenAI | None = None
 
     def __call__(self, entry: PiiEntry) -> PiiEntry:
+        return PiiEntry(
+            uid=entry.uid,
+            text=entry.text,
+            bio=self.predict_bio(entry.text, entry.bio),
+            meta=entry.meta,
+        )
+
+    def predict_bio(self, text, bio):
         if self.client is None:
             self.start_client()
         relevant_descriptions = dict(self.label_descriptions)
@@ -143,7 +151,7 @@ class Generative(PiiModel):
         )
         user_prompt = (
             "Label PII-entities in the following text:\n"
-            f"'{entry.text}'\n"
+            f"'{text}'\n"
             "in the order they appear."
         )
         response = self.client.chat.completions.parse(
@@ -162,8 +170,12 @@ class Generative(PiiModel):
             logging.warning(f"Failed to load model output '{content}'.")
             ner = NERResponse(entities=[])
 
-        bio = ner.to_bio(entry.text, min_confidence=self.min_confidence)
-        return PiiEntry(uid=entry.uid, text=entry.text, bio=bio, meta=entry.meta)
+        bio = ner.to_bio(text, min_confidence=self.min_confidence)
+        return bio
+
+    def predict_spans(self, text):
+        bio = WordTokenizer()(text)
+        return bio_to_spans(self.predict_bio(text, bio))
 
     def start_client(self):
         self.client = OpenAI(base_url=self.base_url, api_key=self.api_key)

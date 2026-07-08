@@ -1,10 +1,12 @@
+from abc import ABCMeta
 from collections import Counter
-from collections.abc import Iterable, Set as AbcSet
+from collections.abc import Iterable
+from collections.abc import Set as AbcSet
 from dataclasses import fields, is_dataclass
 from typing import Any, Mapping
 
 
-class Singleton(type):
+class Singleton(ABCMeta):
     _instances = {}
 
     def __call__(cls, *args, **kwargs):

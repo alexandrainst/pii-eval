@@ -24,10 +24,11 @@ dependencies = [
     "spacy-curated-transformers>=0.3.1",
     "python-dotenv>=1.0.1",
     "typer>=0.24.1",
+    "da-core-news-sm",
 ]
 
 [project.scripts]
-pii-eval = "pii_eval.main:app"
+pii-eval = "pii_eval.cli:app"
 
 [build-system]
 requires = ["hatchling>=1.25.0"]
@@ -38,3 +39,6 @@ packages = ["src/pii_eval"]
 
 [tool.hatch.metadata]
 allow-direct-references = true
+
+[tool.uv.sources]
+da-core-news-sm = { url = "https://github.com/explosion/spacy-models/releases/download/da_core_news_sm-3.8.0/da_core_news_sm-3.8.0-py3-none-any.whl" }

@@ -5,7 +5,7 @@ from pathlib import Path
 
 from pii_eval.constants import ISO_LABEL_PERSON_NAME
 from pii_eval.data import PiiEntry, PiiModel
-from pii_eval.span import LabelSpan
+from pii_eval.span import LabelSpan, spans_to_bio
 
 
 # This should be a model solely targeting the PERSON NAME label
@@ -285,7 +285,21 @@ class PNLookup(PiiModel):
 
         return matches
 
-    def _find_candidate_spans(self, text: str) -> list[tuple[int, int]]:
+    def __call__(self, entry: PiiEntry) -> PiiEntry:
+        return PiiEntry(
+            uid=entry.uid,
+            text=entry.text,
+            bio=self.predict_bio(entry.text, entry.bio),
+            meta=entry.meta,
+        )
+
+    def predict_spans(self, text):
+        return self.predict_spans(text)
+
+    def predict_bio(self, text, _bio):
+        return spans_to_bio(text, self.predict_spans(text))
+
+    def predict_spans(self, text: str) -> list[tuple[int, int]]:
         tokens = self._tokenize_text(text)
         token_count = len(tokens)
         if token_count < 1:
@@ -389,7 +403,9 @@ class PNLookup(PiiModel):
                     center=index,
                 )
                 if run_end - run_start >= 2:
-                    candidates.append((tokens[run_start].start, tokens[run_end - 1].end))
+                    candidates.append(
+                        (tokens[run_start].start, tokens[run_end - 1].end)
+                    )
 
             # Keep contextual checks for expansion logic above; single-token
             # lookup matches are handled unconditionally at loop start.
@@ -407,43 +423,3 @@ class PNLookup(PiiModel):
             selected.append((start, end))
 
         return selected
-
-    def _spans_to_entry_bio(
-        self, entry: PiiEntry, spans: list[tuple[int, int]]
-    ) -> list[LabelSpan]:
-        labels = ["O"] * len(entry.bio)
-        for start, end in spans:
-            token_indexes = [
-                idx
-                for idx, token in enumerate(entry.bio)
-                if token.start >= start
-                and token.end <= end
-                and bool(WORD_PATTERN.search(token.text))
-            ]
-            if not token_indexes:
-                continue
-
-            labels[token_indexes[0]] = f"B-{ISO_LABEL_PERSON_NAME}"
-            for idx in token_indexes[1:]:
-                labels[idx] = f"I-{ISO_LABEL_PERSON_NAME}"
-
-        return [
-            LabelSpan(
-                start=token.start,
-                end=token.end,
-                text=token.text,
-                label=labels[idx],
-            )
-            for idx, token in enumerate(entry.bio)
-        ]
-
-    def __call__(self, entry: PiiEntry) -> PiiEntry:
-        spans = self._find_candidate_spans(entry.text)
-        predicted_bio = self._spans_to_entry_bio(entry, spans)
-
-        return PiiEntry(
-            uid=entry.uid,
-            text=entry.text,
-            bio=predicted_bio,
-            meta=entry.meta,
-        )

@@ -1,33 +1,34 @@
-from typing import Any, Callable
+from typing import Protocol
 
-from pii_eval.span import LabelSpan
+from pii_eval.data import PiiModel
+from pii_eval.models.regex_model import Regex
 
-type Replacer = Callable[[str, str, Any | None], str]
+
+class Replacer(Protocol):
+    def __call__(self, label: str, substring: str) -> str: ...
 
 
-def default_replacer(label: str, _substring: str, _state: Any | None = None) -> str:
+def default_replacer(label: str, _substring: str) -> str:
     return f"<{label}>"
 
 
 def redact(
-    self,
     text: str,
-    model: Callable[[str], list[LabelSpan]],
+    model: PiiModel = Regex(),
     replacer: Replacer = default_replacer,
 ) -> str:
-    entities = self.model(text)
-    if len(entities) == 0:
+    spans = model.predict_spans(text=text)
+    if not spans:
         return text
-    substrs = []
-    state = None
     last_idx = 0
-    for entity in entities:
-        substrs.append(text[last_idx : entities[0].start])
-        substrs.append(
-            entity.text
-            if entity.label == "O"
-            else replacer(entity.label, entity.text, state)
-        )
-        last_idx = entity.end
+    substrs: list[str] = []
+    for span in spans:
+        substrs.append(text[last_idx : span.start])
+        substrs.append(replacer(span.label, span.text))
+        last_idx = span.end
     substrs.append(text[last_idx:])
     return "".join(substrs)
+
+
+if __name__ == "__main__":
+    print(redact("Hello my phone number is +45 12 23 34 45."))

@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from copy import deepcopy
 from dataclasses import asdict, dataclass
 from typing import Callable
@@ -45,7 +46,12 @@ class LabelSpan(TextSpan):
         return spans
 
 
-class WordTokenizer(metaclass=Singleton):
+class Tokenizer(ABC):
+    @abstractmethod
+    def __call__(self, text: str) -> list[TextSpan]: ...
+
+
+class WordTokenizer(Tokenizer, metaclass=Singleton):
     def __init__(self):
         try:
             self.nlp = spacy.load("da_core_news_sm")
@@ -61,7 +67,7 @@ class WordTokenizer(metaclass=Singleton):
 
 
 def align_bio(
-    text: str, bio: list[LabelSpan], tokenizer=WordTokenizer()
+    text: str, bio: list[LabelSpan], tokenizer: Tokenizer = WordTokenizer()
 ) -> list[LabelSpan]:
     tokens = tokenizer(text)
     copy = bio.copy()

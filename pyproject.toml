@@ -23,10 +23,11 @@ dependencies = [
     "uvicorn[standard]>=0.30",
     "spacy-curated-transformers>=0.3.1",
     "python-dotenv>=1.0.1",
+    "typer>=0.24.1",
 ]
 
 [project.scripts]
-dfm-anonymization = "pii_eval.__main__:main"
+pii-eval = "pii_eval.main:app"
 
 [build-system]
 requires = ["hatchling>=1.25.0"]

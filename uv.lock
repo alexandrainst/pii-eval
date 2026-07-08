@@ -1815,6 +1815,7 @@ dependencies = [
     { name = "rich" },
     { name = "spacy" },
     { name = "spacy-curated-transformers" },
+    { name = "typer" },
     { name = "uvicorn", extra = ["standard"] },
     { name = "vllm" },
 ]
@@ -1837,6 +1838,7 @@ requires-dist = [
     { name = "rich", specifier = ">=14.3.3" },
     { name = "spacy", specifier = ">=3.8.11" },
     { name = "spacy-curated-transformers", specifier = ">=0.3.1" },
+    { name = "typer", specifier = ">=0.24.1" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
     { name = "vllm", specifier = ">=0.16.0" },
 ]

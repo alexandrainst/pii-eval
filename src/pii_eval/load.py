@@ -270,8 +270,10 @@ all_datasets: list[Callable[[], PiiDataset]] = [
     load_pii_synth_alpha,
 ]
 
-if __name__ == "__main__":
-    for load_fct in all_datasets:
-        load_fct()
 
-    pass
+def load_all_datasets() -> list[PiiDataset]:
+    return [load_fct() for load_fct in all_datasets]
+
+
+if __name__ == "__main__":
+    sets = load_all_datasets

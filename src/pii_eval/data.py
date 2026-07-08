@@ -11,7 +11,7 @@ import datasets
 from datasets import concatenate_datasets
 from rich.progress import track
 
-from pii_eval.span import LabelSpan
+from pii_eval.span import LabelSpan, WordTokenizer
 from pii_eval.util import count_labels_from_entries, to_dict_recursive
 
 
@@ -28,6 +28,17 @@ class PiiEntry:
         filtered_d = {k: v for k, v in d.items() if k in valid_keys}
         filtered_d["bio"] = [LabelSpan(**x) for x in filtered_d["bio"]]
         return PiiEntry(**filtered_d)
+
+    @staticmethod
+    def empty_from_text(
+        uid: int | str, text: str, tokenizer=WordTokenizer()
+    ) -> "PiiEntry":
+        return PiiEntry(
+            uid=uid,
+            text=text,
+            bio=[LabelSpan.from_text_and_tokens(text, tokenizer(text))],
+            meta={},
+        )
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -180,7 +191,5 @@ class PiiModel(ABC):
         self.name = name
 
     @abstractmethod
-    def __call__(
-        self, entry: PiiEntry, label_map: dict[str, str] | None = None
-    ) -> PiiEntry:
+    def __call__(self, entry: PiiEntry) -> PiiEntry:
         pass

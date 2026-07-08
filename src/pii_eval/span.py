@@ -25,8 +25,13 @@ class LabelSpan(TextSpan):
 
     @staticmethod
     def from_text_and_tokens(
-        text: str, tokens: list[str], labels: list[str], include_o_labels: bool = True
+        text: str,
+        tokens: list[str],
+        labels: list[str] | None = None,
+        include_o_labels: bool = True,
     ) -> list["LabelSpan"]:
+        if labels is None:
+            labels = ["O" for _ in tokens]
         spans = []
         last_end = 0
         for token, label in zip(tokens, labels):

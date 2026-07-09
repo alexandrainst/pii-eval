@@ -58,6 +58,7 @@ target/
 
 # DotEnv configuration
 .env
+.env.pii_eval
 
 # Database
 *.db

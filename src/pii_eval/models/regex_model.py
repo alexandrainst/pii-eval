@@ -1243,7 +1243,7 @@ def _build_lean_regex_rules() -> tuple[RegexRule, ...]:
     selected: list[RegexRule] = []
 
     for rule in REGEX_RULES:
-        if rule.label not in NON_ML_FEASIBLE_LABELS:
+        if rule.label not in REGEX_FEASIBLE_LABELS:
             continue
         if (rule.label, rule.priority) in _EXCLUDED_BASE_RULES:
             continue
@@ -1876,11 +1876,14 @@ def _select_non_overlapping_spans(
 
 
 class Regex(PiiModel):
-    def __init__(
-        self,
-        name: str = "regex-model",
-    ):
+    @property
+    @staticmethod
+    def possible_labels():
+        return REGEX_FEASIBLE_LABELS
+
+    def __init__(self, name: str = "regex-model", label_black_list: set[str] = {}):
         super().__init__(name)
+        self.active_labels = REGEX_FEASIBLE_LABELS.difference(label_black_list)
 
     def __call__(self, entry: PiiEntry) -> PiiEntry:
         return PiiEntry(
@@ -1894,11 +1897,9 @@ class Regex(PiiModel):
         return _align_to_entry_tokens(bio, self.predict_spans(text))
 
     def predict_spans(self, text: str) -> list[LabelSpan]:
-        active_labels = NON_ML_FEASIBLE_LABELS
-
         prioritized_spans: list[tuple[int, LabelSpan]] = []
         for rule in (*LEAN_REGEX_RULES, *VIBE_ALPHA_RULES):
-            if rule.label not in active_labels:
+            if rule.label not in self.active_labels:
                 continue
             for span in _iter_rule_spans(text, rule):
                 prioritized_spans.append((rule.priority, span))

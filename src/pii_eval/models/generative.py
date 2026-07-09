@@ -10,7 +10,7 @@ from pii_eval.constants import LABEL_DESCRIPTIONS_DA
 from pii_eval.data import PiiEntry, PiiModel
 from pii_eval.span import LabelSpan, WordTokenizer, bio_to_spans
 
-load_dotenv()
+load_dotenv(dotenv_path=".env.pii_eval")
 
 
 class NEREntityFormat(BaseModel):
@@ -97,10 +97,10 @@ class NERResponse(BaseModel):
 class Generative(PiiModel):
     def __init__(
         self,
-        model_tag: str = "qwen3.5-397b",
-        base_url: str = "https://inference.alexandra.dk/v1/",
-        api_key: str = os.environ.get("ALEX_API_KEY", None),
-        label_descriptions: dict[str, str] = LABEL_DESCRIPTIONS_DA,
+        model_tag: str = os.environ.get("GEN_MODEL", None),
+        base_url: str = os.environ.get("GEN_BASE_URL", None),
+        api_key: str = os.environ.get("GEN_API_KEY", None),
+        label_descriptions: dict[str, str] = dict(LABEL_DESCRIPTIONS_DA),
         name: str | None = None,
         min_confidence: float = 0.0,
     ):
@@ -132,13 +132,12 @@ class Generative(PiiModel):
     def predict_bio(self, text, bio):
         if self.client is None:
             self.start_client()
-        relevant_descriptions = dict(self.label_descriptions)
         system_prompt = self.preamble + (
             "List of labels to use:\n"
-            f"{list(relevant_descriptions.keys())}"
+            f"{list(self.label_descriptions.keys())}"
             "pick exactly one label for each PII substring/entity. "
             "Below are descriptions of each label in the relevant language:\n"
-            f"{json.dumps(relevant_descriptions)}\n"
+            f"{json.dumps(self.label_descriptions)}\n"
             "Use the descriptions only to understand the labels - "
             "for the actual output labelling use on the (upper-case) labels. "
             "Note that some texts may not contain any PII. "

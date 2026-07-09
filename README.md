@@ -78,7 +78,7 @@ pii-eval redact "Navnet er Anders Sand. Og 21324354 er telefonnummeret."
 > Navnet er <PERSON_NAME>. Og <PHONE_NUMBER> er telefonnummeret.
 
 # Or get the entities in JSON format:
-pii-eval redact "Navnet er Anders Sand. Og 21324354 er telefonnummeret."
+pii-eval identify "Navnet er Anders Sand. Og 21324354 er telefonnummeret."
 [
   {
     "start": 10,

@@ -6,26 +6,16 @@ readme = "README.md"
 requires-python = "==3.12.*" # ,<3.14" # vLLM supports 3.12-3.13; GLiNER is currently more reliable on 3.12
 dependencies = [
     "bidict>=0.23.1",
-    "nltk>=3.9.3",
-    "vllm>=0.16.0",
-    "presidio>=0.1.0",
-    "presidio-anonymizer>=2.2.360",
-    "presidio-evaluator>=0.2.5",
-    "gliner>=0.2.25",
     "spacy>=3.8.11",
     "codetiming>=1.4.0",
     "pytest>=9.0.2",
     "datasets>=4.8.4",
-    "pip>=26.0.1",
     "rich>=14.3.3",
-    "opf @ git+https://github.com/openai/privacy-filter.git",
-    "fastapi>=0.115",
-    "uvicorn[standard]>=0.30",
-    "spacy-curated-transformers>=0.3.1",
     "python-dotenv>=1.0.1",
     "pyyaml>=6.0.2",
     "typer>=0.24.1",
     "da-core-news-sm",
+    "openai>=2.44.0",
 ]
 
 [project.scripts]

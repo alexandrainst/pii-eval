@@ -7,7 +7,7 @@ from rich.progress import MofNCompleteColumn, Progress
 from pii_eval.config import load_config
 from pii_eval.constants import PII_EVAL_CACHE_PATH
 from pii_eval.data import PiiDataset, PiiModel
-from pii_eval.load import all_datasets
+from pii_eval.load import load_dane, load_dansk_ner, load_kiji_da, load_pii_synth_alpha
 from pii_eval.models.generative import Generative
 from pii_eval.models.pn_lookup import PNLookup
 from pii_eval.models.regex_model import Regex
@@ -70,7 +70,7 @@ def generate_predictions(
                 ),
             )
 
-    datasets = all_datasets
+    datasets = [load_dansk_ner, load_dane, load_kiji_da, load_pii_synth_alpha]
 
     print(f"generating predictions\nmodels: {', '.join([m.name for m in models])}\n")
 

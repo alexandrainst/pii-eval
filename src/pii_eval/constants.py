@@ -28,6 +28,9 @@ PII_EVAL_CACHE_PATH = ".pii_eval_cache"
 #
 # * = detectable by regex (*) = potentially
 
+# Philosofisk overbevisning
+# Fagforening
+
 ISO_LABEL_BANK_ACCOUNT = "BANK_ACCOUNT"
 ISO_LABEL_DATE = "DATE"
 ISO_LABEL_DRIVERS_LICENSE = "DRIVERS_LICENSE"

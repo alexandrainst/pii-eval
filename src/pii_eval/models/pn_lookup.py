@@ -5,8 +5,7 @@ from pathlib import Path
 
 from pii_eval.constants import ISO_LABEL_PERSON_NAME
 from pii_eval.data import PiiEntry, PiiModel
-from pii_eval.span import LabelSpan, spans_to_bio
-
+from pii_eval.span import LabelSpan, Span, spans_to_bio
 
 # This should be a model solely targeting the PERSON NAME label
 # and solely based on looking up in lists found in
@@ -297,9 +296,9 @@ class PNLookup(PiiModel):
         return self.predict_spans(text)
 
     def predict_bio(self, text, _bio):
-        return spans_to_bio(text, self.predict_spans(text))
+        return spans_to_bio(text, spans=self.predict_spans(text))
 
-    def predict_spans(self, text: str) -> list[tuple[int, int]]:
+    def predict_spans(self, text: str):
         tokens = self._tokenize_text(text)
         token_count = len(tokens)
         if token_count < 1:
@@ -411,15 +410,21 @@ class PNLookup(PiiModel):
             # lookup matches are handled unconditionally at loop start.
 
         # Prefer longer spans when multiple matches start at the same position.
-        selected: list[tuple[int, int]] = []
+        selected: list[LabelSpan] = []
         for start, end in sorted(
             set(candidates), key=lambda span: (span[0], -(span[1] - span[0]))
         ):
             if any(
-                start < existing_end and existing_start < end
-                for existing_start, existing_end in selected
+                start < existing.end and existing.start < end for existing in selected
             ):
                 continue
-            selected.append((start, end))
+            selected.append(
+                LabelSpan(
+                    start=start,
+                    end=end,
+                    text=text[start:end],
+                    label=ISO_LABEL_PERSON_NAME,
+                )
+            )
 
         return selected

@@ -28,9 +28,13 @@ if gen_config.active:
 
 
 @app.command()
-def run_evaluation():
-    generate_predictions()
-    evaluate_all()
+def run_evaluation(
+    max_entries_per_config: int | None = typer.Option(
+        None, "-m", "--max-entries-per-config"
+    ),
+):
+    generate_predictions(max_entries_per_config=max_entries_per_config)
+    evaluate_all(maximum_entries=max_entries_per_config)
 
 
 @app.command()

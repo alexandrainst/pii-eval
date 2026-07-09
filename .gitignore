@@ -56,9 +56,9 @@ coverage.xml
 # PyBuilder
 target/
 
-# DotEnv configuration
+# Environment configuration
 .env
-.env.pii_eval
+pii_eval_config.yaml
 
 # Database
 *.db

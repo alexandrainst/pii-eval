@@ -39,7 +39,21 @@ class Ensemble(PiiModel):
 
     @staticmethod
     def default() -> "Ensemble":
+        from pii_eval.config import load_config
         from pii_eval.models.generative import Generative
         from pii_eval.models.regex_model import Regex
 
-        return Ensemble(name="ens_regex_gen", models=[Regex(), Generative()])
+        config = load_config()
+        gen_config = config.generative
+        models = [Regex()]
+        if gen_config.active and gen_config.is_ready():
+            models.append(
+                Generative(
+                    model_tag=gen_config.model,
+                    base_url=gen_config.base_url,
+                    api_key=gen_config.api_key,
+                    min_confidence=gen_config.min_confidence,
+                )
+            )
+
+        return Ensemble(name="ens_regex_gen", models=models)

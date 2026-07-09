@@ -23,6 +23,7 @@ dependencies = [
     "uvicorn[standard]>=0.30",
     "spacy-curated-transformers>=0.3.1",
     "python-dotenv>=1.0.1",
+    "pyyaml>=6.0.2",
     "typer>=0.24.1",
     "da-core-news-sm",
 ]

@@ -1,16 +1,12 @@
 import json
 import logging
-import os
 
-from dotenv import load_dotenv
 from openai import OpenAI
 from pydantic import BaseModel, Field
 
 from pii_eval.constants import LABEL_DESCRIPTIONS_DA
 from pii_eval.data import PiiEntry, PiiModel
 from pii_eval.span import LabelSpan, WordTokenizer, bio_to_spans
-
-load_dotenv(dotenv_path=".env.pii_eval")
 
 
 class NEREntityFormat(BaseModel):
@@ -97,9 +93,9 @@ class NERResponse(BaseModel):
 class Generative(PiiModel):
     def __init__(
         self,
-        model_tag: str = os.environ.get("GEN_MODEL", None),
-        base_url: str = os.environ.get("GEN_BASE_URL", None),
-        api_key: str = os.environ.get("GEN_API_KEY", None),
+        model_tag: str,
+        base_url: str,
+        api_key: str | None = None,
         label_descriptions: dict[str, str] = dict(LABEL_DESCRIPTIONS_DA),
         name: str | None = None,
         min_confidence: float = 0.0,

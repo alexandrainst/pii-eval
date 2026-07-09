@@ -2,9 +2,9 @@ from datetime import datetime
 from pathlib import Path
 
 from codetiming import Timer
-from dotenv import load_dotenv
 from rich.progress import MofNCompleteColumn, Progress
 
+from pii_eval.config import load_config
 from pii_eval.constants import PII_EVAL_CACHE_PATH
 from pii_eval.data import PiiDataset, PiiModel
 from pii_eval.load import all_datasets
@@ -51,11 +51,24 @@ def inference(
 
 
 def generate_predictions(
-    models: list[PiiModel] = [Generative(), Regex(), PNLookup()],
+    models: list[PiiModel] | None = None,
     override: bool = False,
     max_entries_per_config: int | None = None,
 ):
-    load_dotenv()
+    if models is None:
+        config = load_config()
+        models = [Regex(), PNLookup()]
+        gen_config = config.generative
+        if gen_config.active and gen_config.is_ready():
+            models.insert(
+                0,
+                Generative(
+                    model_tag=gen_config.model,
+                    base_url=gen_config.base_url,
+                    api_key=gen_config.api_key,
+                    min_confidence=gen_config.min_confidence,
+                ),
+            )
 
     datasets = all_datasets
 

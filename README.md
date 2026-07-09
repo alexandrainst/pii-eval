@@ -10,9 +10,10 @@
 />
 </a>
 
-# Dfm Anonymization
+# pii-eval
 
-Anonymization in the context of [DFM](https://www.foundationmodels.dk/index.html)
+Evaluation of PII (personal identifiable information) detection and redaction.
+Currently primarily focused on the Danish language.
 
 ______________________________________________________________________
 [![Code Coverage](https://img.shields.io/badge/Coverage-0%25-red.svg)](https://github.com/alexandrainst/dfm_anonymization/tree/main/tests)
@@ -22,57 +23,81 @@ ______________________________________________________________________
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](https://github.com/alexandrainst/dfm_anonymization/blob/main/CODE_OF_CONDUCT.md)
 
 Developer:
-
 - Jacob Harder (<jacob.harder@alexandra.dk>)
 
 ## Setup
 
-### Installation
-
 1. Run `make install`, which sets up a virtual environment and all Python dependencies
    therein.
 2. Run `source .venv/bin/activate` to activate the virtual environment.
+3. If you want to use generative models via an API, you need to
+   `cp pii_eval_config.example.yaml pii_eval_config.yaml` and fill out the
+   necessary details in this file (api keys etc. and a URL to an OpenAI-compatible
+   API).
 
-If you need to run GLiNER-based inference, prefer Python 3.12 for the virtual
-environment. In this repo, Python 3.13 can fail during `gliner` import inside
-the `transformers`/`torch` stack.
+## Usage
 
-### Example usage
+### Python package
 
-```bash
-# Anonymize inline text
-dfm-anonymization anonymize \
-  "Navnet er Anders Sand. Og 21324354 er telefonnummeret." \
-  --whitelist "Anders Sand"
+```python
+from pii_eval.models.ensemble import Ensemble
+from pii_eval.redact import redact
 
-# Anonymize piped input
-echo "Eksempel telefonnummer: 12 23 34 45" | dfm-anonymization anonymize
+sample_text = "Navnet er Anders Sand. Og 21324354 er telefonnummeret."
 
-# Anonymize a file
-dfm-anonymization anonymize ./text_file.txt > ./text_file_anonymized.txt
+print(redact(sample_text))
+# Output: Navnet er <PERSON_NAME>. Og <PHONE_NUMBER> er telefonnummeret.
 
-# Generate evaluations
-dfm-anonymization make-evaluations
+ensemble_model = Ensemble.default()
 
-# Start the API
-dfm-anonymization start-api
-# Or via
-uvicorn dfm_anonymization.service:app --host 0.0.0.0 --port 8000
-# then anonymize text via HTTP
-curl -X POST "http://localhost:8000/anonymize" \
-  -H "Content-Type: application/json" \
-  -d '{"text":"Navnet er Anders Sand. Og 21324354 er telefonnummeret.","whitelist":["Anders Sand"]}'
+spans = ensemble_model.predict_spans(sample_text)
 
-# Get help
-dfm-anonymization --help
-dfm-anonymization anonymize --help
+print(spans)
+# Output:
+# [
+#   {
+#     "start": 10,
+#     "end": 21,
+#     "text": "Anders Sand",
+#     "label": "PERSON_NAME"
+#   },
+#   {
+#     "start": 26,
+#     "end": 34,
+#     "text": "21324354",
+#     "label": "PHONE_NUMBER"
+#   }
+# ]
 ```
 
-### Performance
+### CLI
 
-Current (limited) test results:
-| Hardware | Speed |
-| --- | --- |
-| CPU (x86_64, Intel(R) Core(TM) Ultra 7 258V) | ~1.5 sentences / second |
-| GPU (RTX 4090) | ~170 sentences / second |
-(1 sentence ≃ 250 tokens)
+```bash
+# Redact text
+pii-eval redact "Navnet er Anders Sand. Og 21324354 er telefonnummeret."
+> Navnet er <PERSON_NAME>. Og <PHONE_NUMBER> er telefonnummeret.
+
+# Or get the entities in JSON format:
+pii-eval redact "Navnet er Anders Sand. Og 21324354 er telefonnummeret."
+[
+  {
+    "start": 10,
+    "end": 21,
+    "text": "Anders Sand",
+    "label": "PERSON_NAME"
+  },
+  {
+    "start": 26,
+    "end": 34,
+    "text": "21324354",
+    "label": "PHONE_NUMBER"
+  }
+]
+
+# Run evaluations
+pii-eval run-evaluation
+
+# CLI docs
+pii-eval --help
+pii-eval redact --help
+```

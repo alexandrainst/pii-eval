@@ -5,17 +5,8 @@
 # Exports all variables defined in the makefile available to scripts
 .EXPORT_ALL_VARIABLES:
 
-# Create .env file if it does not already exist
-ifeq (,$(wildcard .env))
-  $(shell touch .env)
-endif
-
 # Includes environment variables from the .env file
 include .env
-
-# Set gRPC environment variables, which prevents some errors with the `grpcio` package
-export GRPC_PYTHON_BUILD_SYSTEM_OPENSSL=1
-export GRPC_PYTHON_BUILD_SYSTEM_ZLIB=1
 
 # Set the PATH env var used by cargo and uv
 export PATH := ${HOME}/.local/bin:${HOME}/.cargo/bin:$(PATH)
@@ -27,14 +18,10 @@ help:
 	@grep -E '^[0-9a-zA-Z_-]+:.*?## .*$$' makefile | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 install: ## Install dependencies
-	@echo "Installing the 'dfm_anonymization' project..."
+	@echo "Installing the 'pii-eval' project..."
 	@$(MAKE) --quiet install-uv
-	@$(MAKE) --quiet install-dependencies
-	@$(MAKE) --quiet setup-environment-variables
-	@$(MAKE) --quiet setup-git
-	@$(MAKE) --quiet install-pre-commit
-	@$(MAKE) --quiet add-repo-to-git
-	@echo "Installed the 'dfm_anonymization' project! You can now activate your virtual environment with 'source .venv/bin/activate'."
+	@$(MAKE) --quiet install-venv
+	@echo "Installed the 'pii-eval' project! You can now activate your virtual environment with 'source .venv/bin/activate'."
 	@echo "Note that this is a 'uv' project. Use 'uv add <package>' to install new dependencies and 'uv remove <package>' to remove them."
 
 install-uv:
@@ -50,53 +37,5 @@ install-uv:
 		uv self update || true; \
 	fi
 
-install-pre-commit:
-	@uv run pre-commit install
-	@uv run pre-commit autoupdate
-
-install-dependencies:
-	@uv python install 3.12.3
-	@uv sync --all-extras --all-groups --python 3.12.3
-
-setup-environment-variables:
-	@uv run python src/scripts/fix_dot_env_file.py
-
-setup-environment-variables-non-interactive:
-	@uv run python src/scripts/fix_dot_env_file.py --non-interactive
-
-setup-git:
-	@git config --global init.defaultBranch main
-	@git init
-	@git config --local user.name "${GIT_NAME}"
-	@git config --local user.email "${GIT_EMAIL}"
-
-add-repo-to-git:
-	@if [ ! "$(shell git status --short)" = "" ] && [ "$(shell git --no-pager log --all | sed 's/`//g')" = "" ]; then \
-		git add .; \
-		git commit --quiet -m "Initial commit"; \
-	fi
-	@if [ "$(shell git remote)" = "" ]; then \
-		git remote add origin git@github.com:alexandrainst/dfm_anonymization.git; \
-	fi
-
-docs:  ## View documentation locally
-	@echo "Viewing documentation - run 'make publish-docs' to publish the documentation website."
-	@uv run mkdocs serve
-
-publish-docs:  ## Publish documentation to GitHub Pages
-	@uv run mkdocs gh-deploy
-	@echo "Updated documentation website: https://alexandrainst.github.io/dfm_anonymization"
-
-test:  ## Run tests
-	@uv run pytest
-## && uv run readme-cov
-
-docker:  ## Build Docker image and run container
-	@docker build -t dfm_anonymization .
-	@docker run -it --rm dfm_anonymization
-
-tree:  ## Print directory tree
-	@tree -a --gitignore -I .git .
-
-check:  ## Lint, format, and type-check the code
-	@uv run pre-commit run --all-files
+install-venv:
+	@uv sync

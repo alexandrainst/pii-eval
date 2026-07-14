@@ -76,7 +76,9 @@ class PiiDataset:
         return {x.uid: i for i, x in enumerate(self)}
 
     def get(self, index: int, default=None) -> PiiEntry:
-        return self.entries[index] if index and index < len(self) else default
+        return (
+            self.entries[index] if index is not None and index < len(self) else default
+        )
 
     def get_uid(self, uid: int | str, default=None) -> PiiEntry:
         return self.get(self.uid_to_idx.get(uid), default=default)
@@ -177,7 +179,7 @@ class PiiDataset:
         for row in track(ds, transient=True, description=f"Loading {name} ..."):
             entry = from_row(row)
             if entry:
-                entries.append(from_row(row))
+                entries.append(entry)
 
         return PiiDataset(
             name=name,

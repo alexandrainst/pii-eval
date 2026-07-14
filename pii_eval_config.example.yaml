@@ -1,6 +1,26 @@
+classical:
+  labels: # custom labels cannot be added - delete labels to exclude
+    - BANK_ACCOUNT
+    - DATE
+    - DRIVERS_LICENSE
+    - EMAIL_ADDRESS
+    - ID_CARD_NUMBER
+    - IP_ADDRESS
+    - PASSPORT
+    - PCI
+    - PHONE_NUMBER
+    - SSN
+    - TAX_NUMBER
+    - URL
+    - VEHICLE_ID
 generative:
-  active: true
-  model: qwen/qwen3.5-397b
+  active: false
+  model: qwen3.5-397b
   base_url: https://api.example.com/v1/
-  api_key: ""
+  api_key:
   min_confidence: 0.0
+  label_descriptions: # custom labels can be added
+    PRECISE_LOCATION: location information - e.g. streetname with house number or GPS coordinates
+    SALARY: money earned (monthly, yearly, etc.) by an employee or salary level information
+    USERNAME: username (e.g. for online accounts)
+    PERSON_NAME: any name associated with a person (given name, surname, etc.)

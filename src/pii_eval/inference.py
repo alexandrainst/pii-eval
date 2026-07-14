@@ -77,47 +77,51 @@ def generate_predictions(
     progress = Progress(*Progress.get_default_columns(), MofNCompleteColumn())
     progress.start()
     model_task = progress.add_task("", total=len(models), transient=True)
-    while models:
-        model = models.pop(0)
-        progress.update(
-            model_task,
-            advance=1,
-            description=f"Model: {model.name[:10]:<10}",
-        )
-        dataset_task = progress.add_task("", total=len(datasets), transient=True)
-        for load_fct in datasets:
-            dataset = load_fct()
-            dataset_name = dataset.name
+    try:
+        while models:
+            model = models.pop(0)
             progress.update(
-                dataset_task,
+                model_task,
                 advance=1,
-                description=f"Dataset: {dataset_name[:10]:<10}",
+                description=f"Model: {model.name[:10]:<10}",
             )
-            output_file_path = Path(
-                f"{PII_EVAL_CACHE_PATH}/predictions/{model.name}/{dataset_name}.pickle"
-            )
-            if not override and output_file_path.exists():
-                print(f"skipped {dataset_name} (was cached)")
-            else:
-                timer = Timer(logger=None)
-                timer.start()
-                predictions = inference(
-                    model=model,
-                    dataset=dataset,
-                    samples=max_entries_per_config,
-                    progress=progress,
+            dataset_task = progress.add_task("", total=len(datasets), transient=True)
+            for load_fct in datasets:
+                dataset = load_fct()
+                dataset_name = dataset.name
+                progress.update(
+                    dataset_task,
+                    advance=1,
+                    description=f"Dataset: {dataset_name[:10]:<10}",
                 )
-                timer.stop()
-                elapsed_time = timer.last
-                predictions.meta.update(
-                    {
-                        "computation_time_total": elapsed_time,
-                        "computation_time_per_entry": elapsed_time / len(predictions),
-                    }
+                output_file_path = Path(
+                    f"{PII_EVAL_CACHE_PATH}/predictions/{model.name}/{dataset_name}.pickle"
                 )
-                predictions.dump_pickle(output_file_path)
-        progress.remove_task(dataset_task)
-    progress.remove_task(model_task)
+                if not override and output_file_path.exists():
+                    print(f"skipped {dataset_name} (was cached)")
+                else:
+                    timer = Timer(logger=None)
+                    timer.start()
+                    predictions = inference(
+                        model=model,
+                        dataset=dataset,
+                        samples=max_entries_per_config,
+                        progress=progress,
+                    )
+                    timer.stop()
+                    elapsed_time = timer.last
+                    predictions.meta.update(
+                        {
+                            "computation_time_total": elapsed_time,
+                            "computation_time_per_entry": elapsed_time
+                            / len(predictions),
+                        }
+                    )
+                    predictions.dump_pickle(output_file_path)
+            progress.remove_task(dataset_task)
+        progress.remove_task(model_task)
+    finally:
+        progress.stop()
 
 
 if __name__ == "__main__":

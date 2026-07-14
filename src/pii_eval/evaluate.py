@@ -12,6 +12,7 @@ from pii_eval.constants import (
     get_model_label_map,
 )
 from pii_eval.data import PiiDataset
+from pii_eval.inference import generate_predictions
 
 CONFUSION_COLUMNS = ["tp", "fp", "fn", "tn"]
 METRIC_COLUMNS = ["precision", "f1", "f5", "recall"]
@@ -266,4 +267,5 @@ def evaluate_all(
 
 
 if __name__ == "__main__":
+    generate_predictions()
     evaluate_all()

@@ -3,7 +3,7 @@ from dataclasses import asdict
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-from pii_eval.config import GenerativeConfig, PiiEvalConfig
+from pii_eval.config import PiiEvalConfig
 from pii_eval.data import PiiModel
 from pii_eval.models.ensemble import Ensemble
 from pii_eval.redact import redact as redact_
@@ -14,34 +14,14 @@ from pii_eval.redact import redact as redact_
 default_model: PiiModel = Ensemble.default()
 
 
-class GenerativeConfigPayload(BaseModel):
-    model: str | None = None
-    base_url: str | None = None
-    api_key: str | None = None
-    min_confidence: float = 0.0
-
-
-class PiiEvalConfigPayload(BaseModel):
-    generative: GenerativeConfigPayload | None = None
-
-    def to_config(self) -> PiiEvalConfig:
-        return PiiEvalConfig(
-            generative=(
-                GenerativeConfig(**self.generative.model_dump())
-                if self.generative is not None
-                else None
-            )
-        )
-
-
 class RedactRequest(BaseModel):
     text: str
-    config: PiiEvalConfigPayload | None = None
+    config: PiiEvalConfig | None = None
 
 
 class IdentifyRequest(BaseModel):
     text: str
-    config: PiiEvalConfigPayload | None = None
+    config: PiiEvalConfig | None = None
 
 
 class RedactResponse(BaseModel):
@@ -55,10 +35,10 @@ class SpanResponse(BaseModel):
     label: str
 
 
-def _resolve_model(config: PiiEvalConfigPayload | None) -> PiiModel:
+def _resolve_model(config: PiiEvalConfig | None) -> PiiModel:
     if config is None:
         return default_model
-    return Ensemble.from_config(config.to_config())
+    return Ensemble.from_config(config)
 
 
 app = FastAPI(

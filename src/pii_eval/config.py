@@ -1,22 +1,18 @@
-from dataclasses import dataclass
 import os
 from pathlib import Path
 
 from pydantic import BaseModel, Field
-import requests
 import yaml
 
 
 CONFIG_FILE_NAME = "pii_eval.yaml"
 
 
-@dataclass
-class ClassicalConfig:
+class ClassicalConfig(BaseModel):
     labels: list[str] | None = None
 
 
-@dataclass
-class GenerativeConfig:
+class GenerativeConfig(BaseModel):
     model: str | None = None
     base_url: str | None = None
     api_key: str | None = None
@@ -79,26 +75,8 @@ def load_config(path: str | Path | None = None) -> PiiEvalConfig:
     with config_path.open("r", encoding="utf8") as handle:
         payload = yaml.safe_load(handle) or {}
 
-    raw_classical = payload.get("classical") or None
-    classical = (
-        ClassicalConfig()
-        if raw_classical is None
-        else ClassicalConfig(
-            labels=raw_classical.get("labels"),
-        )
-    )
+    # Drop empty blocks (e.g. a bare "classical:" key) so they fall back to
+    # field defaults instead of failing validation as an explicit null.
+    payload = {key: value for key, value in payload.items() if value is not None}
 
-    raw_generative = payload.get("generative") or None
-    generative = (
-        None
-        if raw_generative is None
-        else GenerativeConfig(
-            model=raw_generative.get("model"),
-            base_url=raw_generative.get("base_url"),
-            api_key=raw_generative.get("api_key"),
-            min_confidence=float(raw_generative.get("min_confidence", 0.0)),
-            label_descriptions=raw_generative.get("label_descriptions"),
-        )
-    )
-
-    return PiiEvalConfig(classical=classical, generative=generative)
+    return PiiEvalConfig.model_validate(payload)

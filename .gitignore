@@ -58,7 +58,7 @@ target/
 
 # Environment configuration
 .env
-pii_eval_config.yaml
+pii_eval.yaml
 
 # Database
 *.db

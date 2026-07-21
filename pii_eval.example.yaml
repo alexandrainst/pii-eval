@@ -14,8 +14,7 @@ classical:
     - URL
     - VEHICLE_ID
 generative:
-  active: false
-  model: qwen3.5-397b
+  model: qwen/qwen3.5-397b
   base_url: https://api.example.com/v1/
   api_key:
   min_confidence: 0.0

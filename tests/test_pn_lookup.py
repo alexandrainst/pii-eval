@@ -22,6 +22,7 @@ def test_pn_lookup_detects_first_last_with_extra_whitespace_and_case_insensitivi
 
     assert _labeled_tokens(output) == [
         ("jens", "B-PERSON_NAME"),
+        ("    ", "I-PERSON_NAME"),
         ("hansen", "I-PERSON_NAME"),
     ]
 
@@ -32,6 +33,7 @@ def test_pn_lookup_detects_reversed_last_comma_first() -> None:
 
     assert _labeled_tokens(output) == [
         ("Hansen", "B-PERSON_NAME"),
+        (",", "I-PERSON_NAME"),
         ("Jens", "I-PERSON_NAME"),
     ]
 

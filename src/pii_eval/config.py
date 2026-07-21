@@ -2,6 +2,7 @@ from dataclasses import dataclass
 import os
 from pathlib import Path
 
+from pydantic import BaseModel, Field
 import requests
 import yaml
 
@@ -45,9 +46,8 @@ class GenerativeConfig:
             return False
 
 
-@dataclass
-class PiiEvalConfig:
-    classical: ClassicalConfig = ClassicalConfig()
+class PiiEvalConfig(BaseModel):
+    classical: ClassicalConfig = Field(default_factory=ClassicalConfig)
     generative: GenerativeConfig | None = None
 
 

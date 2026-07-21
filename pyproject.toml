@@ -16,6 +16,7 @@ dependencies = [
     "typer>=0.24.1",
     "da-core-news-sm",
     "openai>=2.44.0",
+    "fastapi>=0.139.2",
 ]
 
 [project.scripts]

@@ -130,6 +130,10 @@ LABEL_DESCRIPTIONS_DA = bidict(
     }
 )
 
+NON_REGEX_LABEL_DESCRIPTIONS_DA = {
+    k: v for k, v in LABEL_DESCRIPTIONS_DA.items() if not k in REGEX_FEASIBLE_LABELS
+}
+
 GLINER_MODELS = ["nvidia/gliner-pii", "urchade/gliner_multi-v2.1"]
 
 NER_MODELS = ["nbailab-base-ner-scandi"]

@@ -1,6 +1,7 @@
 # ... to be implemented
 
 from pii_eval.config import PiiEvalConfig
+from pii_eval.constants import REGEX_FEASIBLE_LABELS
 from pii_eval.data import PiiEntry, PiiModel
 from pii_eval.span import LabelSpan, WordTokenizer, bio_to_spans
 
@@ -26,7 +27,8 @@ class Ensemble(PiiModel):
         for model in self.models:
             bio_add = model.predict_bio(text=text, bio=bio)
             for i, b in enumerate(bio_add):
-                bio_acc[i] = b
+                if b.label != "O":
+                    bio_acc[i].label = b.label
         return bio_acc
 
     def predict_spans(self, text):
@@ -50,7 +52,8 @@ class Ensemble(PiiModel):
         from pii_eval.models.regex_model import Regex
 
         gen_config = config.generative
-        models = [Regex()]
+        label_black_list = REGEX_FEASIBLE_LABELS.difference(config.classical.labels)
+        models = [Regex(label_black_list=label_black_list)]
         if gen_config is not None and gen_config.is_ready():
             models.append(
                 Generative(
@@ -58,6 +61,7 @@ class Ensemble(PiiModel):
                     base_url=gen_config.base_url,
                     api_key=gen_config.api_key,
                     min_confidence=gen_config.min_confidence,
+                    label_descriptions=gen_config.label_descriptions,
                 )
             )
 

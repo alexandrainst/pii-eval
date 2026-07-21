@@ -11,21 +11,15 @@ CONFIG_FILE_NAME = "pii_eval.yaml"
 
 
 class ClassicalConfig(BaseModel):
-    labels: list[str] = Field(
-        default_factory=lambda: list(REGEX_FEASIBLE_LABELS),
-        examples=[list(REGEX_FEASIBLE_LABELS)],
-    )
+    labels: list[str] = Field(default=list(REGEX_FEASIBLE_LABELS))
 
 
 class GenerativeConfig(BaseModel):
     model: str = Field(examples=["gpt-4o"])
     base_url: str = Field(examples=["https://api.openai.com/v1"])
-    api_key: str | None = Field(default=None, examples=["sk-..."])
-    min_confidence: float = 0.0
-    label_descriptions: dict[str, str] | None = Field(
-        default_factory=lambda: dict(LABEL_DESCRIPTIONS_DA),
-        examples=[dict(LABEL_DESCRIPTIONS_DA)],
-    )
+    api_key: str = Field(examples=["sk-..."])
+    min_confidence: float = Field(default=0.0)
+    label_descriptions: dict[str, str] = Field(default=NON_REGEX_LABEL_DESCRIPTIONS_DA)
 
     def is_ready(self) -> bool:
         """Check that the generative API is actually reachable and usable.
@@ -52,7 +46,7 @@ class GenerativeConfig(BaseModel):
 
 class PiiEvalConfig(BaseModel):
     classical: ClassicalConfig = Field(default_factory=ClassicalConfig)
-    generative: GenerativeConfig | None = None
+    generative: GenerativeConfig | None = Field(default=None, examples=[None])
 
 
 def _repo_root_config_path() -> Path:

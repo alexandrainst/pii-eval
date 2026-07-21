@@ -2,7 +2,7 @@ import json
 import pickle
 import random
 from abc import ABC, abstractmethod
-from dataclasses import asdict, dataclass, field, fields
+from dataclasses import dataclass, field, fields
 from functools import cached_property
 from pathlib import Path
 from typing import Any, Callable, Iterator
@@ -46,7 +46,7 @@ class PiiEntry:
         return {
             "uid": self.uid,
             "text": self.text,
-            "bio": [asdict(x) for x in self.bio],
+            "bio": [x.model_dump() for x in self.bio],
             "meta": to_dict_recursive(self.meta),
         }
 

@@ -18,7 +18,7 @@ generative:
   base_url: https://api.example.com/v1/
   api_key:
   min_confidence: 0.0
-  label_descriptions: # custom labels can be added
+  label_descriptions: # custom labels with descriptions can be added
     PRECISE_LOCATION: location information - e.g. streetname with house number or GPS coordinates
     SALARY: money earned (monthly, yearly, etc.) by an employee or salary level information
     USERNAME: username (e.g. for online accounts)

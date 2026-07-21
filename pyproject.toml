@@ -17,6 +17,7 @@ dependencies = [
     "da-core-news-sm",
     "openai>=2.44.0",
     "fastapi>=0.139.2",
+    "uvicorn>=0.51.0",
 ]
 
 [project.scripts]

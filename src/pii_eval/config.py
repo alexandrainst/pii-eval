@@ -4,20 +4,28 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 import yaml
 
+from pii_eval.constants import *
+
 
 CONFIG_FILE_NAME = "pii_eval.yaml"
 
 
 class ClassicalConfig(BaseModel):
-    labels: list[str] | None = None
+    labels: list[str] = Field(
+        default_factory=lambda: list(REGEX_FEASIBLE_LABELS),
+        examples=[list(REGEX_FEASIBLE_LABELS)],
+    )
 
 
 class GenerativeConfig(BaseModel):
-    model: str | None = None
-    base_url: str | None = None
-    api_key: str | None = None
+    model: str = Field(examples=["gpt-4o"])
+    base_url: str = Field(examples=["https://api.openai.com/v1"])
+    api_key: str | None = Field(default=None, examples=["sk-..."])
     min_confidence: float = 0.0
-    label_descriptions: dict[str, str] | None = None
+    label_descriptions: dict[str, str] | None = Field(
+        default_factory=lambda: dict(LABEL_DESCRIPTIONS_DA),
+        examples=[dict(LABEL_DESCRIPTIONS_DA)],
+    )
 
     def is_ready(self) -> bool:
         """Check that the generative API is actually reachable and usable.

@@ -1,7 +1,7 @@
 from dataclasses import asdict
 
 from fastapi import FastAPI
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from pii_eval.config import PiiEvalConfig
 from pii_eval.data import PiiModel
@@ -14,13 +14,10 @@ from pii_eval.redact import redact as redact_
 default_model: PiiModel = Ensemble.default()
 
 
-class RedactRequest(BaseModel):
-    text: str
-    config: PiiEvalConfig | None = None
-
-
-class IdentifyRequest(BaseModel):
-    text: str
+class PiiRequest(BaseModel):
+    text: str = Field(
+        examples=["My name is Jane Doe and my email is jane.doe@example.com."]
+    )
     config: PiiEvalConfig | None = None
 
 
@@ -48,13 +45,13 @@ app = FastAPI(
 
 
 @app.post("/redact", response_model=RedactResponse)
-def redact_endpoint(request: RedactRequest) -> RedactResponse:
+def redact_endpoint(request: PiiRequest) -> RedactResponse:
     model = _resolve_model(request.config)
     return RedactResponse(text=redact_(text=request.text, model=model))
 
 
 @app.post("/identify", response_model=list[SpanResponse])
-def identify_endpoint(request: IdentifyRequest) -> list[SpanResponse]:
+def identify_endpoint(request: PiiRequest) -> list[SpanResponse]:
     model = _resolve_model(request.config)
     spans = model.predict_spans(text=request.text)
     return [SpanResponse(**asdict(span)) for span in spans]

@@ -65,3 +65,21 @@ def identify(
 if __name__ == "__main__":
     model = _get_model(config_path="./pii_eval_config.yaml")
     app()
+
+
+@app.command()
+def serve(
+    host: str = typer.Option("127.0.0.1", "--host", help="Host to bind to."),
+    port: int = typer.Option(8000, "--port", help="Port to bind to."),
+    reload: bool = typer.Option(True, "--no-reload", help="Disable auto-reload."),
+):
+    """
+    Start an API server exposing /redact and /identify endpoints.
+
+    Both endpoints accept an optional "config" field (with the same shape as
+    pii_eval.yaml) to override the generative-model settings on a per-request
+    basis.
+    """
+    import uvicorn
+
+    uvicorn.run("pii_eval.api:app", host=host, port=port, reload=reload)

@@ -1,5 +1,6 @@
 # ... to be implemented
 
+from pii_eval.config import PiiEvalConfig
 from pii_eval.data import PiiEntry, PiiModel
 from pii_eval.span import LabelSpan, WordTokenizer, bio_to_spans
 
@@ -40,13 +41,17 @@ class Ensemble(PiiModel):
     @staticmethod
     def default() -> "Ensemble":
         from pii_eval.config import load_config
+
+        return Ensemble.from_config(load_config())
+
+    @staticmethod
+    def from_config(config: PiiEvalConfig) -> "Ensemble":
         from pii_eval.models.generative import Generative
         from pii_eval.models.regex_model import Regex
 
-        config = load_config()
         gen_config = config.generative
         models = [Regex()]
-        if gen_config.active and gen_config.is_ready():
+        if gen_config is not None and gen_config.is_ready():
             models.append(
                 Generative(
                     model_tag=gen_config.model,

@@ -59,7 +59,7 @@ def generate_predictions(
         config = load_config()
         models = [Regex(), PNLookup()]
         gen_config = config.generative
-        if gen_config.active and gen_config.is_ready():
+        if gen_config is not None and gen_config.is_ready():
             models.insert(
                 0,
                 Generative(

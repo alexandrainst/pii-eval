@@ -101,3 +101,46 @@ pii-eval run-evaluation
 pii-eval --help
 pii-eval redact --help
 ```
+
+### API server
+
+```bash
+# Start an API server exposing /redact and /identify endpoints
+pii-eval serve --host 127.0.0.1 --port 8000
+
+# Redact text
+curl -X POST http://127.0.0.1:8000/redact \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Navnet er Anders Sand. Og 21324354 er telefonnummeret."}'
+# {"text": "Navnet er <PERSON_NAME>. Og <PHONE_NUMBER> er telefonnummeret."}
+
+# Identify entities
+curl -X POST http://127.0.0.1:8000/identify \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Navnet er Anders Sand. Og 21324354 er telefonnummeret."}'
+# [{"start": 10, "end": 21, "text": "Anders Sand", "label": "PERSON_NAME"}, ...]
+```
+
+Both endpoints accept an optional `config` field to override the model
+configuration on a per-request basis, using the same shape as
+`pii_eval.yaml`. Omitting the `generative` block (or setting it to `null`)
+disables the generative model for that request:
+
+```bash
+curl -X POST http://127.0.0.1:8000/redact \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Navnet er Anders Sand.",
+    "config": {
+      "generative": {
+        "model": "qwen/qwen3.5-397b",
+        "base_url": "https://api.example.com/v1/",
+        "api_key": "sk-...",
+        "min_confidence": 0.0
+      }
+    }
+  }'
+```
+
+Interactive API docs (Swagger UI) are available at `/docs` once the server is
+running.

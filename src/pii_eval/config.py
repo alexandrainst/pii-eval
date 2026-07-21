@@ -5,7 +5,7 @@ from pathlib import Path
 import yaml
 
 
-CONFIG_FILE_NAME = "pii_eval_config.yaml"
+CONFIG_FILE_NAME = "pii_eval.yaml"
 
 
 @dataclass

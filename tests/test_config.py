@@ -17,7 +17,7 @@ def test_load_config_defaults_when_missing(tmp_path: Path, monkeypatch) -> None:
 
 
 def test_load_config_parses_generative_block(tmp_path: Path, monkeypatch) -> None:
-    config_path = tmp_path / "pii_eval_config.yaml"
+    config_path = tmp_path / "pii_eval.yaml"
     config_path.write_text(
         """
         generative:

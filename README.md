@@ -31,7 +31,7 @@ Developer:
    therein.
 2. Run `source .venv/bin/activate` to activate the virtual environment.
 3. If you want to use generative models via an API, you need to
-   `cp pii_eval_config.example.yaml pii_eval_config.yaml` and fill out the
+   `cp pii_eval.example.yaml pii_eval.yaml` and fill out the
    necessary details in this file (api keys etc. and a URL to an OpenAI-compatible
    API).
 

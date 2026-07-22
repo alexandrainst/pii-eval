@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PII detection demo &middot; PII detection demo</title>
+  <link rel="stylesheet" href="styles.css?v=2" />
+</head>
+
+<body>
+  <div class="page">
+    <header class="masthead">
+      <div class="masthead-title">
+        <h1>PII detection demo</h1>
+        <p>Live PII detection &amp; redaction &mdash; type below to see entities highlighted.</p>
+      </div>
+      <div class="status" id="status" data-state="idle">
+        <span class="status-dot"></span>
+        <span class="status-text" id="status-text">Ready</span>
+      </div>
+    </header>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Input</h2>
+        <span class="hint">Detected entities are highlighted with their label above.</span>
+      </div>
+
+      <div class="editor" id="editor">
+        <div class="backdrop" id="backdrop">
+          <div class="highlights" id="highlights"></div>
+        </div>
+        <textarea id="input" spellcheck="false" autocomplete="off" autocapitalize="off"
+          aria-label="Text to analyse for PII"></textarea>
+      </div>
+
+      <div class="legend" id="legend" hidden></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Redacted output</h2>
+        <button class="ghost-btn" id="copy-btn" type="button">Copy</button>
+      </div>
+      <div class="output" id="output" aria-live="polite"></div>
+    </section>
+
+    <details class="config" id="config">
+      <summary>
+        <span class="summary-label">Configuration</span>
+        <span class="summary-sub" id="config-summary">Regex model &middot; all labels</span>
+      </summary>
+
+      <div class="config-body">
+        <div class="config-group">
+          <h3>Classical (regex) labels</h3>
+          <p class="config-note">
+            These labels are matched by the deterministic regex model. Uncheck to exclude a label.
+          </p>
+          <div class="label-grid" id="label-grid"></div>
+        </div>
+
+        <div class="config-group">
+          <label class="toggle">
+            <input type="checkbox" id="gen-enabled" />
+            <span>Enable generative model (LLM)</span>
+          </label>
+          <p class="config-note">
+            Adds an LLM to detect labels regex can't (names, locations, &hellip;). Requires an
+            OpenAI-compatible endpoint. Each keystroke triggers a request, so detection is slower
+            while this is on.
+          </p>
+
+          <div class="gen-fields" id="gen-fields" data-disabled="true">
+            <label class="field">
+              <span>Model</span>
+              <input type="text" id="gen-model" placeholder="qwen/qwen3.5-397b" />
+            </label>
+            <label class="field">
+              <span>Base URL</span>
+              <input type="text" id="gen-base-url" placeholder="https://api.example.com/v1/" />
+            </label>
+            <label class="field">
+              <span>API key</span>
+              <input type="password" id="gen-api-key" placeholder="sk-&hellip;" />
+            </label>
+            <label class="field">
+              <span>Min. confidence</span>
+              <input type="number" id="gen-min-conf" min="0" max="1" step="0.05" value="0" />
+            </label>
+          </div>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <script src="app.js?v=2"></script>
+</body>
+
+</html>

@@ -1,0 +1,424 @@
+:root {
+  --bg: #f4f5f7;
+  --panel: #ffffff;
+  --panel-border: #e3e5ea;
+  --text: #1c1f26;
+  --text-soft: #5b616e;
+  --text-faint: #8a909c;
+  --accent: #3355ff;
+  --accent-soft: #eaeeff;
+  --shadow: 0 1px 2px rgba(20, 24, 40, 0.06), 0 8px 24px rgba(20, 24, 40, 0.06);
+  --radius: 14px;
+  --editor-font: "SFMono-Regular", "JetBrains Mono", "Menlo", "Consolas", monospace;
+  --ui-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --editor-size: 16px;
+  --editor-line: 2.6;
+  --editor-pad-y: 1.5em;
+  --editor-pad-x: 1em;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --panel-border: #262b35;
+    --text: #e7e9ee;
+    --text-soft: #a2a8b6;
+    --text-faint: #6d7480;
+    --accent: #7f96ff;
+    --accent-soft: #1d2440;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.35);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--ui-font);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+/* ---------- masthead ---------- */
+.masthead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.masthead h1 {
+  margin: 0;
+  font-size: 28px;
+  letter-spacing: -0.02em;
+}
+
+.masthead p {
+  margin: 4px 0 0;
+  color: var(--text-soft);
+  font-size: 15px;
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  font-size: 13px;
+  color: var(--text-soft);
+  white-space: nowrap;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-faint);
+  transition: background 0.2s ease;
+}
+
+.status[data-state="loading"] .status-dot {
+  background: var(--accent);
+  animation: pulse 1s ease-in-out infinite;
+}
+.status[data-state="ok"] .status-dot {
+  background: #22b07d;
+}
+.status[data-state="error"] .status-dot {
+  background: #e0564f;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* ---------- panels ---------- */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  padding: 18px;
+  box-shadow: var(--shadow);
+}
+
+.panel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.panel-head h2 {
+  margin: 0;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-soft);
+}
+
+.hint {
+  font-size: 12.5px;
+  color: var(--text-faint);
+}
+
+/* ---------- editor with highlight overlay ---------- */
+.editor {
+  position: relative;
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+/* The text-bearing elements must share identical metrics so the transparent
+ * textarea's caret lines up with the highlighted backdrop text. Keep these two
+ * selectors in lockstep. white-space lives here (NOT on .backdrop) so the HTML
+ * source whitespace around #highlights is not rendered. */
+.highlights,
+#input {
+  font-family: var(--editor-font);
+  font-size: var(--editor-size);
+  line-height: var(--editor-line);
+  padding: var(--editor-pad-y) var(--editor-pad-x);
+  letter-spacing: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  border: 0;
+  margin: 0;
+}
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  color: var(--text);
+}
+
+.highlights {
+  min-height: 100%;
+}
+
+#input {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-height: 240px;
+  resize: none;
+  overflow: hidden;
+  background: transparent;
+  color: transparent;
+  caret-color: var(--text);
+  outline: none;
+}
+
+#input::selection {
+  background: rgba(51, 85, 255, 0.25);
+}
+
+/* highlight marks */
+mark.pii {
+  position: relative;
+  border-radius: 4px;
+  padding: 0.05em 0.12em;
+  color: inherit;
+  background: var(--pii-bg, var(--accent-soft));
+  box-shadow: inset 0 -2px 0 0 var(--pii-line, var(--accent));
+}
+
+mark.pii > .tag {
+  position: absolute;
+  left: 0;
+  top: -1.15em;
+  font-family: var(--ui-font);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+  padding: 1px 5px;
+  border-radius: 5px;
+  white-space: nowrap;
+  color: var(--pii-tag-text, #fff);
+  background: var(--pii-line, var(--accent));
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ---------- legend ---------- */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-soft);
+  padding: 3px 9px 3px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--panel-border);
+}
+
+.legend-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.legend-count {
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- output ---------- */
+.output {
+  font-family: var(--editor-font);
+  font-size: var(--editor-size);
+  line-height: 1.9;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  min-height: 60px;
+  color: var(--text);
+}
+
+.output .token {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: 4px;
+  padding: 0.05em 0.3em;
+  font-weight: 600;
+  font-size: 0.85em;
+}
+
+.ghost-btn {
+  font-family: var(--ui-font);
+  font-size: 12.5px;
+  color: var(--text-soft);
+  background: transparent;
+  border: 1px solid var(--panel-border);
+  border-radius: 7px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.ghost-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ---------- config ---------- */
+.config {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.config > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  user-select: none;
+}
+.config > summary::-webkit-details-marker {
+  display: none;
+}
+.config > summary::before {
+  content: "▸";
+  color: var(--text-faint);
+  transition: transform 0.15s ease;
+  font-size: 12px;
+}
+.config[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.summary-label {
+  font-size: 14px;
+  font-weight: 600;
+}
+.summary-sub {
+  font-size: 12.5px;
+  color: var(--text-faint);
+  margin-left: auto;
+}
+
+.config-body {
+  padding: 4px 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  border-top: 1px solid var(--panel-border);
+}
+
+.config-group h3 {
+  margin: 16px 0 4px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-soft);
+}
+
+.config-note {
+  margin: 0 0 12px;
+  font-size: 12.5px;
+  color: var(--text-faint);
+  max-width: 60ch;
+}
+
+.label-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 6px 16px;
+}
+
+.label-grid label,
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+
+.toggle {
+  font-weight: 600;
+}
+
+.gen-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  transition: opacity 0.15s ease;
+}
+.gen-fields[data-disabled="true"] {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--text-soft);
+}
+
+.field input {
+  font-family: var(--ui-font);
+  font-size: 13.5px;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  outline: none;
+}
+.field input:focus {
+  border-color: var(--accent);
+}
+
+input[type="checkbox"] {
+  accent-color: var(--accent);
+  width: 15px;
+  height: 15px;
+}

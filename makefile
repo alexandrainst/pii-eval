@@ -1,6 +1,6 @@
 # This ensures that we can call `make <target>` even if `<target>` exists as a file or
 # directory.
-.PHONY: docs help
+.PHONY: docs help demo
 
 # Exports all variables defined in the makefile available to scripts
 .EXPORT_ALL_VARIABLES:
@@ -36,3 +36,11 @@ install-uv:
 
 install-venv:
 	@uv sync
+
+DEMO_HOST ?= 127.0.0.1
+DEMO_PORT ?= 8000
+
+demo: ## Spin up the PII detection web demo (override with DEMO_HOST / DEMO_PORT)
+	@echo "Starting pii-eval demo at http://$(DEMO_HOST):$(DEMO_PORT)/demo/ ..."
+	@( sleep 2; (xdg-open "http://$(DEMO_HOST):$(DEMO_PORT)/demo/" || open "http://$(DEMO_HOST):$(DEMO_PORT)/demo/") >/dev/null 2>&1 & )
+	@uv run pii-eval serve --host $(DEMO_HOST) --port $(DEMO_PORT)

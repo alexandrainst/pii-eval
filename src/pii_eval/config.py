@@ -15,9 +15,9 @@ class ClassicalConfig(BaseModel):
 
 
 class GenerativeConfig(BaseModel):
-    model: str = Field(examples=["gpt-4o"])
-    base_url: str = Field(examples=["https://api.openai.com/v1"])
-    api_key: str = Field(examples=["sk-..."])
+    model: str | None = Field(default=None, examples=["gpt-4o"])
+    base_url: str | None = Field(default=None, examples=["https://api.openai.com/v1"])
+    api_key: str | None = Field(default=None, examples=["sk-..."])
     min_confidence: float = Field(default=0.0)
     label_descriptions: dict[str, str] = Field(default=NON_REGEX_LABEL_DESCRIPTIONS_DA)
 

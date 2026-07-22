@@ -5,14 +5,14 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>PII detection demo &middot; PII detection demo</title>
-  <link rel="stylesheet" href="styles.css?v=2" />
+  <link rel="stylesheet" href="styles.css?v=3" />
 </head>
 
 <body>
   <div class="page">
     <header class="masthead">
       <div class="masthead-title">
-        <h1>PII detection demo</h1>
+        <h1>PII detection</h1>
         <p>Live PII detection &amp; redaction &mdash; type below to see entities highlighted.</p>
       </div>
       <div class="status" id="status" data-state="idle">
@@ -72,7 +72,7 @@
             while this is on.
           </p>
 
-          <div class="gen-fields" id="gen-fields" data-disabled="true">
+          <div class="gen-fields" id="gen-fields" hidden>
             <label class="field">
               <span>Model</span>
               <input type="text" id="gen-model" placeholder="qwen/qwen3.5-397b" />
@@ -89,13 +89,25 @@
               <span>Min. confidence</span>
               <input type="number" id="gen-min-conf" min="0" max="1" step="0.05" value="0" />
             </label>
+
+            <div class="label-desc">
+              <div class="label-desc-head">
+                <h4>Label descriptions</h4>
+                <button type="button" class="ghost-btn" id="add-label-desc">+ Add label</button>
+              </div>
+              <p class="config-note">
+                Labels the generative model looks for, each with a description that guides
+                detection. Add your own or remove the ones you don't need.
+              </p>
+              <div class="label-desc-list" id="label-desc-list"></div>
+            </div>
           </div>
         </div>
       </div>
     </details>
   </div>
 
-  <script src="app.js?v=2"></script>
+  <script src="app.js?v=3"></script>
 </body>
 
 </html>

@@ -65,6 +65,8 @@ const els = {
   genBaseUrl: document.getElementById("gen-base-url"),
   genApiKey: document.getElementById("gen-api-key"),
   genMinConf: document.getElementById("gen-min-conf"),
+  labelDescList: document.getElementById("label-desc-list"),
+  addLabelDesc: document.getElementById("add-label-desc"),
   configSummary: document.getElementById("config-summary"),
   copyBtn: document.getElementById("copy-btn"),
 };
@@ -163,12 +165,48 @@ function renderLegend(spans) {
 }
 
 // ---------- config ----------
-// Populated from GET /config (i.e. the server's pii_eval.yaml). The API key is
-// never sent to the browser, so we send a blank one back and the server fills
-// it in from its own config. label_descriptions round-trip so the yaml's custom
-// descriptions are preserved.
-let serverLabelDescriptions = null;
+// The API key is never sent to the browser; we send a blank one back and the
+// server fills it in from its own config.
 let serverKeyConfigured = false;
+
+// ---------- label descriptions (label ↔ description pairs) ----------
+function addLabelDescRow(label = "", description = "") {
+  const row = document.createElement("div");
+  row.className = "label-desc-row";
+  const labelInput = document.createElement("input");
+  labelInput.className = "ld-label";
+  labelInput.placeholder = "LABEL_NAME";
+  labelInput.value = label;
+  const descInput = document.createElement("input");
+  descInput.className = "ld-desc";
+  descInput.placeholder = "description";
+  descInput.value = description;
+  const remove = document.createElement("button");
+  remove.type = "button";
+  remove.className = "icon-btn ld-remove";
+  remove.textContent = "×";
+  remove.setAttribute("aria-label", `Remove ${label || "label"}`);
+  row.append(labelInput, descInput, remove);
+  els.labelDescList.appendChild(row);
+  return row;
+}
+
+function renderLabelDescRows(descriptions) {
+  els.labelDescList.innerHTML = "";
+  for (const [label, description] of Object.entries(descriptions || {})) {
+    addLabelDescRow(label, description);
+  }
+}
+
+function collectLabelDescriptions() {
+  const out = {};
+  els.labelDescList.querySelectorAll(".label-desc-row").forEach((row) => {
+    const label = row.querySelector(".ld-label").value.trim();
+    const desc = row.querySelector(".ld-desc").value.trim();
+    if (label) out[label] = desc;
+  });
+  return out;
+}
 
 function buildConfig() {
   const labels = [...els.labelGrid.querySelectorAll("input:checked")].map(
@@ -181,12 +219,15 @@ function buildConfig() {
       base_url: els.genBaseUrl.value.trim(),
       api_key: els.genApiKey.value,
       min_confidence: parseFloat(els.genMinConf.value) || 0,
+      label_descriptions: collectLabelDescriptions(),
     };
-    if (serverLabelDescriptions) {
-      config.generative.label_descriptions = serverLabelDescriptions;
-    }
   }
   return config;
+}
+
+function setGenerativeEnabled(enabled) {
+  els.genEnabled.checked = enabled;
+  els.genFields.hidden = !enabled;
 }
 
 // Pre-populate the UI from the server's active config (pii_eval.yaml).
@@ -207,14 +248,13 @@ async function loadServerConfig() {
 
     const gen = cfg.generative;
     if (gen) {
-      els.genEnabled.checked = true;
-      els.genFields.dataset.disabled = "false";
+      setGenerativeEnabled(true);
       els.genModel.value = gen.model || "";
       els.genBaseUrl.value = gen.base_url || "";
       if (typeof gen.min_confidence === "number") {
         els.genMinConf.value = gen.min_confidence;
       }
-      serverLabelDescriptions = gen.label_descriptions || null;
+      renderLabelDescRows(gen.label_descriptions);
     }
 
     serverKeyConfigured = Boolean(data.api_key_configured);
@@ -321,7 +361,7 @@ function wireEvents() {
   });
 
   els.genEnabled.addEventListener("change", () => {
-    els.genFields.dataset.disabled = String(!els.genEnabled.checked);
+    setGenerativeEnabled(els.genEnabled.checked);
     updateConfigSummary();
     scheduleAnalyse();
   });
@@ -329,6 +369,20 @@ function wireEvents() {
   for (const el of [els.genModel, els.genBaseUrl, els.genApiKey, els.genMinConf]) {
     el.addEventListener("input", scheduleAnalyse);
   }
+
+  els.addLabelDesc.addEventListener("click", () => {
+    const row = addLabelDescRow();
+    row.querySelector(".ld-label").focus();
+  });
+
+  // Editing or removing a label/description pair re-runs detection.
+  els.labelDescList.addEventListener("input", scheduleAnalyse);
+  els.labelDescList.addEventListener("click", (event) => {
+    const remove = event.target.closest(".ld-remove");
+    if (!remove) return;
+    remove.closest(".label-desc-row").remove();
+    scheduleAnalyse();
+  });
 
   els.copyBtn.addEventListener("click", async () => {
     try {

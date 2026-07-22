@@ -385,25 +385,31 @@ mark.pii > .tag {
 }
 
 .gen-fields {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 12px;
-  transition: opacity 0.15s ease;
-}
-.gen-fields[data-disabled="true"] {
-  opacity: 0.45;
-  pointer-events: none;
-}
-
-.field {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  font-size: 12px;
+  gap: 10px;
+  margin-top: 4px;
+}
+.gen-fields[hidden] {
+  display: none;
+}
+
+/* Fixed generative fields: label on the left, input on the right. */
+.field {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
   color: var(--text-soft);
 }
 
-.field input {
+.field > span {
+  font-weight: 500;
+}
+
+.field input,
+.label-desc-row input {
   font-family: var(--ui-font);
   font-size: 13.5px;
   color: var(--text);
@@ -412,9 +418,74 @@ mark.pii > .tag {
   border-radius: 8px;
   padding: 8px 10px;
   outline: none;
+  width: 100%;
 }
-.field input:focus {
+.field input:focus,
+.label-desc-row input:focus {
   border-color: var(--accent);
+}
+
+/* Label + description pairs */
+.label-desc {
+  margin-top: 6px;
+  padding-top: 14px;
+  border-top: 1px solid var(--panel-border);
+}
+
+.label-desc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.label-desc-head h4 {
+  margin: 0;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-soft);
+}
+
+.label-desc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label-desc-row {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.label-desc-row .ld-label {
+  font-family: var(--editor-font);
+  font-size: 12.5px;
+  text-transform: uppercase;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--text-faint);
+  background: transparent;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.icon-btn:hover {
+  color: #e0564f;
+  border-color: #e0564f;
 }
 
 input[type="checkbox"] {

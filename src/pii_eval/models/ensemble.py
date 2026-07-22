@@ -53,16 +53,17 @@ class Ensemble(PiiModel):
 
         gen_config = config.generative
         label_black_list = REGEX_FEASIBLE_LABELS.difference(config.classical.labels)
-        models = [Regex(label_black_list=label_black_list)]
+        models: list[PiiModel] = [Regex(label_black_list=label_black_list)]
         if gen_config is not None and gen_config.is_ready():
-            models.append(
+            models.insert(
+                0,
                 Generative(
                     model_tag=gen_config.model,
                     base_url=gen_config.base_url,
                     api_key=gen_config.api_key,
                     min_confidence=gen_config.min_confidence,
                     label_descriptions=gen_config.label_descriptions,
-                )
+                ),
             )
 
         return Ensemble(name="ens_regex_gen", models=models)

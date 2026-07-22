@@ -408,6 +408,50 @@ mark.pii > .tag {
   font-weight: 500;
 }
 
+/* Fields whose control is taller than one line align their label to the top. */
+.field-top {
+  align-items: start;
+}
+.field-top > span {
+  padding-top: 8px;
+}
+
+.field-input {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.field-input textarea {
+  font-family: var(--editor-font);
+  font-size: 13px;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  outline: none;
+  width: 100%;
+  resize: vertical;
+  white-space: pre;
+}
+.field-input textarea:focus {
+  border-color: var(--accent);
+}
+.field-input textarea[aria-invalid="true"] {
+  border-color: #e0564f;
+}
+
+.field-help {
+  font-size: 11.5px;
+  color: var(--text-faint);
+}
+.field-error {
+  font-size: 11.5px;
+  color: #e0564f;
+}
+
 .field input,
 .label-desc-row input {
   font-family: var(--ui-font);

@@ -63,6 +63,7 @@ class Ensemble(PiiModel):
                     api_key=gen_config.api_key,
                     min_confidence=gen_config.min_confidence,
                     label_descriptions=gen_config.label_descriptions,
+                    extra_body=gen_config.extra_body or {},
                 ),
             )
 

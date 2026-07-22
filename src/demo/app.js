@@ -65,6 +65,8 @@ const els = {
   genBaseUrl: document.getElementById("gen-base-url"),
   genApiKey: document.getElementById("gen-api-key"),
   genMinConf: document.getElementById("gen-min-conf"),
+  genExtraBody: document.getElementById("gen-extra-body"),
+  genExtraBodyError: document.getElementById("gen-extra-body-error"),
   labelDescList: document.getElementById("label-desc-list"),
   addLabelDesc: document.getElementById("add-label-desc"),
   configSummary: document.getElementById("config-summary"),
@@ -208,6 +210,35 @@ function collectLabelDescriptions() {
   return out;
 }
 
+function setExtraBodyError(message) {
+  els.genExtraBody.setAttribute("aria-invalid", message ? "true" : "false");
+  els.genExtraBodyError.textContent = message || "";
+  els.genExtraBodyError.hidden = !message;
+}
+
+// Parse the "extra body" textarea into a JSON object, updating the inline error
+// message. Returns null when empty or invalid (the request then omits it).
+function readExtraBody() {
+  const text = els.genExtraBody.value.trim();
+  if (!text) {
+    setExtraBodyError(null);
+    return null;
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    setExtraBodyError("Invalid JSON");
+    return null;
+  }
+  if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+    setExtraBodyError("Must be a JSON object");
+    return null;
+  }
+  setExtraBodyError(null);
+  return parsed;
+}
+
 function buildConfig() {
   const labels = [...els.labelGrid.querySelectorAll("input:checked")].map(
     (cb) => cb.value
@@ -221,6 +252,8 @@ function buildConfig() {
       min_confidence: parseFloat(els.genMinConf.value) || 0,
       label_descriptions: collectLabelDescriptions(),
     };
+    const extraBody = readExtraBody();
+    if (extraBody) config.generative.extra_body = extraBody;
   }
   return config;
 }
@@ -253,6 +286,9 @@ async function loadServerConfig() {
       els.genBaseUrl.value = gen.base_url || "";
       if (typeof gen.min_confidence === "number") {
         els.genMinConf.value = gen.min_confidence;
+      }
+      if (gen.extra_body) {
+        els.genExtraBody.value = JSON.stringify(gen.extra_body, null, 2);
       }
       renderLabelDescRows(gen.label_descriptions);
     }
@@ -366,9 +402,17 @@ function wireEvents() {
     scheduleAnalyse();
   });
 
-  for (const el of [els.genModel, els.genBaseUrl, els.genApiKey, els.genMinConf]) {
+  for (const el of [
+    els.genModel,
+    els.genBaseUrl,
+    els.genApiKey,
+    els.genMinConf,
+    els.genExtraBody,
+  ]) {
     el.addEventListener("input", scheduleAnalyse);
   }
+  // Validate the JSON on the fly, not only when the debounced request fires.
+  els.genExtraBody.addEventListener("input", readExtraBody);
 
   els.addLabelDesc.addEventListener("click", () => {
     const row = addLabelDescRow();

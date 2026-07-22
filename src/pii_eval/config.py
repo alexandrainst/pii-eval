@@ -20,6 +20,7 @@ class GenerativeConfig(BaseModel):
     api_key: str | None = Field(default=None, examples=["sk-..."])
     min_confidence: float = Field(default=0.0)
     label_descriptions: dict[str, str] = Field(default=NON_REGEX_LABEL_DESCRIPTIONS_DA)
+    extra_body: dict | None = None
 
     def is_ready(self) -> bool:
         """Check that the generative API is actually reachable and usable.
@@ -82,3 +83,8 @@ def load_config(path: str | Path | None = None) -> PiiEvalConfig:
     payload = {key: value for key, value in payload.items() if value is not None}
 
     return PiiEvalConfig.model_validate(payload)
+
+
+if __name__ == "__main__":
+    config = load_config("./pii_eval.yaml")
+    pass

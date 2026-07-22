@@ -5,7 +5,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>PII detection demo &middot; PII detection demo</title>
-  <link rel="stylesheet" href="styles.css?v=3" />
+  <link rel="stylesheet" href="styles.css?v=4" />
 </head>
 
 <body>
@@ -89,6 +89,15 @@
               <span>Min. confidence</span>
               <input type="number" id="gen-min-conf" min="0" max="1" step="0.05" value="0" />
             </label>
+            <label class="field field-top">
+              <span>Extra body</span>
+              <span class="field-input">
+                <textarea id="gen-extra-body" rows="3" spellcheck="false"
+                  placeholder='{"reasoning_effort": "low"}'></textarea>
+                <span class="field-error" id="gen-extra-body-error" hidden></span>
+                <span class="field-help">JSON merged into each request body (e.g. provider-specific params).</span>
+              </span>
+            </label>
 
             <div class="label-desc">
               <div class="label-desc-head">
@@ -107,7 +116,7 @@
     </details>
   </div>
 
-  <script src="app.js?v=3"></script>
+  <script src="app.js?v=4"></script>
 </body>
 
 </html>

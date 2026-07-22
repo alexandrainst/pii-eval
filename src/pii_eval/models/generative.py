@@ -96,9 +96,10 @@ class Generative(PiiModel):
         model_tag: str,
         base_url: str,
         api_key: str | None = None,
+        min_confidence: float = 0.0,
+        extra_body: dict = {},
         label_descriptions: dict[str, str] = dict(LABEL_DESCRIPTIONS_DA),
         name: str | None = None,
-        min_confidence: float = 0.0,
     ):
         super().__init__(name=name if name else model_tag.split("/")[-1])
         if name is None:
@@ -107,6 +108,7 @@ class Generative(PiiModel):
         self.model_tag = model_tag
         self.base_url = base_url
         self.api_key = api_key
+        self.extra_body = extra_body
         self.min_confidence = min_confidence
         self.label_descriptions = label_descriptions
         self.model_json_schema = NERResponse.model_json_schema()
@@ -156,7 +158,7 @@ class Generative(PiiModel):
                 {"role": "user", "content": user_prompt},
             ],
             response_format=NERResponse,
-            extra_body={"chat_template_kwargs": {"enable_thinking": False}},
+            extra_body=self.extra_body,
         )
         content = response.choices[0].message.content
         try:
